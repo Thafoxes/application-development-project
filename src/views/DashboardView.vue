@@ -1,15 +1,25 @@
 <script setup>
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 import AppHeader from '@/components/AppHeader.vue'
 import NavigationButton from '@/components/NavigationButton.vue'
 import StatsCard from '@/components/StatsCard.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
+import CreateSessionModal from '@/components/CreateSessionModal.vue'
 
 const { user } = useAuth()
+const router = useRouter()
+const isModalOpen = ref(false)
+
+const handleSessionCreated = () => {
+  isModalOpen.value = false
+  router.push('/manage-session')
+}
 </script>
 
 <template>
-  <div class="min-h-screen flex flex-col bg-[#e7ded3] w-full font-['Inter']">
+  <div class="min-h-screen flex flex-col bg-[#e7ded3] w-full font-['Inter'] text-black">
     <!-- Header -->
     <AppHeader />
 
@@ -30,8 +40,8 @@ const { user } = useAuth()
       <aside
         class="w-[280px] bg-[#e9e9e9] shrink-0 flex flex-col py-[25px] gap-2 border-r border-gray-300"
       >
-        <NavigationButton linkName="Dashboard" active />
-        <NavigationButton linkName="Manage Session" />
+        <NavigationButton linkName="Dashboard" active @click="router.push('/dashboard')" />
+        <NavigationButton linkName="Manage Session" @click="router.push('/manage-session')" />
         <NavigationButton linkName="Manage Schedule" />
         <NavigationButton linkName="Manage User" />
         <NavigationButton linkName="Manage FYP" />
@@ -45,7 +55,8 @@ const { user } = useAuth()
         <div class="flex items-center justify-between w-full">
           <h1 class="font-['Inter'] font-bold text-[40px] text-black uppercase">SESSION 25262</h1>
           <button
-            class="bg-[#5c001f] text-white px-[24px] py-[16px] rounded-[8px] font-medium text-[16px] hover:bg-[#4a0019] transition-colors shadow-md"
+            @click="isModalOpen = true"
+            class="bg-[#5c001f] text-white px-[24px] py-[16px] rounded-[8px] font-medium text-[16px] hover:bg-[#4a0019] transition-colors shadow-lg border-none"
           >
             Create New Session
           </button>
@@ -56,7 +67,7 @@ const { user } = useAuth()
 
         <!-- Quick Stats Cards (Color coded) -->
         <div
-          class="bg-white border border-[#2f2f2f] rounded-[15px] p-[20px] flex flex-col gap-4 shadow-sm w-full"
+          class="bg-white rounded-[15px] p-[20px] flex flex-col gap-4 shadow-lg w-full border-none"
         >
           <h2 class="font-['Inter'] font-bold text-[32px] text-black">Quick Stats</h2>
           <div class="flex gap-[20px] w-full">
@@ -94,14 +105,14 @@ const { user } = useAuth()
         <div class="bg-white rounded-[25px] p-[30px] flex flex-col gap-[20px] shadow-lg w-full">
           <div>
             <h2 class="font-['Inter'] font-bold text-[32px] text-black">Users & Data Manager</h2>
-            <p class="text-[20px] text-gray-700 mt-2">Current users in this session:</p>
+            <p class="text-[20px] text-gray-700 mt-2">Current users in this system:</p>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-[20px] w-full">
-            <StatsCard amount="12" label="Students" />
+            <StatsCard amount="12" label="User" />
+            <StatsCard amount="1" label="Student" />
             <StatsCard amount="3" label="Staff" />
             <StatsCard amount="4" label="Examiner" />
-            <StatsCard amount="1" label="Coordinator" />
           </div>
 
           <button
@@ -141,5 +152,12 @@ const { user } = useAuth()
         </div>
       </main>
     </div>
+
+    <!-- Create Session Modal -->
+    <CreateSessionModal
+      v-if="isModalOpen"
+      @close="isModalOpen = false"
+      @create="handleSessionCreated"
+    />
   </div>
 </template>

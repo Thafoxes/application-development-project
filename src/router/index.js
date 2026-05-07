@@ -3,6 +3,7 @@ import LoginView from '../views/LoginView.vue'
 import CalendarView from '../views/CalendarView.vue'
 import SignupView from '../views/SignupView.vue'
 import DashboardView from '../views/DashboardView.vue'
+import ManageSessionView from '../views/ManageSessionView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -26,6 +27,12 @@ const router = createRouter({
       path: '/dashboard',
       name: 'dashboard',
       component: DashboardView,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/manage-session',
+      name: 'manage-session',
+      component: ManageSessionView,
       meta: { requiresAuth: true }
     }
   ],

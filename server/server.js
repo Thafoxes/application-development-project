@@ -141,6 +141,58 @@ app.post("/api/login", (req, res) => {
   });
 });
 
+// --- SESSION MANAGEMENT APIs ---
+
+// GET all sessions
+app.get("/api/sessions", (req, res) => {
+  db.query("CALL sp_get_all_session()", (err, results) => {
+    if (err) return res.status(500).json({ error: "Failed to fetch sessions: " + err.message });
+    // results[0] contains the select query results
+    res.json(results[0] || []);
+  });
+});
+
+// GET single session
+app.get("/api/sessions/:id", (req, res) => {
+  const sessionId = req.params.id;
+  db.query("CALL sp_select_session(?)", [sessionId], (err, results) => {
+    if (err) return res.status(500).json({ error: "Failed to fetch session: " + err.message });
+    res.json(results[0]?.[0] || null);
+  });
+});
+
+// POST create new session
+app.post("/api/sessions", (req, res) => {
+  const { session_id } = req.body;
+  if (!session_id) return res.status(400).json({ error: "Session ID (number) is required" });
+  
+  db.query("CALL sp_insert_session(?)", [session_id], (err, results) => {
+    if (err) return res.status(500).json({ error: "Failed to create session: " + err.message });
+    res.json({ message: "Session created successfully" });
+  });
+});
+
+// PUT update session
+app.put("/api/sessions/:id", (req, res) => {
+  const old_id = req.params.id;
+  const { new_session_id } = req.body;
+  if (!new_session_id) return res.status(400).json({ error: "New Session ID is required" });
+  
+  db.query("CALL sp_update_session(?, ?)", [old_id, new_session_id], (err, results) => {
+    if (err) return res.status(500).json({ error: "Failed to update session: " + err.message });
+    res.json({ message: "Session updated successfully" });
+  });
+});
+
+// DELETE session
+app.delete("/api/sessions/:id", (req, res) => {
+  const session_id = req.params.id;
+  db.query("CALL sp_delete_session(?)", [session_id], (err, results) => {
+    if (err) return res.status(500).json({ error: "Failed to delete session: " + err.message });
+    res.json({ message: "Session deleted successfully" });
+  });
+});
+
 // Simple API Endpoint
 app.get("/api/users", (req, res) => {
   db.query("SELECT * FROM users", (err, results) => {
