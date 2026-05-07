@@ -117,10 +117,19 @@ app.post("/api/login", (req, res) => {
           // If the procedure fails, we still might want to let them login, or fail strictly
           return res.status(500).json({ error: "Database error during role lookup" });
         }
-        
-        // Attach the role information returned by the procedure
+        // Debug: Log what the database actually returned
+        console.log("Procedure Results:", JSON.stringify(roleResults));
+
+        // Attach the role information directly to the user object
         if (roleResults && roleResults[0] && roleResults[0].length > 0) {
-          user.role_info = roleResults[0][0]; 
+          const roles = roleResults[0][0];
+          user.is_student = roles.is_student;
+          user.is_supervisor = roles.is_supervisor;
+          user.is_examiner = roles.is_examiner;
+          user.is_coordinator = roles.is_coordinator;
+          user.role_info = roles; // Keep this just in case
+        } else {
+          console.warn("WARNING: sp_lookup_user_role returned 0 rows for email:", user.email);
         }
 
         res.json({ message: "Login successful", user });

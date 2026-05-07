@@ -13,18 +13,18 @@ const errorMessage = ref('')
 
 const handleLogin = async () => {
   errorMessage.value = ''
-  
+
   try {
     const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000'
     const response = await fetch(`${apiUrl}/api/login`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         email: email.value,
-        password: password.value
-      })
+        password: password.value,
+      }),
     })
 
     const data = await response.json()
@@ -41,6 +41,10 @@ const handleLogin = async () => {
   } catch (error) {
     errorMessage.value = error.message
   }
+}
+
+const handleForgotPassword = () => {
+  alert('Please contact your coordinator first (feature not implemented)')
 }
 </script>
 
@@ -69,7 +73,9 @@ const handleLogin = async () => {
         SIGN IN
       </p>
 
-      <p v-if="errorMessage" class="text-red-500 text-sm font-medium w-full text-center mt-[-10px]">{{ errorMessage }}</p>
+      <p v-if="errorMessage" class="text-red-500 text-sm font-medium w-full text-center mt-[-10px]">
+        {{ errorMessage }}
+      </p>
 
       <!-- Email Field -->
       <div class="flex flex-col gap-2 w-full">
@@ -106,6 +112,7 @@ const handleLogin = async () => {
       <!-- Forgot Password Text Link -->
       <div class="w-full flex justify-center mt-[-8px]">
         <a
+          @click.prevent="handleForgotPassword"
           href="#"
           class="text-[#5c001f] hover:underline text-sm font-medium decoration-solid underline-offset-4"
         >
