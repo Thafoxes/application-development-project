@@ -110,7 +110,9 @@ const imgLine1 = 'http://localhost:3845/assets/a78a2dcd9833684c6020633a4a83baec9
         </div>
         <div class="flex flex-col justify-center relative shrink-0 text-[#5c001f] text-[16px]">
           <p class="[text-decoration-skip-ink:none] decoration-solid leading-[1.4] underline">
-            SIGN UP
+            <router-link to="/signup" class="text-[#5c001f] font-semibold hover:underline"
+              >SIGN UP</router-link
+            >
           </p>
         </div>
       </div>
