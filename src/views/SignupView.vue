@@ -3,11 +3,13 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 
 import AppHeader from '@/components/AppHeader.vue'
+import FormStepper from '@/components/FormStepper.vue'
 import imgLine2 from '@/assets/f25212dbf403cb5eaf6315aeac6fdb23a11d908c.svg'
 
 const router = useRouter()
 
 const step = ref(1)
+const stepperSteps = [{ label: 'Basic Info' }, { label: 'More Info' }]
 
 const formData = ref({
   fullName: '',
@@ -15,7 +17,7 @@ const formData = ref({
   password: '',
   confirmPassword: '',
   phoneNumber: '',
-  affiliation: '',
+  // affiliation: '',
 })
 
 const step2Data = ref({
@@ -62,11 +64,15 @@ const validateStep1 = () => {
 
   if (!formData.value.fullName.trim()) errors.value.fullName = 'Full name is required.'
   if (!formData.value.email.trim()) errors.value.email = 'Email is required.'
+
   if (!formData.value.phoneNumber.trim()) errors.value.phoneNumber = 'Phone number is required.'
+  if (!/^\d+$/.test(formData.value.phoneNumber))
+    errors.value.phoneNumber = 'Phone number must be digits.'
+
   if (!formData.value.password) errors.value.password = 'Password is required.'
   if (formData.value.password !== formData.value.confirmPassword)
     errors.value.confirmPassword = 'Passwords do not match.'
-  if (!formData.value.affiliation.trim()) errors.value.affiliation = 'Affiliation is required.'
+  // if (!formData.value.affiliation.trim()) errors.value.affiliation = 'Affiliation is required.'
 
   return Object.keys(errors.value).length === 0
 }
@@ -74,6 +80,14 @@ const validateStep1 = () => {
 const handleNext = () => {
   if (validateStep1()) {
     step.value = 2
+  }
+}
+
+const onStepClick = (targetStep) => {
+  if (targetStep === 1) {
+    step.value = 1
+  } else if (targetStep === 2) {
+    handleNext()
   }
 }
 
@@ -85,13 +99,48 @@ const handleFileUpload = (event) => {
 }
 
 const submitRegistration = async () => {
-  console.log('Submitting data to backend:', {
-    ...formData.value,
-    ...step2Data.value,
-    role: emailDomain.value,
-  })
-  alert('Sign up form submitted successfully! (Mock)')
-  // router.push('/')
+  try {
+    // Map data to match the stored procedure signature expectations
+    const payload = {
+      email: formData.value.email,
+      password: formData.value.password, // In a real app, hash this properly on the backend
+      fullName: formData.value.fullName,
+      phoneNumber: formData.value.phoneNumber,
+      // Pass null if the field doesn't apply to the user's role
+      companyName: emailDomain.value === 'outsider' ? step2Data.value.companyName : null,
+      expertise: ['staff', 'outsider'].includes(emailDomain.value)
+        ? step2Data.value.expertise
+        : null,
+      // Map metric number (student) or department (staff) to p_affiliation
+      affiliation:
+        emailDomain.value === 'staff'
+          ? step2Data.value.department
+          : emailDomain.value === 'student'
+            ? step2Data.value.metricNumber
+            : null,
+    }
+
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+    const response = await fetch(`${apiUrl}/api/signup`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      throw new Error(data.details || data.error || 'Registration failed')
+    }
+
+    alert('Sign up successful!')
+    router.push('/')
+  } catch (error) {
+    alert('Registration Error: ' + error.message)
+    console.error('Signup Error:', error)
+  }
 }
 </script>
 
@@ -106,57 +155,8 @@ const submitRegistration = async () => {
       <div
         class="bg-white w-full max-w-[1000px] flex flex-col items-center py-10 px-4 rounded-xl shadow-sm overflow-hidden relative"
       >
-        <!-- Stepper -->
-        <div class="flex items-start justify-center w-[760px] relative mb-4 shrink-0">
-          <!-- Background Line connecting steps -->
-          <div class="absolute h-[3px] bg-[#cfd6dc] top-[19px] left-[251px] w-[281px]">
-            <!-- Progress Line overlay -->
-            <div
-              class="h-full bg-[#5c001f] transition-all duration-300"
-              :class="step === 2 ? 'w-full' : 'w-0'"
-            ></div>
-          </div>
-
-          <!-- Step 1 -->
-          <div
-            class="flex flex-col items-center gap-[16px] flex-1 z-10 cursor-pointer"
-            @click="step = 1"
-          >
-            <div
-              :class="
-                step >= 1
-                  ? 'bg-[#5c001f] text-white border-[#5c001f]'
-                  : 'bg-white text-[#5c001f] border-[#cfd6dc]'
-              "
-              class="rounded-[20px] size-[40px] flex items-center justify-center shrink-0 border-2 transition-colors duration-300"
-            >
-              <span class="font-medium text-[16px]">01</span>
-            </div>
-            <div class="h-[40px] flex items-center justify-center">
-              <span class="text-[#0d0b26] font-medium text-[14px]">Basic Info</span>
-            </div>
-          </div>
-
-          <!-- Step 2 -->
-          <div
-            class="flex flex-col items-center gap-[16px] flex-1 z-10 cursor-pointer"
-            @click="handleNext"
-          >
-            <div
-              :class="
-                step === 2
-                  ? 'bg-[#5c001f] text-white border-[#5c001f]'
-                  : 'bg-white text-[#5c001f] border-[#5c001f]'
-              "
-              class="rounded-[20px] size-[40px] flex items-center justify-center shrink-0 border-2 transition-colors duration-300"
-            >
-              <span class="font-medium text-[16px]">02</span>
-            </div>
-            <div class="h-[40px] flex items-center justify-center">
-              <span class="text-[#0d0b26] font-medium text-[14px]">More Info</span>
-            </div>
-          </div>
-        </div>
+        <!-- Stepper Component -->
+        <FormStepper :current-step="step" :steps="stepperSteps" @step-click="onStepClick" />
 
         <!-- Horizontal Separator Line below stepper -->
         <div class="w-full mb-10 flex justify-center px-8">
@@ -208,7 +208,7 @@ const submitRegistration = async () => {
             <div class="flex flex-col gap-1">
               <label class="text-sm font-medium text-[#0d0b26]">Phone Number</label>
               <span class="text-xs text-gray-500 mb-1 leading-tight"
-                >Must be accessible through Whatsapp</span
+                >Must be accessible through Whatsapp. No spacing</span
               >
               <input
                 v-model="formData.phoneNumber"
@@ -222,7 +222,7 @@ const submitRegistration = async () => {
             </div>
 
             <!-- Affiliation -->
-            <div class="flex flex-col gap-1">
+            <!-- <div class="flex flex-col gap-1">
               <label class="text-sm font-medium text-[#0d0b26]">Affiliation</label>
               <input
                 v-model="formData.affiliation"
@@ -233,7 +233,7 @@ const submitRegistration = async () => {
               <span v-if="errors.affiliation" class="text-red-500 text-xs">{{
                 errors.affiliation
               }}</span>
-            </div>
+            </div> -->
 
             <!-- Password -->
             <div class="flex flex-col gap-1">
@@ -464,7 +464,8 @@ const submitRegistration = async () => {
                 <input
                   v-model="step2Data.workloadCapacity"
                   type="number"
-                  placeholder="Value"
+                  placeholder="5"
+                  value="5"
                   class="px-4 py-3 rounded-lg border border-[#d9d9d9] focus:ring-1 focus:ring-[#5c001f] focus:border-[#5c001f] outline-none w-full text-sm text-gray-900 placeholder:text-gray-500"
                 />
               </div>
@@ -477,7 +478,8 @@ const submitRegistration = async () => {
                 <input
                   v-model="step2Data.companyName"
                   type="text"
-                  placeholder="Value"
+                  placeholder="5"
+                  value="5"
                   class="px-4 py-3 rounded-lg border border-[#d9d9d9] focus:ring-1 focus:ring-[#5c001f] focus:border-[#5c001f] outline-none w-full text-sm text-gray-900 placeholder:text-gray-500"
                 />
               </div>

@@ -1,5 +1,8 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
+* {
+  font-family: 'Inter', 'Roboto', system-ui;
+}
 :root {
   /* Light mode neutrals from left_grid */
   --page-bg: #f4ebe4;
@@ -19,11 +22,11 @@
 @theme {
   --font-sans: 'Inter', system-ui, sans-serif;
   --font-heading: 'Roboto', system-ui, sans-serif;
-  
+
   /* UTM Official Colors */
   --color-utm-maroon: #5c001f;
   --color-utm-gold: #f8be17;
-  
+
   /* Context-aware semantic colors for Tailwind classes (e.g. bg-page-bg, text-page-text) */
   --color-page-bg: var(--page-bg);
   --color-page-text: var(--page-text);

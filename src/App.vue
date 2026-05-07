@@ -4,7 +4,8 @@ import axios from 'axios';
 
 onMounted(async () => {
   try {
-    const response = await axios.get('http://localhost:3000/api/status');
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+    const response = await axios.get(`${apiUrl}/api/status`);
     if (response.data && response.data.message === 'connected') {
       console.log('connected');
     }
