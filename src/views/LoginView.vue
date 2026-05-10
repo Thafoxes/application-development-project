@@ -85,7 +85,7 @@ const handleForgotPassword = () => {
           type="email"
           required
           placeholder="Value"
-          class="border border-[#d9d9d9] rounded-[8px] px-4 py-3 outline-none focus:border-[#5c001f] focus:ring-1 focus:ring-[#5c001f] w-full"
+          class="border border-[#d9d9d9] rounded-[8px] px-4 py-3 outline-none focus:border-[#5c001f] focus:ring-1 focus:ring-[#5c001f] w-full text-black"
         />
       </div>
 
@@ -97,7 +97,7 @@ const handleForgotPassword = () => {
           type="password"
           required
           placeholder="Value"
-          class="border border-[#d9d9d9] rounded-[8px] px-4 py-3 outline-none focus:border-[#5c001f] focus:ring-1 focus:ring-[#5c001f] w-full"
+          class="border border-[#d9d9d9] rounded-[8px] px-4 py-3 outline-none focus:border-[#5c001f] focus:ring-1 focus:ring-[#5c001f] w-full text-black"
         />
       </div>
 
