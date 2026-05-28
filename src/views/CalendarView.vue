@@ -1,8 +1,9 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 
-// Import the new CalendarSchedule component
 import CalendarSchedule from '@/components/CalendarSchedule.vue'
+import AppHeader from '@/components/AppHeader.vue'
+import AppSidebar from '@/components/AppSidebar.vue'
 
 // ─── Original Mock Data (imported from JSON, used as immutable default) ──
 import originalData from '../../localData/calendar_data.json'
@@ -116,14 +117,31 @@ const flatEvents = computed(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-page-bg text-page-text p-4 sm:p-6 lg:p-8 font-sans">
+  <div class="min-h-screen flex flex-col bg-[#e7ded3] w-full font-['Inter'] text-black">
+    <!-- Header -->
+    <AppHeader />
 
-    <!-- ═══════════════════════════════════════════════════════════════ -->
-    <!-- CALENDAR COMPONENT                                             -->
-    <!-- ═══════════════════════════════════════════════════════════════ -->
-    <div class="mb-8">
-      <CalendarSchedule :events="flatEvents" />
-    </div>
+    <!-- Main Content Split Layout -->
+    <div class="flex flex-1 w-full relative">
+      <!-- Side Navigation -->
+      <AppSidebar />
+
+      <!-- Main Dashboard Content -->
+      <main class="flex-1 flex flex-col px-[50px] py-[30px] gap-8 overflow-y-auto">
+        <!-- Heading -->
+        <div class="flex items-center justify-between w-full">
+          <h1 class="font-['Inter'] font-bold text-[40px] text-black uppercase">CALENDAR</h1>
+        </div>
+
+        <!-- Divider -->
+        <hr class="border-[#2f2f2f] w-full" />
+
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- CALENDAR COMPONENT                                             -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <div class="w-full">
+          <CalendarSchedule :events="flatEvents" />
+        </div>
 
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- DEVELOPER DATABASE TESTING JSON CONSOLE                        -->
@@ -225,6 +243,7 @@ const flatEvents = computed(() => {
         </div>
       </div>
     </div>
-
+      </main>
+    </div>
   </div>
 </template>
