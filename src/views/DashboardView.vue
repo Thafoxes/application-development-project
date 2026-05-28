@@ -7,6 +7,7 @@ import NavigationButton from '@/components/NavigationButton.vue'
 import StatsCard from '@/components/StatsCard.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
 import CreateSessionModal from '@/components/CreateSessionModal.vue'
+import AppSidebar from '@/components/AppSidebar.vue'
 
 const { user } = useAuth()
 const router = useRouter()
@@ -37,18 +38,7 @@ const handleSessionCreated = () => {
     <!-- Main Content Split Layout for Coordinators -->
     <div v-else class="flex flex-1 w-full relative">
       <!-- Side Navigation -->
-      <aside
-        class="w-[280px] bg-[#e9e9e9] shrink-0 flex flex-col py-[25px] gap-2 border-r border-gray-300"
-      >
-        <NavigationButton linkName="Dashboard" active @click="router.push('/dashboard')" />
-        <NavigationButton linkName="Manage Session" @click="router.push('/manage-session')" />
-        <NavigationButton linkName="Manage Schedule" />
-        <NavigationButton linkName="View Calendar" @click="router.push('/calendar')" />
-        <NavigationButton linkName="Manage User" />
-        <NavigationButton linkName="Manage FYP" />
-        <NavigationButton linkName="Export" />
-        <NavigationButton linkName="Import" />
-      </aside>
+      <AppSidebar />
 
       <!-- Main Dashboard Content -->
       <main class="flex-1 flex flex-col px-[50px] py-[30px] gap-8 overflow-y-auto">

@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 import AppHeader from '@/components/AppHeader.vue'
 import NavigationButton from '@/components/NavigationButton.vue'
+import AppSidebar from '@/components/AppSidebar.vue'
 
 const { user } = useAuth()
 const router = useRouter()
@@ -226,21 +227,12 @@ const updateFromJson = () => {
   <div class="min-h-screen flex flex-col bg-[#e7ded3] w-full font-['Inter'] text-black">
     <AppHeader />
     <div class="flex flex-1 w-full relative">
-      <aside class="w-[280px] bg-[#e9e9e9] shrink-0 flex flex-col py-[25px] gap-2 border-r border-gray-300">
-        <NavigationButton linkName="Dashboard" @click="router.push('/dashboard')" />
-        <NavigationButton linkName="Manage Session" @click="router.push('/manage-session')" />
-        <NavigationButton linkName="Manage Schedule" active @click="router.push('/manage-schedule')" />
-        <NavigationButton linkName="View Calendar" @click="router.push('/calendar')" />
-        <NavigationButton linkName="Manage User" />
-        <NavigationButton linkName="Manage FYP" />
-        <NavigationButton linkName="Export" />
-        <NavigationButton linkName="Import" />
-      </aside>
+      <AppSidebar />
 
       <main class="flex-1 flex flex-col px-[50px] py-[30px] overflow-y-auto">
         <!-- Breadcrumbs -->
         <div class="text-[#5c001f] text-sm mb-4">
-          <span class="hover:underline cursor-pointer">Time table</span> &gt; 
+          <span class="hover:underline cursor-pointer" @click="router.push('/calendar')">Time table</span> &gt; 
           <span class="font-bold underline">Add New Time Table</span>
         </div>
 
@@ -396,7 +388,7 @@ const updateFromJson = () => {
               </div>
 
               <!-- Calendar Grid -->
-              <div class="w-full bg-[#a31f37] text-white">
+              <div class="w-full bg-[#5c001f] text-white">
                 <div class="grid grid-cols-7">
                   <div v-for="header in dayHeaders" :key="header" class="p-3 text-center font-bold text-sm border-r border-white/20 last:border-r-0">
                     {{ header }}
