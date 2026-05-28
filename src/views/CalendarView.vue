@@ -1,17 +1,14 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 
+// Import the new CalendarSchedule component
+import CalendarSchedule from '@/components/CalendarSchedule.vue'
+
 // ─── Original Mock Data (imported from JSON, used as immutable default) ──
 import originalData from '../../localData/calendar_data.json'
 
 // ─── Reactive unified data source (simulates MySQL retrieval) ─────────
 const calendarData = ref(structuredClone(originalData))
-
-// ─── State ────────────────────────────────────────────────────────────
-const today = new Date(2026, 4, 7) // May 7, 2026 (month is 0-indexed)
-const currentYear = ref(today.getFullYear())
-const currentMonth = ref(today.getMonth()) // 0-indexed: 4 = May
-const selectedCourse = ref('all')
 
 // ─── Developer Console State ──────────────────────────────────────────
 const consoleOpen = ref(false)
@@ -54,128 +51,67 @@ function resetMockData() {
   setTimeout(() => { jsonSuccess.value = '' }, 3000)
 }
 
-// ─── Month helpers ────────────────────────────────────────────────────
-const monthNames = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December'
-]
-
-const dayHeaders = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-
-const activeMonthLabel = computed(() => `${monthNames[currentMonth.value]} ${currentYear.value}`)
-
-const prevMonthLabel = computed(() => {
-  const m = currentMonth.value === 0 ? 11 : currentMonth.value - 1
-  return monthNames[m]
-})
-
-const nextMonthLabel = computed(() => {
-  const m = currentMonth.value === 11 ? 0 : currentMonth.value + 1
-  return monthNames[m]
-})
-
-// ─── Navigation ───────────────────────────────────────────────────────
-function goToPrevMonth() {
-  if (currentMonth.value === 0) {
-    currentMonth.value = 11
-    currentYear.value--
-  } else {
-    currentMonth.value--
-  }
-}
-
-function goToNextMonth() {
-  if (currentMonth.value === 11) {
-    currentMonth.value = 0
-    currentYear.value++
-  } else {
-    currentMonth.value++
-  }
-}
-
 // ─── Day-of-week mapping helper ───────────────────────────────────────
-// JSON uses: 1=Monday, 2=Tuesday, ... 7=Sunday
-// JS Date.getDay() returns: 0=Sun, 1=Mon, ... 6=Sat
-// Convert JS day -> JSON day_of_week
 function jsDayToJsonDay(jsDay) {
   return jsDay === 0 ? 7 : jsDay
 }
 
-// ─── Calendar grid computation (dual-source injection) ────────────────
-const calendarWeeks = computed(() => {
-  const year = currentYear.value
-  const month = currentMonth.value
+function formatDate(d) {
+  let month = '' + (d.getMonth() + 1)
+  let day = '' + d.getDate()
+  const year = d.getFullYear()
+
+  if (month.length < 2) month = '0' + month
+  if (day.length < 2) day = '0' + day
+
+  return [year, month, day].join('-')
+}
+
+// ─── Flatten data for CalendarSchedule ────────────────────────────────
+const flatEvents = computed(() => {
+  const events = []
   const data = calendarData.value
+  let idCounter = 1
 
-  // First day of month (JS: 0=Sun,1=Mon,...6=Sat)
-  const firstDayJS = new Date(year, month, 1).getDay()
-  // Convert to Mon-start index (Mon=0 … Sun=6)
-  const startOffset = firstDayJS === 0 ? 6 : firstDayJS - 1
-
-  const daysInMonth = new Date(year, month + 1, 0).getDate()
-
-  const cells = []
-
-  // Leading empty cells
-  for (let i = 0; i < startOffset; i++) {
-    cells.push({ day: null, events: [], recurringSlots: [], isToday: false, hasEvents: false, hasRecurring: false })
+  // 1. Add specific events
+  if (data.specific_calendar_events) {
+    for (const e of data.specific_calendar_events) {
+      events.push({
+        id: `specific-${idCounter++}`,
+        title: e.title,
+        date: e.target_date,
+        start_time: e.start_time || '08:00', // Default if missing
+        end_time: e.end_time || '09:00',
+        course_context: e.course_context
+      })
+    }
   }
 
-  // Day cells
-  for (let d = 1; d <= daysInMonth; d++) {
-    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
-    const dateObj = new Date(year, month, d)
-    const jsonDayOfWeek = jsDayToJsonDay(dateObj.getDay())
-
-    // ── Specific calendar events (deadline indicators) ──
-    const dayEvents = (data.specific_calendar_events || []).filter(
-      (e) => e.target_date === dateStr
-    )
-
-    // ── Weekly recurring occupancy (class/lab slots) ──
-    const recurringSlots = []
-    for (const entry of (data.weekly_recurring_occupancy || [])) {
-      if (entry.day_of_week === jsonDayOfWeek) {
-        for (const slot of (entry.slots || [])) {
-          recurringSlots.push({ ...slot, dayName: entry.day_name })
+  // 2. Add recurring slots for a fixed range (e.g., 2026) to feed the calendar
+  if (data.weekly_recurring_occupancy) {
+    const startDate = new Date(2026, 0, 1)
+    const endDate = new Date(2026, 11, 31)
+    
+    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+      const jsonDayOfWeek = jsDayToJsonDay(d.getDay())
+      const dateStr = formatDate(d)
+      
+      const recurring = data.weekly_recurring_occupancy.find(r => r.day_of_week === jsonDayOfWeek)
+      if (recurring && recurring.slots) {
+        for (const slot of recurring.slots) {
+          events.push({
+            id: `recurring-${idCounter++}`,
+            title: slot.label,
+            date: dateStr,
+            start_time: slot.start_time,
+            end_time: slot.end_time
+          })
         }
       }
     }
-
-    const isToday =
-      d === today.getDate() &&
-      month === today.getMonth() &&
-      year === today.getFullYear()
-
-    cells.push({
-      day: d,
-      events: dayEvents,
-      recurringSlots,
-      isToday,
-      hasEvents: dayEvents.length > 0,
-      hasRecurring: recurringSlots.length > 0
-    })
   }
 
-  // Pad to complete last week
-  while (cells.length % 7 !== 0) {
-    cells.push({ day: null, events: [], recurringSlots: [], isToday: false, hasEvents: false, hasRecurring: false })
-  }
-
-  // Chunk into weeks
-  const weeks = []
-  for (let i = 0; i < cells.length; i += 7) {
-    weeks.push(cells.slice(i, i + 7))
-  }
-  return weeks
-})
-
-// ─── Course options (derived from data) ───────────────────────────────
-const courseOptions = computed(() => {
-  const courses = new Set(
-    (calendarData.value.specific_calendar_events || []).map((e) => e.course_context).filter(Boolean)
-  )
-  return ['All courses', ...courses]
+  return events
 })
 </script>
 
@@ -183,164 +119,16 @@ const courseOptions = computed(() => {
   <div class="min-h-screen bg-page-bg text-page-text p-4 sm:p-6 lg:p-8 font-sans">
 
     <!-- ═══════════════════════════════════════════════════════════════ -->
-    <!-- CALENDAR CARD                                                  -->
+    <!-- CALENDAR COMPONENT                                             -->
     <!-- ═══════════════════════════════════════════════════════════════ -->
-    <div class="max-w-5xl mx-auto bg-surface-bg rounded-xl shadow-sm border border-page-text/20 overflow-hidden">
-
-      <!-- ─── Header ────────────────────────────────────────────── -->
-      <div class="px-5 pt-5 pb-3">
-        <div class="flex items-start justify-between">
-          <div>
-            <h1 class="text-xl font-bold tracking-tight">Calendar</h1>
-
-            <!-- Filter dropdown -->
-            <div class="mt-3 relative">
-              <select
-                id="course-filter"
-                v-model="selectedCourse"
-                class="appearance-none w-72 pl-3 pr-10 py-2 text-sm bg-surface-bg border border-page-text/30 rounded-md focus:outline-none focus:ring-2 focus:ring-utm-maroon/30 focus:border-utm-maroon cursor-pointer"
-              >
-                <option value="all">All courses</option>
-                <option v-for="course in courseOptions.slice(1)" :key="course" :value="course">
-                  {{ course }}
-                </option>
-              </select>
-              <!-- Chevron icon -->
-              <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-                <svg class="h-4 w-4 text-page-text/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                </svg>
-              </div>
-            </div>
-          </div>
-
-          <!-- New event button -->
-          <button
-            id="new-event-btn"
-            class="bg-utm-maroon hover:bg-utm-maroon/80 text-white text-sm font-medium px-4 py-2 rounded-md transition-colors duration-150 shadow-sm cursor-pointer"
-          >
-            New event
-          </button>
-        </div>
-      </div>
-
-      <!-- ─── Navigation Row ────────────────────────────────────── -->
-      <div class="flex items-center justify-between px-5 py-3">
-        <!-- Prev month -->
-        <button
-          id="prev-month-btn"
-          @click="goToPrevMonth"
-          class="flex items-center gap-1 text-utm-maroon hover:text-utm-maroon/80 text-sm font-medium transition-colors cursor-pointer group"
-        >
-          <span class="text-xs transition-transform group-hover:-translate-x-0.5">◀</span>
-          <span>{{ prevMonthLabel }}</span>
-        </button>
-
-        <!-- Current month/year -->
-        <h2 class="text-xl sm:text-2xl font-semibold text-utm-maroon tracking-tight select-none">
-          {{ activeMonthLabel }}
-        </h2>
-
-        <!-- Next month -->
-        <button
-          id="next-month-btn"
-          @click="goToNextMonth"
-          class="flex items-center gap-1 text-utm-maroon hover:text-utm-maroon/80 text-sm font-medium transition-colors cursor-pointer group"
-        >
-          <span>{{ nextMonthLabel }}</span>
-          <span class="text-xs transition-transform group-hover:translate-x-0.5">▶</span>
-        </button>
-      </div>
-
-      <!-- ─── Calendar Grid ─────────────────────────────────────── -->
-      <div class="border-t border-page-text/20">
-        <!-- Day-of-week headers -->
-        <div class="grid grid-cols-7 border-b border-page-text/20">
-          <div
-            v-for="header in dayHeaders"
-            :key="header"
-            class="py-2 px-2 text-xs font-semibold text-page-text/70 tracking-wide text-left border-r border-page-text/10 last:border-r-0"
-          >
-            {{ header }}
-          </div>
-        </div>
-
-        <!-- Week rows -->
-        <div
-          v-for="(week, wIdx) in calendarWeeks"
-          :key="wIdx"
-          class="grid grid-cols-7 border-b border-page-text/10 last:border-b-0"
-        >
-          <div
-            v-for="(cell, dIdx) in week"
-            :key="dIdx"
-            class="min-h-[100px] sm:min-h-[120px] p-2 border-r border-page-text/10 last:border-r-0 relative transition-colors"
-            :class="cell.day ? 'hover:bg-page-text/5' : 'bg-page-text/5'"
-          >
-            <!-- Day number -->
-            <template v-if="cell.day">
-              <!-- Today badge -->
-              <div v-if="cell.isToday" class="flex items-start">
-                <span
-                  class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-utm-maroon text-white text-sm font-semibold leading-none shadow-sm"
-                >
-                  {{ cell.day }}
-                </span>
-              </div>
-              <!-- Day with events or recurring (maroon) -->
-              <div v-else-if="cell.hasEvents || cell.hasRecurring">
-                <span class="text-sm font-medium text-utm-maroon">{{ cell.day }}</span>
-              </div>
-              <!-- Normal day -->
-              <div v-else>
-                <span class="text-sm font-medium text-page-text/80">{{ cell.day }}</span>
-              </div>
-
-              <!-- ── Recurring class/lab slots (tinted banners) ── -->
-              <div v-if="cell.recurringSlots.length" class="mt-1.5 space-y-1">
-                <div
-                  v-for="slot in cell.recurringSlots"
-                  :key="slot.slot_id"
-                  class="bg-page-bg/50 border border-page-text/10 rounded px-1.5 py-1 transition-colors hover:bg-page-bg"
-                >
-                  <p class="text-[10px] text-page-text/70 font-medium leading-tight">
-                    {{ slot.start_time }} – {{ slot.end_time }}
-                  </p>
-                  <p class="text-[11px] text-page-text/90 font-semibold truncate leading-tight">
-                    {{ slot.label }}
-                  </p>
-                  <p v-if="slot.location" class="text-[10px] text-page-text/60 truncate leading-tight">
-                    {{ slot.location }}
-                  </p>
-                </div>
-              </div>
-
-              <!-- ── Specific deadline events (orange circle indicators) ── -->
-              <div v-if="cell.events.length" class="mt-1.5 space-y-1">
-                <div
-                  v-for="event in cell.events"
-                  :key="event.event_id"
-                  class="flex items-start gap-1.5 group/event"
-                >
-                  <!-- Gold circle indicator -->
-                  <span class="mt-0.5 shrink-0 w-3.5 h-3.5 rounded-full border-2 border-utm-gold inline-block"></span>
-                  <!-- Event title with truncation -->
-                  <span class="text-xs text-utm-maroon font-medium truncate leading-tight">
-                    {{ event.title }}
-                  </span>
-                </div>
-              </div>
-            </template>
-          </div>
-        </div>
-      </div>
-
+    <div class="mb-8">
+      <CalendarSchedule :events="flatEvents" />
     </div>
 
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- DEVELOPER DATABASE TESTING JSON CONSOLE                        -->
     <!-- ═══════════════════════════════════════════════════════════════ -->
-    <div class="max-w-5xl mx-auto mt-4">
+    <div class="max-w-6xl mx-auto mt-4">
       <div class="bg-surface-bg rounded-xl shadow-sm border border-page-text/20 overflow-hidden">
 
         <!-- Console header / toggle -->
