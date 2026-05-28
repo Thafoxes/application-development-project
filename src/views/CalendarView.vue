@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 
-import CalendarSchedule from '@/components/CalendarSchedule.vue'
+import ViewCalendarComponent from '@/components/ViewCalendarComponent.vue'
 import AppHeader from '@/components/AppHeader.vue'
 import AppSidebar from '@/components/AppSidebar.vue'
 
@@ -140,7 +140,7 @@ const flatEvents = computed(() => {
         <!-- CALENDAR COMPONENT                                             -->
         <!-- ═══════════════════════════════════════════════════════════════ -->
         <div class="w-full">
-          <CalendarSchedule :events="flatEvents" />
+          <ViewCalendarComponent :events="flatEvents" />
         </div>
 
    

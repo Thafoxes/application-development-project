@@ -41,12 +41,13 @@
         </div>
 
         <!-- Call to Action -->
+         <!-- Add new meeting link here  -->
         <router-link 
-          to="/manage-schedule" 
+          to="/" 
           class="bg-[#F8BE17] hover:bg-[#e0ab15] text-[#5C001F] font-bold px-4 py-2 rounded-lg shadow-sm transition-all flex items-center gap-2 transform active:scale-95"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
-          Add new time table
+          Add new meeting
         </router-link>
       </div>
     </div>
