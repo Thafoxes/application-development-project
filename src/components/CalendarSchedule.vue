@@ -82,7 +82,12 @@
             <div 
               v-for="event in dateInfo.events.slice(0, 3)" 
               :key="event.id"
-              class="text-xs truncate px-1.5 py-0.5 rounded bg-[#5C001F]/10 text-[#5C001F] font-medium border border-[#5C001F]/20"
+              class="text-xs truncate px-1.5 py-0.5 rounded font-medium border"
+              :style="{ 
+                backgroundColor: event.color ? event.color + '1A' : '#5C001F1A',
+                color: event.color || '#5C001F',
+                borderColor: event.color ? event.color + '33' : '#5C001F33'
+              }"
               :title="`${event.title} (${event.start_time} - ${event.end_time})`"
             >
               {{ event.start_time }} {{ event.title }}
@@ -147,13 +152,16 @@
             <div 
               v-for="event in dateInfo.events" 
               :key="event.id"
-              class="absolute mx-1 rounded-md overflow-hidden shadow-sm border border-[#5C001F]/20 hover:shadow-md transition-shadow group cursor-pointer"
-              :style="getEventStyle(event, dayIndex)"
+              class="absolute mx-1 rounded-md overflow-hidden shadow-sm border hover:shadow-md transition-shadow group cursor-pointer"
+              :style="[
+                getEventStyle(event, dayIndex),
+                { borderColor: event.color ? event.color + '40' : '#5C001F33' }
+              ]"
             >
-              <div class="w-1 h-full bg-[#5C001F] absolute left-0 top-0"></div>
-              <div class="bg-[#5C001F]/10 w-full h-full p-1.5 pl-2.5 text-xs">
-                <div class="font-bold text-[#5C001F] truncate group-hover:whitespace-normal group-hover:break-words">{{ event.title }}</div>
-                <div class="text-[#5C001F]/80 font-medium">{{ event.start_time }} - {{ event.end_time }}</div>
+              <div class="w-1 h-full absolute left-0 top-0" :style="{ backgroundColor: event.color || '#5C001F' }"></div>
+              <div class="w-full h-full p-1.5 pl-2.5 text-xs" :style="{ backgroundColor: event.color ? event.color + '1A' : '#5C001F1A' }">
+                <div class="font-bold truncate group-hover:whitespace-normal group-hover:break-words" :style="{ color: event.color || '#5C001F' }">{{ event.title }}</div>
+                <div class="font-medium" :style="{ color: event.color || '#5C001F' }">{{ event.start_time }} - {{ event.end_time }}</div>
               </div>
             </div>
           </template>
