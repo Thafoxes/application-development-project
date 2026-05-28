@@ -37,7 +37,7 @@ const router = createRouter({
     },
     {
       path: '/manage-schedule',
-      name: 'manage-schedule',
+      name: 'manage_schedule',
       component: () => import('../views/ManageScheduleView.vue'),
       meta: { requiresAuth: true }
     }
