@@ -125,7 +125,7 @@ const deleteSession = async (id) => {
           active
           @click="router.push('/manage-session')"
         />
-        <NavigationButton linkName="Manage Schedule" />
+        <NavigationButton linkName="Manage Schedule" @click="router.push('/manage-schedule')" />
         <NavigationButton linkName="Manage User" />
         <NavigationButton linkName="Manage FYP" />
         <NavigationButton linkName="Export" />

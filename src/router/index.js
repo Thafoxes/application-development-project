@@ -34,6 +34,12 @@ const router = createRouter({
       name: 'manage-session',
       component: ManageSessionView,
       meta: { requiresAuth: true }
+    },
+    {
+      path: '/manage-schedule',
+      name: 'manage-schedule',
+      component: () => import('../views/ManageScheduleView.vue'),
+      meta: { requiresAuth: true }
     }
   ],
 })
