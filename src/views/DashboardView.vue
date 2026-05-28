@@ -43,6 +43,7 @@ const handleSessionCreated = () => {
         <NavigationButton linkName="Dashboard" active @click="router.push('/dashboard')" />
         <NavigationButton linkName="Manage Session" @click="router.push('/manage-session')" />
         <NavigationButton linkName="Manage Schedule" />
+        <NavigationButton linkName="View Calendar" @click="router.push('/calendar')" />
         <NavigationButton linkName="Manage User" />
         <NavigationButton linkName="Manage FYP" />
         <NavigationButton linkName="Export" />
