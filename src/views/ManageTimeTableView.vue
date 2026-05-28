@@ -3,7 +3,6 @@ import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 import AppHeader from '@/components/AppHeader.vue'
-import NavigationButton from '@/components/NavigationButton.vue'
 import AppSidebar from '@/components/AppSidebar.vue'
 
 const { user } = useAuth()

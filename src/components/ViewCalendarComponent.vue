@@ -113,7 +113,7 @@
 
       <!-- Action Buttons -->
       <div class="p-4 flex flex-col gap-2 mt-auto border-t border-[#d6d68b]">
-        <router-link to="/manage-schedule" class="w-full bg-[#5C001E] hover:bg-[#4a0018] text-white font-bold py-3 rounded-md shadow text-xs transition-colors flex justify-center items-center gap-2">
+        <router-link to="/add-time-table" class="w-full bg-[#5C001E] hover:bg-[#4a0018] text-white font-bold py-3 rounded-md shadow text-xs transition-colors flex justify-center items-center gap-2">
           <span>+</span> Add new time table
         </router-link>
       </div>

@@ -36,9 +36,9 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
-      path: '/manage-schedule',
-      name: 'manage_schedule',
-      component: () => import('../views/ManageScheduleView.vue'),
+      path: '/add-time-table',
+      name: 'add-time-table',
+      component: () => import('../views/ManageTimeTableView.vue'),
       meta: { requiresAuth: true }
     }
   ],

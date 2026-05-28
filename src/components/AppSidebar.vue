@@ -15,7 +15,7 @@ const isActive = (path) => {
     <NavigationButton linkName="Dashboard" :active="isActive('/dashboard')" @click="router.push('/dashboard')" />
     <NavigationButton linkName="Manage Session" :active="isActive('/manage-session')" @click="router.push('/manage-session')" />
     <NavigationButton linkName="View Calendar" :active="isActive('/calendar')" @click="router.push('/calendar')" />
-    <!-- <NavigationButton linkName="View Calendar" :active="isActive('/calendar')" @click="router.push('/calendar')" /> -->
+    <NavigationButton linkName="Add Time Table" :active="isActive('/add-time-table')" @click="router.push('/add-time-table')" />
     <NavigationButton linkName="Manage User" />
     <NavigationButton linkName="Manage FYP" />
     <NavigationButton linkName="Export" />
