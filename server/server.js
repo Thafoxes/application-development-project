@@ -200,9 +200,9 @@ app.delete("/api/sessions/:id", (req, res) => {
 // GET full session data (timetables & projects)
 app.get("/api/sessions/:id/data", (req, res) => {
   const sessionId = req.params.id;
-  db.query("CALL sp_GetFYPSessionCalendarData(?)", [sessionId], (err, results) => {
+  db.query("CALL sp_GetSessionCalendarData(?)", [sessionId], (err, results) => {
     if (err) {
-      console.error("Database error in sp_GetFYPSessionCalendarData:", err);
+      console.error("Database error in sp_GetSessionCalendarData:", err);
       return res.status(500).json({ error: "Failed to fetch session data: " + err.message });
     }
 
