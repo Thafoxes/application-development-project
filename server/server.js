@@ -112,7 +112,7 @@ app.post("/api/login", (req, res) => {
 
       // Successful login
       delete user.password_hash;
-      
+
       // Call sp_lookup_user_role
       const roleSql = "CALL sp_lookup_user_role(?, ?)";
       db.query(roleSql, [user.email, user.user_id], (roleErr, roleResults) => {
@@ -169,7 +169,7 @@ app.get("/api/sessions/:id", (req, res) => {
 app.post("/api/sessions", (req, res) => {
   const { session_id } = req.body;
   if (!session_id) return res.status(400).json({ error: "Session ID (number) is required" });
-  
+
   db.query("CALL sp_insert_session(?)", [session_id], (err, results) => {
     if (err) return res.status(500).json({ error: "Failed to create session: " + err.message });
     res.json({ message: "Session created successfully" });
@@ -181,7 +181,7 @@ app.put("/api/sessions/:id", (req, res) => {
   const old_id = req.params.id;
   const { new_session_id } = req.body;
   if (!new_session_id) return res.status(400).json({ error: "New Session ID is required" });
-  
+
   db.query("CALL sp_update_session(?, ?)", [old_id, new_session_id], (err, results) => {
     if (err) return res.status(500).json({ error: "Failed to update session: " + err.message });
     res.json({ message: "Session updated successfully" });
@@ -194,6 +194,53 @@ app.delete("/api/sessions/:id", (req, res) => {
   db.query("CALL sp_delete_session(?)", [session_id], (err, results) => {
     if (err) return res.status(500).json({ error: "Failed to delete session: " + err.message });
     res.json({ message: "Session deleted successfully" });
+  });
+});
+
+// GET full session data (timetables & projects)
+app.get("/api/sessions/:id/data", (req, res) => {
+  const sessionId = req.params.id;
+  db.query("CALL sp_GetFYPSessionCalendarData(?)", [sessionId], (err, results) => {
+    if (err) {
+      console.error("Database error in sp_GetFYPSessionCalendarData:", err);
+      return res.status(500).json({ error: "Failed to fetch session data: " + err.message });
+    }
+
+    // With mysql2 stored procedures returning multiple result sets:
+    // results[0] -> first SELECT (session verification)
+    // results[1] -> second SELECT (timetables)
+    const sessionRows = results[0] || [];
+    if (sessionRows.length === 0) {
+      return res.status(404).json({ error: `Session ${sessionId} not found.` });
+    }
+
+    const rawTimetables = results[1] || [];
+
+    // Parse the schedule_json for each timetable
+    const timetables = rawTimetables.map(row => {
+      let schedule = {};
+      if (row.schedule_json) {
+        try {
+          schedule = typeof row.schedule_json === 'string'
+            ? JSON.parse(row.schedule_json)
+            : row.schedule_json;
+        } catch (parseErr) {
+          console.error(`Failed to parse schedule_json for timetable ${row.time_table_id}:`, parseErr);
+        }
+      }
+      return {
+        time_table_id: row.time_table_id,
+        is_class: row.is_class,
+        owner_identifier: row.owner_identifier,
+        schedule
+      };
+    });
+
+    res.json({
+      fyp_session_id: parseInt(sessionId),
+      timetables,
+      projects: [] // Return an empty array for backward compatibility
+    });
   });
 });
 
