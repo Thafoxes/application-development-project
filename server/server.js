@@ -9,6 +9,10 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Import and use the assistant router
+const assistantRouter = require("./routes/assistant");
+app.use(assistantRouter);
+
 // Database Connection
 const db = mysql.createConnection({
   host: process.env.DB_HOST,
