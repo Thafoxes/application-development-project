@@ -40,6 +40,12 @@ const router = createRouter({
       name: 'add-time-table',
       component: () => import('../views/ManageTimeTableView.vue'),
       meta: { requiresAuth: true }
+    },
+    {
+      path: '/edit-time-table',
+      name: 'edit-time-table',
+      component: () => import('../views/EditTimeTableView.vue'),
+      meta: { requiresAuth: true }
     }
   ],
 })
