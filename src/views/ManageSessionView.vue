@@ -113,6 +113,7 @@ const setActiveSession = async (id) => {
       throw new Error(data.error || 'Failed to set active session')
     }
 
+    localStorage.setItem('activeSessionId', id)
     await fetchSessions()
   } catch (err) {
     alert(err.message)
