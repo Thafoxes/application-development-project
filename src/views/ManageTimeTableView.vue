@@ -41,28 +41,50 @@ const handleFileUpload = async (event) => {
 
   isUploading.value = true
   
-  // Mock API call to OpenRouter / Gemma 4
-  setTimeout(() => {
+  try {
+    const formData = new FormData()
+    formData.append('image', file)
+
+    // Call our Node.js AI backend to process the image with Gemma 4
+    const response = await fetch('http://localhost:3000/api/assistant/analyze-timetable', {
+      method: 'POST',
+      body: formData
+    })
+
+    const result = await response.json()
+
+    if (response.ok && result.success) {
+      // Update calendarData. Map backend's expected JSON schema keys to the frontend state names.
+      // We append so we don't destroy manually added entries, or we can replace it.
+      // Let's just push to existing.
+      const newRecurring = result.data.weekly_recurring || []
+      const newSpecific = result.data.specific_events || []
+
+      // Give them slot_ids since backend might not generate it
+      newRecurring.forEach(day => {
+        if (day.slots) {
+          day.slots.forEach(slot => {
+            slot.slot_id = Date.now().toString() + '_' + Math.random().toString(36).substring(7)
+          })
+        }
+      })
+      newSpecific.forEach(event => {
+        event.event_id = Date.now().toString() + '_' + Math.random().toString(36).substring(7)
+      })
+
+      calendarData.value.weekly_recurring_occupancy.push(...newRecurring)
+      calendarData.value.specific_calendar_events.push(...newSpecific)
+    } else {
+      uploadError.value = result.error || 'Failed to process image'
+    }
+  } catch (error) {
+    console.error("Upload error:", error)
+    uploadError.value = 'An error occurred while uploading. Please ensure the backend is running.'
+  } finally {
     isUploading.value = false
-    
-    // Auto-inject dummy OCR JSON data
-    calendarData.value.weekly_recurring_occupancy.push(
-      {
-        day_of_week: 1, // Monday
-        day_name: "Monday",
-        slots: [
-          { slot_id: Date.now().toString() + '_1', start_time: "14:00", end_time: "18:00", label: "Advanced AI System", location: "Lab 1" }
-        ]
-      },
-      {
-        day_of_week: 4, // Thursday
-        day_name: "Thursday",
-        slots: [
-          { slot_id: Date.now().toString() + '_2', start_time: "09:00", end_time: "11:00", label: "Application Development", location: "Room 101" }
-        ]
-      }
-    )
-  }, 2500)
+    // Clear the input so you can upload the same file again if needed
+    event.target.value = ''
+  }
 }
 
 const jsDayToJsonDay = (jsDay) => jsDay === 0 ? 7 : jsDay
