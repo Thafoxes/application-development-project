@@ -17,7 +17,7 @@ const handleLogout = () => {
 
 <template>
   <div
-    class="bg-[#5C001F] w-full h-[100px] lg:h-[70px] px-[20px] py-[8px] flex items-center justify-between shrink-0 shadow-sm relative z-50"
+    class="bg-utm-dark-maroon w-full h-[100px] lg:h-[70px] px-[20px] py-[8px] flex items-center justify-between shrink-0 shadow-sm relative z-50"
   >
     <!-- Left side -->
     <div class="flex items-center gap-[15px] shrink-0">

@@ -25,6 +25,7 @@
 
   /* UTM Official Colors */
   --color-utm-maroon: #5c001f;
+  --color-utm-dark-maroon: #2d000f;
   --color-utm-gold: #f8be17;
 
   /* Context-aware semantic colors for Tailwind classes (e.g. bg-page-bg, text-page-text) */

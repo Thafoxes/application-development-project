@@ -6,7 +6,7 @@ const currentYear = computed(() => new Date().getFullYear())
 </script>
 
 <template>
-  <footer class="bg-[#2d000f] text-gray-300 border-t-4 border-[#f8be17] w-full py-8 px-6 lg:px-[50px] mt-auto font-['Inter'] relative z-10 shrink-0">
+  <footer class="bg-utm-dark-maroon text-gray-300 border-t-4 border-[#f8be17] w-full py-8 px-6 lg:px-[50px] mt-auto font-['Inter'] relative z-10 shrink-0">
     <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
       
       <!-- Left side: UTM & MJIIT Branding -->
