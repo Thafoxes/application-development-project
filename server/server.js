@@ -156,6 +156,27 @@ app.get("/api/sessions", (req, res) => {
   });
 });
 
+// GET active session
+app.get("/api/sessions/active", (req, res) => {
+  db.query("CALL sp_get_all_session()", (err, results) => {
+    if (err) return res.status(500).json({ error: "Failed to fetch active session: " + err.message });
+    const sessions = results[0] || [];
+    const activeSession = sessions.find(s => s.is_active === 1 || s.is_active === true || s.is_active === Buffer.from([1]));
+    if (!activeSession) return res.status(404).json({ error: "No active session found" });
+    res.json(activeSession);
+  });
+});
+
+// PUT set session as active
+app.put("/api/sessions/:id/active", (req, res) => {
+  const sessionId = req.params.id;
+  // Update all to inactive, then set the specific one to active
+  db.query("sp_SetActiveFYPSession(?)", [sessionId], (err, results) => {
+    if (err) return res.status(500).json({ error: "Failed to update active session: " + err.message });
+    res.json({ message: "Session set as active successfully" });
+  });
+});
+
 // GET single session
 app.get("/api/sessions/:id", (req, res) => {
   const sessionId = req.params.id;
