@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 import AppHeader from '@/components/AppHeader.vue'
@@ -9,6 +9,7 @@ import StatusBadge from '@/components/StatusBadge.vue'
 import CreateSessionModal from '@/components/CreateSessionModal.vue'
 import AppSidebar from '@/components/AppSidebar.vue'
 import AppFooter from '@/components/AppFooter.vue'
+import { useCalendarStore } from '@/stores/calendarStore'
 
 const { user } = useAuth()
 const router = useRouter()
@@ -18,6 +19,12 @@ const handleSessionCreated = () => {
   isModalOpen.value = false
   router.push('/manage-session')
 }
+
+const calendarStore = useCalendarStore()
+
+onMounted(() => {
+  calendarStore.fetchActiveSession()
+})
 </script>
 
 <template>
@@ -45,7 +52,9 @@ const handleSessionCreated = () => {
       <main class="flex-1 flex flex-col px-[50px] py-[30px] gap-8 overflow-y-auto">
         <!-- Session Heading & Action -->
         <div class="flex items-center justify-between w-full">
-          <h1 class="font-['Inter'] font-bold text-[40px] text-black uppercase">SESSION 25262</h1>
+          <h1 class="font-['Inter'] font-bold text-[40px] text-black uppercase">
+            {{ calendarStore.isLoading ? 'Loading session...' : (calendarStore.activeSessionId ? 'Session ' + calendarStore.activeSessionId : 'No active session') }}
+          </h1>
           <button
             @click="isModalOpen = true"
             class="bg-[#5c001f] text-white px-[24px] py-[16px] rounded-[8px] font-medium text-[16px] hover:bg-[#4a0019] transition-colors shadow-lg border-none"

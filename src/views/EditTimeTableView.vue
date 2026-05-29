@@ -15,7 +15,7 @@ const calendarStore = useCalendarStore()
 
 onMounted(() => {
   if (!calendarStore.sessionData) {
-    calendarStore.fetchSessionData(25261)
+    calendarStore.fetchActiveSession()
   }
 })
 
