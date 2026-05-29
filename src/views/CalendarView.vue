@@ -5,6 +5,7 @@ import { useCalendarStore } from '@/stores/calendarStore'
 import ViewCalendarComponent from '@/components/ViewCalendarComponent.vue'
 import AppHeader from '@/components/AppHeader.vue'
 import AppSidebar from '@/components/AppSidebar.vue'
+import AppFooter from '@/components/AppFooter.vue'
 
 const calendarStore = useCalendarStore()
 
@@ -60,7 +61,9 @@ onMounted(() => {
             <ViewCalendarComponent />
           </div>
         </div>
+
       </main>
     </div>
+    <AppFooter class="mt-auto -mb-[30px]" />
   </div>
 </template>

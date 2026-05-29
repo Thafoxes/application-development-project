@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 import AppHeader from '@/components/AppHeader.vue'
+import AppFooter from '@/components/AppFooter.vue'
 
 const router = useRouter()
 const { login } = useAuth()
@@ -50,8 +51,9 @@ const handleForgotPassword = () => {
 
 <template>
   <div
-    class="bg-[#e7ded3] content-stretch flex flex-col items-center justify-start pb-[258px] relative min-h-screen w-full font-sans"
+    class="bg-[#e7ded3] flex flex-col items-center justify-between min-h-screen w-full font-sans"
   >
+    <div class="w-full flex flex-col items-center justify-start pb-16">
     <!-- Heading Area -->
     <AppHeader />
 
@@ -130,5 +132,10 @@ const handleForgotPassword = () => {
         >
       </div>
     </form>
+    </div>
+
+    
   </div>
+  <!-- Footer -->
+  <AppFooter/>
 </template>

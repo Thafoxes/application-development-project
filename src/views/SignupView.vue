@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 
 import AppHeader from '@/components/AppHeader.vue'
+import AppFooter from '@/components/AppFooter.vue'
 import FormStepper from '@/components/FormStepper.vue'
 import imgLine2 from '@/assets/f25212dbf403cb5eaf6315aeac6fdb23a11d908c.svg'
 
@@ -145,12 +146,13 @@ const submitRegistration = async () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#e7ded3] flex flex-col items-center relative font-sans pb-10">
-    <!-- Heading Area -->
-    <AppHeader />
+  <div class="min-h-screen bg-[#e7ded3] flex flex-col items-center justify-between font-sans">
+    <div class="w-full flex flex-col items-center justify-start pb-16">
+      <!-- Heading Area -->
+      <AppHeader />
 
-    <!-- Main Content Area -->
-    <div class="flex-1 w-full flex items-center justify-center p-6 sm:p-8">
+      <!-- Main Content Area -->
+      <div class="w-full flex items-center justify-center p-6 sm:p-8">
       <!-- Register Form Container (White Card) -->
       <div
         class="bg-white w-full max-w-[1000px] flex flex-col items-center py-10 px-4 rounded-xl shadow-sm overflow-hidden relative"
@@ -515,5 +517,9 @@ const submitRegistration = async () => {
         </div>
       </div>
     </div>
+    </div>
+
   </div>
+  <!-- Footer -->
+  <AppFooter/>
 </template>

@@ -6,6 +6,7 @@ import AppHeader from '@/components/AppHeader.vue'
 import NavigationButton from '@/components/NavigationButton.vue'
 import CreateSessionModal from '@/components/CreateSessionModal.vue'
 import AppSidebar from '@/components/AppSidebar.vue'
+import AppFooter from '@/components/AppFooter.vue'
 
 const { user } = useAuth()
 const router = useRouter()
@@ -210,10 +211,14 @@ const deleteSession = async (id) => {
             <div v-if="sessions.length === 0" class="p-8 text-center text-gray-500 bg-white">
               No sessions found. Go to the Dashboard to create one!
             </div>
-          </div>
         </div>
+      </div>
+        
+     
       </main>
     </div>
+    <!-- Footer -->
+    <AppFooter class="mt-auto -mb-[30px]" />
 
     <!-- Create Session Modal -->
     <CreateSessionModal 

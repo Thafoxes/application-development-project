@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 import AppHeader from '@/components/AppHeader.vue'
 import AppSidebar from '@/components/AppSidebar.vue'
+import AppFooter from '@/components/AppFooter.vue'
 
 const { user } = useAuth()
 const router = useRouter()
@@ -464,5 +465,6 @@ const updateFromJson = () => {
 
       </main>
     </div>
+    <AppFooter class="mt-auto -mb-[30px]" />
   </div>
 </template>

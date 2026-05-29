@@ -8,6 +8,7 @@ import StatsCard from '@/components/StatsCard.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
 import CreateSessionModal from '@/components/CreateSessionModal.vue'
 import AppSidebar from '@/components/AppSidebar.vue'
+import AppFooter from '@/components/AppFooter.vue'
 
 const { user } = useAuth()
 const router = useRouter()
@@ -141,8 +142,12 @@ const handleSessionCreated = () => {
             </div>
           </div>
         </div>
+
+       
       </main>
     </div>
+    <!-- Footer -->
+    <AppFooter class="mt-auto -mb-[30px]" />
 
     <!-- Create Session Modal -->
     <CreateSessionModal

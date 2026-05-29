@@ -11,7 +11,7 @@ const currentYear = computed(() => new Date().getFullYear())
       
       <!-- Left side: UTM & MJIIT Branding -->
       <div class="flex flex-col md:flex-row items-center gap-4 text-center md:text-left">
-        <div class="h-12 flex items-center justify-center shrink-0">
+        <div class="h-15 flex items-center justify-center shrink-0">
           <img 
             :src="utmLogo" 
             alt="UTM Logo" 
@@ -31,9 +31,8 @@ const currentYear = computed(() => new Date().getFullYear())
 
       <!-- Right side: Creator Attribution -->
       <div class="flex flex-col items-center md:items-end gap-2 text-center md:text-right">
-        <div class="flex items-center gap-2 bg-[#5c001f]/40 border border-[#f8be17]/30 rounded-full px-4 py-1.5 text-xs text-white shadow-md backdrop-blur-sm select-none">
-          <span class="inline-block w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)] animate-pulse"></span>
-          <span>Made by the <strong class="font-bold text-white">Fukushima, Japan Team</strong></span>
+        <div class="flex items-center gap-2 px-4 py-1.5 text-xs text-white shadow-md backdrop-blur-sm select-none">
+          <span>Made by the team: <strong class="font-bold text-white">Fukushima, Japan</strong></span>
         </div>
         <span class="text-[11px] text-white/50">
           © {{ currentYear }} MJIIT-UTM. All rights reserved.
