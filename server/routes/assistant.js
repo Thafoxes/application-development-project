@@ -61,8 +61,15 @@ IMPORTANT: If the provided image is NOT a timetable or schedule, you must return
 
 If it IS a timetable, extract all classes/events. The image is a grid where rows are days of the week and columns are time slots. Look for text in the cells. The text often contains the class name (e.g., SCSE1013, SMJM1023), section (e.g., SEC 15), type (e.g., Lecture, LAB), and location. Map each occupied cell to its corresponding day and time.
 
+Also check for a header indicating who the timetable is for:
+- If it says "TIMETABLE FOR LECTURER : <NAME>", set "target_type" to "Lecturer" and "target_name" to the extracted <NAME>.
+- If it says "TIMETABLE FOR STUDENT GROUP : <SECTION>", set "target_type" to "Section Class" and "target_name" to the extracted <SECTION>.
+- If you cannot find this information, leave them as empty strings.
+
 Format the extracted data into the following exact JSON schema:
 {
+  "target_type": "Lecturer" | "Section Class" | "",
+  "target_name": "<Extracted name or section>",
   "weekly_recurring": [
     {
       "day_of_week": <Number 1-7, where 1 is Monday and 7 is Sunday>,
