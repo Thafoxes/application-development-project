@@ -286,7 +286,7 @@ const updateFromJson = () => {
             </div>
 
             <!-- Upload Mode -->
-            <div v-if="entryMode === 'upload'" class="flex-1 flex flex-col items-center justify-center border-4 border-black rounded-3xl p-8 bg-[#e7ded3] relative shadow-inner min-h-[400px]">
+            <div v-if="entryMode === 'upload'" class="flex-1 flex flex-col items-center justify-center border-4 border-black rounded-3xl p-8 bg-[#e7ded3] relative shadow-inner min-h-[300px] max-h-[500px]">
               <p class="text-xl text-center font-bold mb-6">
                 Upload the time table<br>and<br>let AI analyse for you!
               </p>
