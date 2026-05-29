@@ -286,7 +286,7 @@ const updateFromJson = () => {
             </div>
 
             <!-- Upload Mode -->
-            <div v-if="entryMode === 'upload'" class="flex-1 flex flex-col items-center justify-center border-4 border-black rounded-3xl p-8 bg-[#e7ded3] relative shadow-inner min-h-[400px] max-h-[700px]">
+            <div v-if="entryMode === 'upload'" class="flex-1 flex flex-col items-center justify-center border-4 border-black rounded-3xl p-8 bg-[#e7ded3] relative shadow-inner min-h-[400px]">
               <p class="text-xl text-center font-bold mb-6">
                 Upload the time table<br>and<br>let AI analyse for you!
               </p>
@@ -294,7 +294,6 @@ const updateFromJson = () => {
               <div class="relative w-24 h-24 mb-6 group cursor-pointer hover:scale-110 transition-transform">
                 <svg class="w-full h-full text-black group-hover:text-[#5c001f] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 12v9m0-9l-3 3m3-3l3 3" />
                 </svg>
                 <input 
                   type="file" 
