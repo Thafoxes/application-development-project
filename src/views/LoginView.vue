@@ -1,12 +1,18 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
+import { useCalendarStore } from '@/stores/calendarStore'
 import AppHeader from '@/components/AppHeader.vue'
 import AppFooter from '@/components/AppFooter.vue'
 
 const router = useRouter()
 const { login } = useAuth()
+const calendarStore = useCalendarStore()
+
+onMounted(() => {
+  calendarStore.fetchActiveSession()
+})
 
 const email = ref('')
 const password = ref('')
@@ -61,7 +67,7 @@ const handleForgotPassword = () => {
     <p
       class="font-sans font-bold leading-normal relative shrink-0 text-4xl text-gray-800 whitespace-nowrap mt-16 mb-8"
     >
-      Session 25262
+      {{ calendarStore.isLoading ? 'Loading session...' : (calendarStore.activeSessionId ? 'Session ' + calendarStore.activeSessionId : 'No active session') }}
     </p>
 
     <!-- Form Log In -->
