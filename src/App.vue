@@ -1,6 +1,7 @@
 <script setup>
 import { onMounted } from 'vue';
 import axios from 'axios';
+import AIAssistantWidget from './components/AIAssistantWidget.vue'
 
 onMounted(async () => {
   try {
@@ -17,4 +18,6 @@ onMounted(async () => {
 
 <template>
   <router-view />
+  <!-- Float the AI Assistant at the bottom right -->
+  <AIAssistantWidget />
 </template>
