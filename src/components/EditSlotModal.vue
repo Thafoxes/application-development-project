@@ -44,12 +44,12 @@ const close = () => {
       
       <div class="flex flex-col gap-1">
         <label class="text-sm font-medium text-gray-700">Start Time</label>
-        <input v-model="form.startTime" type="text" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-[#5c001f] focus:border-[#5c001f] outline-none" placeholder="e.g. 09:00" />
+        <input v-model="form.startTime" type="time" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-[#5c001f] focus:border-[#5c001f] outline-none" />
       </div>
       
       <div class="flex flex-col gap-1">
         <label class="text-sm font-medium text-gray-700">End Time</label>
-        <input v-model="form.endTime" type="text" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-[#5c001f] focus:border-[#5c001f] outline-none" placeholder="e.g. 10:00" />
+        <input v-model="form.endTime" type="time" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-[#5c001f] focus:border-[#5c001f] outline-none" />
       </div>
 
       <div class="flex justify-end gap-3 mt-4">
