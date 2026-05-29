@@ -7,6 +7,7 @@ import AppHeader from '@/components/AppHeader.vue'
 import AppSidebar from '@/components/AppSidebar.vue'
 import AppFooter from '@/components/AppFooter.vue'
 import EditSlotModal from '@/components/EditSlotModal.vue'
+import { apiService } from '@/services/api'
 
 const { user } = useAuth()
 const router = useRouter()
@@ -55,34 +56,65 @@ const selectSchedule = (newId) => {
   hasUnsavedChanges.value = false
 }
 
-const saveTimeTable = () => {
+const isSaving = ref(false)
+
+const saveTimeTable = async () => {
   if (!selectedScheduleId.value) return
   
   const tb = calendarStore.sessionData?.timetables.find(t => t.owner_identifier === selectedScheduleId.value)
-  if (tb) {
-    tb.schedule = {
-      weekly_recurring: JSON.parse(JSON.stringify(calendarData.value.weekly_recurring_occupancy)),
-      specific_events: JSON.parse(JSON.stringify(calendarData.value.specific_calendar_events))
-    }
-    if (editingOwnerIdentifier.value && editingOwnerIdentifier.value.trim() !== '' && editingOwnerIdentifier.value !== tb.owner_identifier) {
-      tb.owner_identifier = editingOwnerIdentifier.value.trim()
-      selectedScheduleId.value = tb.owner_identifier
-    }
+  if (!tb) return
+  
+  const newOwner = (editingOwnerIdentifier.value && editingOwnerIdentifier.value.trim() !== '') 
+    ? editingOwnerIdentifier.value.trim() 
+    : tb.owner_identifier
+    
+  const newSchedule = {
+    weekly_recurring: JSON.parse(JSON.stringify(calendarData.value.weekly_recurring_occupancy)),
+    specific_events: JSON.parse(JSON.stringify(calendarData.value.specific_calendar_events))
   }
-  hasUnsavedChanges.value = false
-  alert('Time table saved successfully!')
+  
+  isSaving.value = true
+  try {
+    await apiService.updateCalendarSchedule(tb.time_table_id, newOwner, newSchedule)
+    
+    tb.schedule = newSchedule
+    if (newOwner !== tb.owner_identifier) {
+      tb.owner_identifier = newOwner
+      selectedScheduleId.value = newOwner
+    }
+    hasUnsavedChanges.value = false
+    alert('Time table saved successfully!')
+  } catch (error) {
+    console.error('Failed to save time table:', error)
+    alert('Failed to save time table. Please try again.')
+  } finally {
+    isSaving.value = false
+  }
 }
 
-const deleteTimeTable = () => {
+const deleteTimeTable = async () => {
   if (!selectedScheduleId.value) return
   const confirmation = prompt(`Type "${selectedScheduleId.value}" to confirm deletion of this time table:`)
   if (confirmation === selectedScheduleId.value) {
-    calendarStore.sessionData.timetables = calendarStore.sessionData.timetables.filter(t => t.owner_identifier !== selectedScheduleId.value)
-    selectedScheduleId.value = null
-    editingOwnerIdentifier.value = ''
-    calendarData.value = { weekly_recurring_occupancy: [], specific_calendar_events: [] }
-    hasUnsavedChanges.value = false
-    alert('Time table deleted.')
+    const tb = calendarStore.sessionData?.timetables.find(t => t.owner_identifier === selectedScheduleId.value)
+    if (!tb) return
+    
+    isSaving.value = true
+    try {
+      await apiService.deleteCalendarSchedule(tb.time_table_id)
+      
+      calendarStore.sessionData.timetables = calendarStore.sessionData.timetables.filter(t => t.owner_identifier !== selectedScheduleId.value)
+      selectedScheduleId.value = null
+      editingOwnerIdentifier.value = ''
+      calendarData.value = { weekly_recurring_occupancy: [], specific_calendar_events: [] }
+      hasUnsavedChanges.value = false
+      alert('Time table deleted.')
+    } catch (error) {
+      console.error('Failed to delete time table:', error)
+      alert('Failed to delete time table. Please try again.')
+    } finally {
+      isSaving.value = false
+    }
   } else if (confirmation !== null) {
     alert('Identifier did not match. Deletion cancelled.')
   }
@@ -371,11 +403,11 @@ const calendarWeeks = computed(() => {
               <h1 class="text-3xl font-bold uppercase tracking-wider">UPDATE TIME TABLE</h1>
               <button 
                 @click="saveTimeTable"
-                :disabled="!selectedScheduleId"
-                :class="!selectedScheduleId ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#5c001f] hover:bg-[#4a0019] shadow-lg'"
+                :disabled="!selectedScheduleId || isSaving"
+                :class="(!selectedScheduleId || isSaving) ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#5c001f] hover:bg-[#4a0019] shadow-lg'"
                 class="text-white px-8 py-3 rounded-full font-bold transition-colors capitalize "
               >
-                Save time table
+                {{ isSaving ? 'Saving...' : 'Save time table' }}
               </button>
             </div>
 
@@ -392,7 +424,9 @@ const calendarWeeks = computed(() => {
               </div>
               <button 
                 @click="deleteTimeTable" 
+                :disabled="isSaving"
                 class="px-6 py-2 bg-[#5c001f] text-white font-bold rounded-md hover:bg-[#4a0019] transition-colors h-[42px] shadow-sm flex items-center gap-2"
+                :class="{ 'opacity-50 cursor-not-allowed': isSaving }"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                 Delete
