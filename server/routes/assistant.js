@@ -8,7 +8,7 @@ const SYSTEM_PROMPT = `You are the I-FAMOUS AI Assistant, an intelligent system 
 router.post('/api/assistant/chat', async (req, res) => {
     try {
         // 1. Get the user's message history from the Vue frontend
-        const { messages } = req.body; 
+        const { messages } = req.body;
 
         if (!messages || !Array.isArray(messages)) {
             return res.status(400).json({ error: "Invalid message format" });
@@ -51,10 +51,17 @@ router.post('/api/assistant/analyze-timetable', upload.single('image'), async (r
         }
 
         const base64Image = req.file.buffer.toString('base64');
-        
-        const PROMPT = `You are an expert AI system designed to extract scheduling information from timetable images and output the result strictly in JSON.
 
-Extract all classes/events from this timetable image and format them into the following exact JSON schema:
+        const PROMPT = `You are an expert AI system designed to extract scheduling information from university timetable images and output the result strictly in JSON.
+
+IMPORTANT: If the provided image is NOT a timetable or schedule, you must return EXACTLY this JSON:
+{
+  "error": "Not a timetable"
+}
+
+If it IS a timetable, extract all classes/events. The image is a grid where rows are days of the week and columns are time slots. Look for text in the cells. The text often contains the class name (e.g., SCSE1013, SMJM1023), section (e.g., SEC 15), type (e.g., Lecture, LAB), and location. Map each occupied cell to its corresponding day and time.
+
+Format the extracted data into the following exact JSON schema:
 {
   "weekly_recurring": [
     {
@@ -64,7 +71,7 @@ Extract all classes/events from this timetable image and format them into the fo
         {
           "start_time": "<HH:MM in 24-hour format>",
           "end_time": "<HH:MM in 24-hour format>",
-          "label": "<Event or Class Name>",
+          "label": "<Combine class code, section, type, and location. Example: SCSE1013 (L) SEC 15 PROG. LAB>",
           "is_blocking": true
         }
       ]
@@ -93,7 +100,7 @@ Rules:
 
         const ollamaResponse = await axios.post('http://localhost:11434/api/chat', ollamaPayload);
         let reply = ollamaResponse.data.message.content;
-        
+
         // Clean up possible markdown tags if the model still includes them
         if (reply.startsWith('\`\`\`json')) {
             reply = reply.replace(/^\`\`\`json/, '').replace(/\`\`\`$/, '').trim();
@@ -107,6 +114,10 @@ Rules:
         } catch (e) {
             console.error("Failed to parse JSON from AI response:", reply);
             return res.status(500).json({ success: false, error: "AI output was not valid JSON." });
+        }
+
+        if (parsedJson.error === "Not a timetable") {
+            return res.status(400).json({ success: false, error: "The provided image does not appear to be a valid timetable." });
         }
 
         res.status(200).json({
