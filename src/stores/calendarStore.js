@@ -4,6 +4,7 @@ import { apiService } from '@/services/api'
 
 export const useCalendarStore = defineStore('calendar', () => {
   const sessionData = ref(null)
+  const activeSessionId = ref(null)
   const selectedSchedules = ref([])
   const isLoading = ref(false)
   const error = ref(null)
@@ -65,6 +66,36 @@ export const useCalendarStore = defineStore('calendar', () => {
       console.error('Error fetching calendar session data:', err)
       error.value = err.message || 'Failed to load session data'
     } finally {
+      isLoading.value = false
+    }
+  }
+
+  // Fetch active session from API or LocalStorage
+  const fetchActiveSession = async () => {
+    isLoading.value = true
+    error.value = null
+
+    // 1. Check if we already have it in localStorage to prevent SQL overload
+    const cachedSessionId = localStorage.getItem('activeSessionId')
+    if (cachedSessionId) {
+      activeSessionId.value = parseInt(cachedSessionId, 10)
+      await fetchSessionData(activeSessionId.value)
+      return // Skip the API call completely
+    }
+
+    // 2. Otherwise fetch from API
+    try {
+      const activeSession = await apiService.getActiveSession()
+      activeSessionId.value = activeSession.fyp_session_id
+      
+      // Save it to localStorage for future visits
+      localStorage.setItem('activeSessionId', activeSessionId.value)
+      
+      // Now fetch the data for this active session
+      await fetchSessionData(activeSessionId.value)
+    } catch (err) {
+      console.error('Error fetching active session:', err)
+      error.value = err.message || 'Failed to load active session'
       isLoading.value = false
     }
   }
@@ -147,6 +178,7 @@ export const useCalendarStore = defineStore('calendar', () => {
 
   return {
     sessionData,
+    activeSessionId,
     selectedSchedules,
     isLoading,
     error,
@@ -154,6 +186,7 @@ export const useCalendarStore = defineStore('calendar', () => {
     availableSchedules,
     flatEvents,
     visibleEvents,
-    fetchSessionData
+    fetchSessionData,
+    fetchActiveSession
   }
 })
