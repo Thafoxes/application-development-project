@@ -71,5 +71,18 @@ export const apiService = {
   getFYPSessionData: async (sessionId) => {
     const response = await axios.get(`${API_BASE_URL}/api/sessions/${sessionId}/data`);
     return response.data;
+  },
+  
+  deleteCalendarSchedule: async (timeTableId) => {
+    const response = await axios.delete(`${API_BASE_URL}/api/timetables/${timeTableId}`);
+    return response.data;
+  },
+
+  updateCalendarSchedule: async (timeTableId, ownerIdentifier, scheduleJson) => {
+    const response = await axios.put(`${API_BASE_URL}/api/timetables/${timeTableId}`, {
+      owner_identifier: ownerIdentifier,
+      schedule_json: scheduleJson
+    });
+    return response.data;
   }
 };
