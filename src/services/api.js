@@ -1,4 +1,7 @@
 import mockData from "../../localData/mockData.json";
+import axios from 'axios';
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 // Simulated delay to mimic network latency
 const delay = (ms = 500) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -63,4 +66,10 @@ export const apiService = {
       (sub) => sub.project_id === parseInt(projectId),
     );
   },
+
+  // FYP Session Data from GetFYPSessionData procedure
+  getFYPSessionData: async (sessionId) => {
+    const response = await axios.get(`${API_BASE_URL}/api/sessions/${sessionId}/data`);
+    return response.data;
+  }
 };
