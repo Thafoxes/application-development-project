@@ -5,6 +5,7 @@ import { useAuth } from '@/composables/useAuth'
 import AppHeader from '@/components/AppHeader.vue'
 import AppSidebar from '@/components/AppSidebar.vue'
 import AppFooter from '@/components/AppFooter.vue'
+import EditSlotModal from '@/components/EditSlotModal.vue'
 
 const { user } = useAuth()
 const router = useRouter()
@@ -163,6 +164,82 @@ const removeRecurringSlot = (dayOfWeek, slotId) => {
 
 const removeSpecificEvent = (eventId) => {
   calendarData.value.specific_calendar_events = calendarData.value.specific_calendar_events.filter(e => e.event_id !== eventId)
+}
+
+const editModal = ref({
+  isOpen: false,
+  type: '', 
+  dayOfWeek: null, 
+  slotId: null,    
+  eventId: null,   
+  form: {
+    title: '', 
+    startTime: '',
+    endTime: ''
+  }
+})
+
+const openEditModal = (type, item, dayOfWeek = null) => {
+  editModal.value.type = type
+  editModal.value.isOpen = true
+  
+  if (type === 'recurring') {
+    editModal.value.dayOfWeek = dayOfWeek
+    editModal.value.slotId = item.slot_id
+    editModal.value.form.title = item.label
+    editModal.value.form.startTime = item.start_time || ''
+    editModal.value.form.endTime = item.end_time || ''
+  } else {
+    editModal.value.eventId = item.event_id
+    editModal.value.form.title = item.title
+    editModal.value.form.startTime = item.start_time || ''
+    editModal.value.form.endTime = item.end_time || ''
+  }
+}
+
+const handleModalSave = (updatedData) => {
+  editModal.value.form = updatedData
+  saveEditModal()
+}
+
+const saveEditModal = () => {
+  if (editModal.value.type === 'recurring') {
+    const day = calendarData.value.weekly_recurring_occupancy.find(d => d.day_of_week === editModal.value.dayOfWeek)
+    if (day) {
+      const slot = day.slots.find(s => s.slot_id === editModal.value.slotId)
+      if (slot) {
+        slot.label = editModal.value.form.title
+        slot.start_time = editModal.value.form.startTime
+        slot.end_time = editModal.value.form.endTime
+      }
+    }
+  } else {
+    const event = calendarData.value.specific_calendar_events.find(e => e.event_id === editModal.value.eventId)
+    if (event) {
+      event.title = editModal.value.form.title
+      event.start_time = editModal.value.form.startTime
+      event.end_time = editModal.value.form.endTime
+    }
+  }
+  closeEditModal()
+}
+
+const closeEditModal = () => {
+  editModal.value.isOpen = false
+}
+
+const editRecurringSlot = (dayOfWeek, slotId) => {
+  const day = calendarData.value.weekly_recurring_occupancy.find(d => d.day_of_week === dayOfWeek)
+  if (!day) return
+  const slot = day.slots.find(s => s.slot_id === slotId)
+  if (!slot) return
+  openEditModal('recurring', slot, dayOfWeek)
+}
+
+const editSpecificEvent = (eventId) => {
+  const event = calendarData.value.specific_calendar_events.find(e => e.event_id === eventId)
+  if (!event) return
+  openEditModal('specific', event)
 }
 
 // Calendar Month logic
@@ -428,12 +505,12 @@ const updateFromJson = () => {
                     
                     <!-- Render recurring slots -->
                     <template v-if="cell.day">
-                      <div v-for="slot in cell.recurringSlots" :key="slot.slot_id" class="bg-[#5c001f] text-white rounded p-1.5 text-[10px] leading-tight flex flex-col cursor-pointer hover:opacity-90 relative group shadow-sm">
+                      <div v-for="slot in cell.recurringSlots" :key="slot.slot_id" @click="editRecurringSlot(slot.dayOfWeek, slot.slot_id)" class="bg-[#5c001f] text-white rounded p-1.5 text-[10px] leading-tight flex flex-col cursor-pointer hover:opacity-90 relative group shadow-sm">
                         <button @click.stop="removeRecurringSlot(slot.dayOfWeek, slot.slot_id)" class="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center font-bold hidden group-hover:flex z-10 text-[8px] shadow">✕</button>
                         <span class="font-bold">{{ slot.start_time }} - {{ slot.end_time }}</span>
                         <span class="truncate mt-0.5">{{ slot.label }}</span>
                       </div>
-                      <div v-for="event in cell.events" :key="event.event_id" class="bg-[#e85d04] text-white rounded p-1.5 text-[10px] leading-tight flex flex-col cursor-pointer hover:opacity-90 relative group shadow-sm">
+                      <div v-for="event in cell.events" :key="event.event_id" @click="editSpecificEvent(event.event_id)" class="bg-[#e85d04] text-white rounded p-1.5 text-[10px] leading-tight flex flex-col cursor-pointer hover:opacity-90 relative group shadow-sm">
                         <button @click.stop="removeSpecificEvent(event.event_id)" class="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center font-bold hidden group-hover:flex z-10 text-[8px] shadow">✕</button>
                         <span class="font-bold" v-if="event.start_time">{{ event.start_time }} - {{ event.end_time }}</span>
                         <span class="truncate mt-0.5">{{ event.title }}</span>
@@ -466,5 +543,13 @@ const updateFromJson = () => {
       </main>
     </div>
     <AppFooter class="mt-auto -mb-[30px]" />
+
+    <!-- Edit Modal Component -->
+    <EditSlotModal 
+      :isOpen="editModal.isOpen" 
+      :initialData="editModal.form" 
+      @save="handleModalSave" 
+      @close="closeEditModal" 
+    />
   </div>
 </template>
