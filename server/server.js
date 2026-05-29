@@ -244,6 +244,29 @@ app.get("/api/sessions/:id/data", (req, res) => {
   });
 });
 
+// DELETE calendar schedule
+app.delete("/api/timetables/:id", (req, res) => {
+  const timeTableId = req.params.id;
+  db.query("CALL sp_DeleteCalendarSchedule(?)", [timeTableId], (err, results) => {
+    if (err) return res.status(500).json({ error: "Failed to delete schedule: " + err.message });
+    res.json({ message: "Schedule deleted successfully" });
+  });
+});
+
+// PUT update calendar schedule
+app.put("/api/timetables/:id", (req, res) => {
+  const timeTableId = req.params.id;
+  const { owner_identifier, schedule_json } = req.body;
+  if (!owner_identifier || !schedule_json) {
+    return res.status(400).json({ error: "owner_identifier and schedule_json are required" });
+  }
+
+  db.query("CALL sp_UpdateCalendarSchedule(?, ?, ?)", [timeTableId, owner_identifier, JSON.stringify(schedule_json)], (err, results) => {
+    if (err) return res.status(500).json({ error: "Failed to update schedule: " + err.message });
+    res.json({ message: "Schedule updated successfully" });
+  });
+});
+
 // Simple API Endpoint
 app.get("/api/users", (req, res) => {
   db.query("SELECT * FROM users", (err, results) => {
