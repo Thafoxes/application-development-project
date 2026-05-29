@@ -9,6 +9,7 @@ const { user } = useAuth()
 const router = useRouter()
 
 const targetType = ref('Lecturer')
+const targetName = ref('')
 const entryMode = ref('manual')
 
 const manualForm = ref({
@@ -54,6 +55,9 @@ const handleFileUpload = async (event) => {
     const result = await response.json()
 
     if (response.ok && result.success) {
+      if (result.data.target_type) targetType.value = result.data.target_type;
+      if (result.data.target_name) targetName.value = result.data.target_name;
+
       // Update calendarData. Map backend's expected JSON schema keys to the frontend state names.
       // We append so we don't destroy manually added entries, or we can replace it.
       // Let's just push to existing.
@@ -282,7 +286,7 @@ const updateFromJson = () => {
             </div>
 
             <!-- Upload Mode -->
-            <div v-if="entryMode === 'upload'" class="flex-1 flex flex-col items-center justify-center border-4 border-black rounded-3xl p-8 bg-[#e7ded3] relative shadow-inner min-h-[400px]">
+            <div v-if="entryMode === 'upload'" class="flex-1 flex flex-col items-center justify-center border-4 border-black rounded-3xl p-8 bg-[#e7ded3] relative shadow-inner min-h-[400px] max-h-[700px]">
               <p class="text-xl text-center font-bold mb-6">
                 Upload the time table<br>and<br>let AI analyse for you!
               </p>
@@ -389,7 +393,7 @@ const updateFromJson = () => {
                   <option value="Section Class">Section Class</option>
                 </select>
                 <label class="text-sm font-medium mt-2 text-gray-700">{{ targetType === 'Lecturer' ? 'Lecturer Name or email' : 'Section number' }}</label>
-                <input type="text" class="border border-gray-400 p-2 w-64 outline-none focus:border-[#5c001f] rounded shadow-sm" />
+                <input v-model="targetName" type="text" class="border border-gray-400 p-2 w-64 outline-none focus:border-[#5c001f] rounded shadow-sm" />
               </div>
               <button class="bg-[#5c001f] text-white px-8 py-3 rounded-full font-bold hover:bg-[#4a0019] transition-colors shadow-lg">
                 Save time table
