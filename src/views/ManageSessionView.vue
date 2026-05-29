@@ -98,6 +98,26 @@ const deleteSession = async (id) => {
     alert(err.message)
   }
 }
+
+const setActiveSession = async (id) => {
+  if (!confirm(`Are you sure you want to set SESSION ${id} as the active semester?`)) return
+
+  try {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+    const res = await fetch(`${apiUrl}/api/sessions/${id}/active`, {
+      method: 'PUT',
+    })
+
+    if (!res.ok) {
+      const data = await res.json()
+      throw new Error(data.error || 'Failed to set active session')
+    }
+
+    await fetchSessions()
+  } catch (err) {
+    alert(err.message)
+  }
+}
 </script>
 
 <template>
@@ -149,6 +169,7 @@ const deleteSession = async (id) => {
             <!-- Table Header -->
             <div class="bg-white flex justify-between p-[16px] border-b-2 border-black">
               <div class="flex-[2] font-bold text-[14px] text-black pl-4">Session Number</div>
+              <div class="flex-1 font-bold text-[14px] text-black text-center">Status</div>
               <div class="flex-1 font-bold text-[14px] text-black text-center">Actions</div>
             </div>
 
@@ -175,6 +196,24 @@ const deleteSession = async (id) => {
                 </template>
                 <template v-else> SESSION {{ session.fyp_session_id }} </template>
               </div>
+
+              <!-- Status Column -->
+              <div class="flex-1 flex justify-center items-center">
+                <span 
+                  v-if="session.is_active == 1" 
+                  class="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full uppercase tracking-wide border border-green-200"
+                >
+                  Active
+                </span>
+                <button 
+                  v-else
+                  @click="setActiveSession(session.fyp_session_id)" 
+                  class="px-3 py-1 bg-gray-100 text-gray-500 text-xs font-bold rounded-full uppercase tracking-wide border border-gray-300 hover:bg-[#5c001f] hover:text-white hover:border-[#5c001f] transition-colors"
+                >
+                  Inactive
+                </button>
+              </div>
+
               <div class="flex-1 flex justify-center gap-6">
                 <template v-if="editingId === session.fyp_session_id">
                   <button
