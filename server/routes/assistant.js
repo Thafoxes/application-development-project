@@ -16,7 +16,7 @@ router.post('/api/assistant/chat', async (req, res) => {
 
         // 2. Format the payload for Ollama (Injecting the System Prompt first)
         const ollamaPayload = {
-            model: process.env.OLLAMA_MODEL || "gemma4:31b-cloud", // Loaded from env variable, fallback to default
+            model: process.env.OLLAMA_MODEL || 'gemma4:latest', // Loaded from env variable, fallback to default
             stream: false,       // We want the whole message at once, not streamed
             messages: [
                 { role: "system", content: SYSTEM_PROMPT },
@@ -94,7 +94,7 @@ Rules:
 `;
 
         const ollamaPayload = {
-            model: process.env.OLLAMA_MODEL || "gemma4:31b-cloud", // Will use gemma4 as requested, or replace with a vision model if needed
+            model: process.env.OLLAMA_MODEL || 'gemma4:latest',
             stream: false,
             messages: [
                 {
