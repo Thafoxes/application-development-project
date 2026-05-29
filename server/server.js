@@ -265,6 +265,29 @@ app.get("/api/sessions/:id/data", (req, res) => {
   });
 });
 
+// POST create calendar schedule
+app.post("/api/timetables", (req, res) => {
+  const { fyp_session_id, is_class, owner_identifier, schedule_json } = req.body;
+  
+  if (!fyp_session_id || is_class === undefined || !owner_identifier || !schedule_json) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  db.query(
+    "CALL sp_CreateCalendarSchedule(?, ?, ?, ?)",
+    [fyp_session_id, is_class, owner_identifier, JSON.stringify(schedule_json)],
+    (err, results) => {
+      if (err) return res.status(500).json({ error: "Failed to create schedule: " + err.message });
+      
+      // The procedure returns the new ID in the first result set
+      const newIdRow = results[0] && results[0][0];
+      const new_time_table_id = newIdRow ? newIdRow.new_time_table_id : null;
+      
+      res.json({ message: "Schedule created successfully", time_table_id: new_time_table_id });
+    }
+  );
+});
+
 // DELETE calendar schedule
 app.delete("/api/timetables/:id", (req, res) => {
   const timeTableId = req.params.id;

@@ -77,6 +77,15 @@ export const apiService = {
     const response = await axios.get(`${API_BASE_URL}/api/sessions/active`);
     return response.data;
   },
+  createCalendarSchedule: async (fypSessionId, isClass, ownerIdentifier, scheduleJson) => {
+    const response = await axios.post(`${API_BASE_URL}/api/timetables`, {
+      fyp_session_id: fypSessionId,
+      is_class: isClass,
+      owner_identifier: ownerIdentifier,
+      schedule_json: scheduleJson
+    });
+    return response.data;
+  },
   
   deleteCalendarSchedule: async (timeTableId) => {
     const response = await axios.delete(`${API_BASE_URL}/api/timetables/${timeTableId}`);
