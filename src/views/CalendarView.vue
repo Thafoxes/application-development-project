@@ -1,118 +1,16 @@
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { onMounted } from 'vue'
+import { useCalendarStore } from '@/stores/calendarStore'
 
 import ViewCalendarComponent from '@/components/ViewCalendarComponent.vue'
 import AppHeader from '@/components/AppHeader.vue'
 import AppSidebar from '@/components/AppSidebar.vue'
 
-// ─── Original Mock Data (imported from JSON, used as immutable default) ──
-import originalData from '../../localData/calendar_data.json'
+const calendarStore = useCalendarStore()
 
-// ─── Reactive unified data source (simulates MySQL retrieval) ─────────
-const calendarData = ref(structuredClone(originalData))
-
-// ─── Developer Console State ──────────────────────────────────────────
-const consoleOpen = ref(false)
-const jsonTextarea = ref(JSON.stringify(originalData, null, 2))
-const jsonError = ref('')
-const jsonSuccess = ref('')
-
-// Keep textarea in sync when calendarData changes externally
-watch(calendarData, (val) => {
-  jsonTextarea.value = JSON.stringify(val, null, 2)
-}, { deep: true })
-
-// ─── Console Actions ──────────────────────────────────────────────────
-function writeJsonToCalendar() {
-  jsonError.value = ''
-  jsonSuccess.value = ''
-  try {
-    const parsed = JSON.parse(jsonTextarea.value)
-    // Basic structural validation
-    if (!parsed.weekly_recurring_occupancy || !Array.isArray(parsed.weekly_recurring_occupancy)) {
-      throw new Error('Missing or invalid "weekly_recurring_occupancy" array.')
-    }
-    if (!parsed.specific_calendar_events || !Array.isArray(parsed.specific_calendar_events)) {
-      throw new Error('Missing or invalid "specific_calendar_events" array.')
-    }
-    calendarData.value = parsed
-    jsonSuccess.value = `✓ Calendar updated successfully at ${new Date().toLocaleTimeString()}`
-    setTimeout(() => { jsonSuccess.value = '' }, 3000)
-  } catch (err) {
-    jsonError.value = `✗ ${err.message}`
-  }
-}
-
-function resetMockData() {
-  jsonError.value = ''
-  jsonSuccess.value = ''
-  calendarData.value = structuredClone(originalData)
-  jsonTextarea.value = JSON.stringify(originalData, null, 2)
-  jsonSuccess.value = '✓ Reset to original MySQL mock data.'
-  setTimeout(() => { jsonSuccess.value = '' }, 3000)
-}
-
-// ─── Day-of-week mapping helper ───────────────────────────────────────
-function jsDayToJsonDay(jsDay) {
-  return jsDay === 0 ? 7 : jsDay
-}
-
-function formatDate(d) {
-  let month = '' + (d.getMonth() + 1)
-  let day = '' + d.getDate()
-  const year = d.getFullYear()
-
-  if (month.length < 2) month = '0' + month
-  if (day.length < 2) day = '0' + day
-
-  return [year, month, day].join('-')
-}
-
-// ─── Flatten data for CalendarSchedule ────────────────────────────────
-const flatEvents = computed(() => {
-  const events = []
-  const data = calendarData.value
-  let idCounter = 1
-
-  // 1. Add specific events
-  if (data.specific_calendar_events) {
-    for (const e of data.specific_calendar_events) {
-      events.push({
-        id: `specific-${idCounter++}`,
-        title: e.title,
-        date: e.target_date,
-        start_time: e.start_time || '08:00', // Default if missing
-        end_time: e.end_time || '09:00',
-        course_context: e.course_context
-      })
-    }
-  }
-
-  // 2. Add recurring slots for a fixed range (e.g., 2026) to feed the calendar
-  if (data.weekly_recurring_occupancy) {
-    const startDate = new Date(2026, 0, 1)
-    const endDate = new Date(2026, 11, 31)
-    
-    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-      const jsonDayOfWeek = jsDayToJsonDay(d.getDay())
-      const dateStr = formatDate(d)
-      
-      const recurring = data.weekly_recurring_occupancy.find(r => r.day_of_week === jsonDayOfWeek)
-      if (recurring && recurring.slots) {
-        for (const slot of recurring.slots) {
-          events.push({
-            id: `recurring-${idCounter++}`,
-            title: slot.label,
-            date: dateStr,
-            start_time: slot.start_time,
-            end_time: slot.end_time
-          })
-        }
-      }
-    }
-  }
-
-  return events
+onMounted(() => {
+  // Load session 25261 by default on mount (this can be made dynamic based on route/session picker)
+  calendarStore.fetchSessionData(25261)
 })
 </script>
 
@@ -140,10 +38,28 @@ const flatEvents = computed(() => {
         <!-- CALENDAR COMPONENT                                             -->
         <!-- ═══════════════════════════════════════════════════════════════ -->
         <div class="w-full">
-          <ViewCalendarComponent :events="flatEvents" />
-        </div>
+          <!-- Loading State -->
+          <div v-if="calendarStore.isLoading" class="flex flex-col items-center justify-center min-h-[400px] gap-4 bg-white rounded-xl shadow-md border border-gray-100 p-6">
+            <svg class="animate-spin h-10 w-10 text-[#5C001F]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span class="text-sm font-medium text-gray-500">Loading FYP Session Schedule...</span>
+          </div>
 
-   
+          <!-- Error State -->
+          <div v-else-if="calendarStore.error" class="flex flex-col items-center justify-center min-h-[400px] gap-2 bg-white rounded-xl shadow-md border border-gray-100 p-6 text-red-600">
+            <svg class="h-12 w-12 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+            <span class="text-lg font-bold">Failed to Load Schedule</span>
+            <span class="text-sm text-gray-500">{{ calendarStore.error }}</span>
+            <button @click="calendarStore.fetchSessionData(25261)" class="mt-4 px-4 py-2 bg-[#5C001F] text-white rounded-lg text-sm font-semibold hover:bg-[#4a0018]">Retry</button>
+          </div>
+
+          <!-- Calendar View -->
+          <div v-else class="w-full">
+            <ViewCalendarComponent />
+          </div>
+        </div>
       </main>
     </div>
   </div>
