@@ -51,12 +51,12 @@
             :class="msg.role === 'user' ? 'justify-end' : 'justify-start'"
           >
             <div 
-              class="max-w-[85%] rounded-2xl px-4 py-2.5 text-sm shadow-sm"
+              class="max-w-[85%] rounded-2xl px-4 py-2.5 text-sm shadow-sm markdown-body"
               :class="msg.role === 'user' 
                 ? 'bg-[#5C001F] text-white rounded-br-sm' 
                 : 'bg-white border border-gray-100 text-gray-800 rounded-bl-sm'"
+              v-html="renderMarkdown(msg.content)"
             >
-              {{ msg.content }}
             </div>
           </div>
           
@@ -77,7 +77,7 @@
           <input 
             v-model="newMessage" 
             placeholder="Ask about UTM FYP rules or schedules..." 
-            class="flex-1 focus:outline-none focus:ring-2 focus:ring-[#5C001F] rounded-full border border-gray-300 bg-gray-50 px-4 py-2 text-sm"
+            class="flex-1 focus:outline-none focus:ring-2 focus:ring-[#5C001F] rounded-full border border-gray-300 bg-gray-50 px-4 py-2 text-sm text-gray-500"
             :disabled="isLoading"
           />
           <button 
@@ -96,6 +96,18 @@
 <script setup>
 import { ref, nextTick } from 'vue'
 import axios from 'axios'
+import { marked } from 'marked'
+
+// Configure marked to render safe GitHub Flavored Markdown
+marked.setOptions({
+  gfm: true,
+  breaks: true,
+})
+
+const renderMarkdown = (content) => {
+  if (!content) return ''
+  return marked.parse(content)
+}
 
 // Lucide Icons
 import { Bot, Sparkles, Maximize2, Minimize2, X, Send } from 'lucide-vue-next'
@@ -152,3 +164,61 @@ const sendMessage = async () => {
   }
 }
 </script>
+
+<style scoped>
+.markdown-body :deep(p) {
+  margin: 0 0 8px 0;
+}
+.markdown-body :deep(p:last-child) {
+  margin-bottom: 0;
+}
+.markdown-body :deep(ul), .markdown-body :deep(ol) {
+  margin: 0 0 8px 0;
+  padding-left: 20px;
+}
+.markdown-body :deep(ul) {
+  list-style-type: disc;
+}
+.markdown-body :deep(ol) {
+  list-style-type: decimal;
+}
+.markdown-body :deep(li) {
+  margin-bottom: 4px;
+}
+.markdown-body :deep(strong) {
+  font-weight: 600;
+}
+.markdown-body :deep(code) {
+  background-color: rgba(0, 0, 0, 0.05);
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.9em;
+}
+.markdown-body :deep(pre) {
+  background-color: rgba(0, 0, 0, 0.05);
+  padding: 8px;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin: 8px 0;
+}
+.markdown-body :deep(pre code) {
+  background-color: transparent;
+  padding: 0;
+}
+.markdown-body :deep(a) {
+  color: #F8BE17;
+  text-decoration: underline;
+}
+/* Ensure code snippets and lists look good inside user's maroon message bubbles */
+.bg-\[\#5C001F\] :deep(code) {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+.bg-\[\#5C001F\] :deep(pre) {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+.bg-\[\#5C001F\] :deep(a) {
+  color: #F8BE17;
+}
+</style>
