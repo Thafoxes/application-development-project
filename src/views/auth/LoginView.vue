@@ -41,7 +41,7 @@ const handleLogin = async () => {
     }
 
     // Save session
-    login(data.user)
+    login(data.user, data.token)
 
     // Redirect to dashboard
     router.push('/dashboard')
