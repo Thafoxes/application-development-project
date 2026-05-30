@@ -551,7 +551,7 @@ const updateFromJson = () => {
                   <option value="Lecturer">Lecturer</option>
                   <option value="Section Class">Section Class</option>
                 </select>
-                <label class="text-sm font-medium mt-2 text-gray-700">{{ targetType === 'Lecturer' ? 'Search Lecturer or Staff email (min 3 chars)' : 'Search Section number (min 3 chars)' }}</label>
+                <label class="text-sm font-medium mt-2 text-gray-700">{{ targetType === 'Lecturer' ? 'Search Lecturer or Staff name/email (min 3 chars)' : 'Search Section number (min 3 chars)' }}</label>
                 <div class="relative">
                   <input 
                     v-model="targetName" 
