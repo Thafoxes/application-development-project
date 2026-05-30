@@ -1,3 +1,5 @@
+CREATE DATABASE  IF NOT EXISTS `ifamous_dbms` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci */ /*!80016 DEFAULT ENCRYPTION='N' */;
+USE `ifamous_dbms`;
 -- MySQL dump 10.13  Distrib 8.0.46, for Win64 (x86_64)
 --
 -- Host: localhost    Database: ifamous_dbms
@@ -405,7 +407,7 @@ CREATE TABLE `time_table` (
   CONSTRAINT `fk_tt_session` FOREIGN KEY (`fyp_session_id`) REFERENCES `fyp_session` (`fyp_session_id`) ON DELETE CASCADE,
   CONSTRAINT `fk_tt_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE,
   CONSTRAINT `chk_exclusive_owner` CHECK ((((`user_id` is not null) and (`class_id` is null)) or ((`user_id` is null) and (`class_id` is not null))))
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -414,7 +416,7 @@ CREATE TABLE `time_table` (
 
 LOCK TABLES `time_table` WRITE;
 /*!40000 ALTER TABLE `time_table` DISABLE KEYS */;
-INSERT INTO `time_table` VALUES (1,25262,NULL,5,'{\"specific_events\": [], \"weekly_recurring\": [{\"slots\": [{\"label\": \"SECJ3553-01 (L) | N28-BK2\", \"end_time\": \"08:50\", \"start_time\": \"08:00\", \"is_blocking\": true}, {\"label\": \"SECJ3553-01 (L) | N28-MPKT1\", \"end_time\": \"10:50\", \"start_time\": \"09:00\", \"is_blocking\": true}, {\"label\": \"SECJ3104-01 (L) | N28-BK2\", \"end_time\": \"12:50\", \"start_time\": \"11:00\", \"is_blocking\": true}, {\"label\": \"SECJ3104-01 (L) | N28-MPKT1\", \"end_time\": \"16:50\", \"start_time\": \"14:00\", \"is_blocking\": true}], \"day_name\": \"Monday\", \"day_of_week\": 1}, {\"slots\": [{\"label\": \"SECJ3553-01 (L) | N28-MPKT2\", \"end_time\": \"16:50\", \"start_time\": \"14:00\", \"is_blocking\": true}], \"day_name\": \"Tuesday\", \"day_of_week\": 2}, {\"slots\": [{\"label\": \"SECH3143-01 (L) | N28-MPKT2\", \"end_time\": \"10:50\", \"start_time\": \"08:00\", \"is_blocking\": true}], \"day_name\": \"Wednesday\", \"day_of_week\": 3}, {\"slots\": [{\"label\": \"UKQF2102-06 (L) | U-BK2\", \"end_time\": \"09:50\", \"start_time\": \"08:00\", \"is_blocking\": true}, {\"label\": \"SECJ3623-01 (L) | N28-MPKT2\", \"end_time\": \"16:50\", \"start_time\": \"14:00\", \"is_blocking\": true}], \"day_name\": \"Thursday\", \"day_of_week\": 4}]}'),(2,25262,4016,NULL,'{\"specific_events\": [], \"weekly_recurring\": [{\"slots\": [{\"label\": \"Software Engineering 2 - Lecture\", \"end_time\": \"12:00\", \"start_time\": \"10:00\", \"is_blocking\": true}], \"day_name\": \"Monday\", \"day_of_week\": 1}, {\"slots\": [{\"label\": \"Open Consultation Hours\", \"end_time\": \"16:00\", \"start_time\": \"14:00\", \"is_blocking\": false}], \"day_name\": \"Wednesday\", \"day_of_week\": 3}]}'),(3,25262,4017,NULL,'{\"specific_events\": [{\"date\": \"2026-06-15\", \"label\": \"Final Year Project Presentations - Panel D\", \"end_time\": \"12:00\", \"start_time\": \"09:00\", \"is_blocking\": true}], \"weekly_recurring\": [{\"slots\": [{\"label\": \"Data Structures - Lab\", \"end_time\": \"11:00\", \"start_time\": \"08:00\", \"is_blocking\": true}], \"day_name\": \"Tuesday\", \"day_of_week\": 2}, {\"slots\": [{\"label\": \"Department Meeting\", \"end_time\": \"12:00\", \"start_time\": \"10:00\", \"is_blocking\": true}], \"day_name\": \"Thursday\", \"day_of_week\": 4}]}'),(4,25262,4018,NULL,'{\"specific_events\": [], \"weekly_recurring\": [{\"slots\": [{\"label\": \"FYP Consultation\", \"end_time\": \"16:00\", \"start_time\": \"14:00\", \"is_blocking\": false}], \"day_name\": \"Monday\", \"day_of_week\": 1}, {\"slots\": [{\"label\": \"Artificial Intelligence - Lecture\", \"end_time\": \"11:00\", \"start_time\": \"09:00\", \"is_blocking\": true}], \"day_name\": \"Friday\", \"day_of_week\": 5}]}'),(5,25261,4019,NULL,'{\"specific_events\": [], \"weekly_recurring\": [{\"slots\": [{\"label\": \"Web Programming - Lecture\", \"end_time\": \"10:00\", \"start_time\": \"08:00\", \"is_blocking\": true}], \"day_name\": \"Wednesday\", \"day_of_week\": 3}, {\"slots\": [{\"label\": \"Student Consultation\", \"end_time\": \"16:00\", \"start_time\": \"14:00\", \"is_blocking\": false}], \"day_name\": \"Thursday\", \"day_of_week\": 4}]}'),(6,25261,4020,NULL,'{\"specific_events\": [{\"date\": \"2026-06-16\", \"label\": \"Final Year Project Presentations - Panel E\", \"end_time\": \"17:00\", \"start_time\": \"14:00\", \"is_blocking\": true}], \"weekly_recurring\": [{\"slots\": [{\"label\": \"FYP Consultation\", \"end_time\": \"12:00\", \"start_time\": \"10:00\", \"is_blocking\": false}], \"day_name\": \"Tuesday\", \"day_of_week\": 2}, {\"slots\": [{\"label\": \"Cloud Computing - Lecture\", \"end_time\": \"10:00\", \"start_time\": \"08:00\", \"is_blocking\": true}], \"day_name\": \"Thursday\", \"day_of_week\": 4}]}');
+INSERT INTO `time_table` VALUES (1,25262,NULL,5,'{\"specific_events\": [], \"weekly_recurring\": [{\"slots\": [{\"label\": \"SECJ3553-01 (L) | N28-BK2\", \"end_time\": \"08:50\", \"start_time\": \"08:00\", \"is_blocking\": true}, {\"label\": \"SECJ3553-01 (L) | N28-MPKT1\", \"end_time\": \"10:50\", \"start_time\": \"09:00\", \"is_blocking\": true}, {\"label\": \"SECJ3104-01 (L) | N28-BK2\", \"end_time\": \"12:50\", \"start_time\": \"11:00\", \"is_blocking\": true}, {\"label\": \"SECJ3104-01 (L) | N28-MPKT1\", \"end_time\": \"16:50\", \"start_time\": \"14:00\", \"is_blocking\": true}], \"day_name\": \"Monday\", \"day_of_week\": 1}, {\"slots\": [{\"label\": \"SECJ3553-01 (L) | N28-MPKT2\", \"end_time\": \"16:50\", \"start_time\": \"14:00\", \"is_blocking\": true}], \"day_name\": \"Tuesday\", \"day_of_week\": 2}, {\"slots\": [{\"label\": \"SECH3143-01 (L) | N28-MPKT2\", \"end_time\": \"10:50\", \"start_time\": \"08:00\", \"is_blocking\": true}], \"day_name\": \"Wednesday\", \"day_of_week\": 3}, {\"slots\": [{\"label\": \"UKQF2102-06 (L) | U-BK2\", \"end_time\": \"09:50\", \"start_time\": \"08:00\", \"is_blocking\": true}, {\"label\": \"SECJ3623-01 (L) | N28-MPKT2\", \"end_time\": \"16:50\", \"start_time\": \"14:00\", \"is_blocking\": true}], \"day_name\": \"Thursday\", \"day_of_week\": 4}]}'),(2,25262,4016,NULL,'{\"specific_events\": [], \"weekly_recurring\": [{\"slots\": [{\"label\": \"Software Engineering 2 - Lecture\", \"end_time\": \"12:00\", \"start_time\": \"10:00\", \"is_blocking\": true}], \"day_name\": \"Monday\", \"day_of_week\": 1}, {\"slots\": [{\"label\": \"Open Consultation Hours\", \"end_time\": \"16:00\", \"start_time\": \"14:00\", \"is_blocking\": false}], \"day_name\": \"Wednesday\", \"day_of_week\": 3}]}'),(3,25262,4017,NULL,'{\"specific_events\": [{\"date\": \"2026-06-15\", \"label\": \"Final Year Project Presentations - Panel D\", \"end_time\": \"12:00\", \"start_time\": \"09:00\", \"is_blocking\": true}], \"weekly_recurring\": [{\"slots\": [{\"label\": \"Data Structures - Lab\", \"end_time\": \"11:00\", \"start_time\": \"08:00\", \"is_blocking\": true}], \"day_name\": \"Tuesday\", \"day_of_week\": 2}, {\"slots\": [{\"label\": \"Department Meeting\", \"end_time\": \"12:00\", \"start_time\": \"10:00\", \"is_blocking\": true}], \"day_name\": \"Thursday\", \"day_of_week\": 4}]}'),(4,25262,4018,NULL,'{\"specific_events\": [], \"weekly_recurring\": [{\"slots\": [{\"label\": \"FYP Consultation\", \"end_time\": \"16:00\", \"start_time\": \"14:00\", \"is_blocking\": false}], \"day_name\": \"Monday\", \"day_of_week\": 1}, {\"slots\": [{\"label\": \"Artificial Intelligence - Lecture\", \"end_time\": \"11:00\", \"start_time\": \"09:00\", \"is_blocking\": true}], \"day_name\": \"Friday\", \"day_of_week\": 5}]}'),(5,25261,4019,NULL,'{\"specific_events\": [], \"weekly_recurring\": [{\"slots\": [{\"label\": \"Web Programming - Lecture\", \"end_time\": \"10:00\", \"start_time\": \"08:00\", \"is_blocking\": true}], \"day_name\": \"Wednesday\", \"day_of_week\": 3}, {\"slots\": [{\"label\": \"Student Consultation\", \"end_time\": \"16:00\", \"start_time\": \"14:00\", \"is_blocking\": false}], \"day_name\": \"Thursday\", \"day_of_week\": 4}]}'),(6,25261,4020,NULL,'{\"specific_events\": [{\"date\": \"2026-06-16\", \"label\": \"Final Year Project Presentations - Panel E\", \"end_time\": \"17:00\", \"start_time\": \"14:00\", \"is_blocking\": true}], \"weekly_recurring\": [{\"slots\": [{\"label\": \"FYP Consultation\", \"end_time\": \"12:00\", \"start_time\": \"10:00\", \"is_blocking\": false}], \"day_name\": \"Tuesday\", \"day_of_week\": 2}, {\"slots\": [{\"label\": \"Cloud Computing - Lecture\", \"end_time\": \"10:00\", \"start_time\": \"08:00\", \"is_blocking\": true}], \"day_name\": \"Thursday\", \"day_of_week\": 4}]}'),(7,25262,NULL,1,'{\"specific_events\": [], \"weekly_recurring\": [{\"slots\": [{\"label\": \"UHMS1182-07 (L) | KTG, L50 - BK2\", \"end_time\": \"15:50\", \"start_time\": \"14:00\", \"is_blocking\": true}], \"day_name\": \"Monday\", \"day_of_week\": 1}, {\"slots\": [{\"label\": \"SECP1513-10 (L) | N28 - BK5\", \"end_time\": \"08:50\", \"start_time\": \"08:00\", \"is_blocking\": true}, {\"label\": \"SECP1513-10 (L) | N28 - MPKT1\", \"end_time\": \"10:50\", \"start_time\": \"09:00\", \"is_blocking\": true}, {\"label\": \"UHMT1012-25 (L) | N24 - BK7\", \"end_time\": \"15:50\", \"start_time\": \"14:00\", \"is_blocking\": true}, {\"label\": \"UHLB1112-58 (L) | D06 - BLIK SEMI 2\", \"end_time\": \"16:50\", \"start_time\": \"16:00\", \"is_blocking\": true}], \"day_name\": \"Tuesday\", \"day_of_week\": 2}, {\"slots\": [{\"label\": \"SECI1013-09 (L) | N28 - BK2\", \"end_time\": \"10:50\", \"start_time\": \"10:00\", \"is_blocking\": true}, {\"label\": \"UHLB1112-58 (L) | N24 - BK4\", \"end_time\": \"15:50\", \"start_time\": \"14:00\", \"is_blocking\": true}, {\"label\": \"SECI1013-09 (L) | N28 - BK3\", \"end_time\": \"16:50\", \"start_time\": \"16:00\", \"is_blocking\": true}], \"day_name\": \"Wednesday\", \"day_of_week\": 3}, {\"slots\": [{\"label\": \"SECP1513-10 (L) | N28A - MP2\", \"end_time\": \"08:50\", \"start_time\": \"08:00\", \"is_blocking\": true}, {\"label\": \"SECI1013-09 (L) | N28 - MPKT2\", \"end_time\": \"12:50\", \"start_time\": \"10:00\", \"is_blocking\": true}], \"day_name\": \"Thursday\", \"day_of_week\": 4}]}'),(8,25262,NULL,2,'{\"specific_events\": [], \"weekly_recurring\": [{\"slots\": [{\"label\": \"SECJ1013-02 (L) | N28 - BK1\", \"end_time\": \"09:50\", \"start_time\": \"08:00\", \"is_blocking\": true}, {\"label\": \"SECJ2013-05 (L) | N28 - MPKT3\", \"end_time\": \"16:50\", \"start_time\": \"14:00\", \"is_blocking\": true}], \"day_name\": \"Monday\", \"day_of_week\": 1}, {\"slots\": [{\"label\": \"SECJ1013-02 (L) | N28 - BK1\", \"end_time\": \"09:50\", \"start_time\": \"08:00\", \"is_blocking\": true}], \"day_name\": \"Wednesday\", \"day_of_week\": 3}]}'),(9,25261,NULL,3,'{\"specific_events\": [], \"weekly_recurring\": [{\"slots\": [{\"label\": \"SECV2113-01 (L) | N28 - LAB 1\", \"end_time\": \"12:50\", \"start_time\": \"10:00\", \"is_blocking\": true}], \"day_name\": \"Tuesday\", \"day_of_week\": 2}, {\"slots\": [{\"label\": \"SECV3104-03 (L) | N28 - LAB 2\", \"end_time\": \"11:50\", \"start_time\": \"09:00\", \"is_blocking\": true}], \"day_name\": \"Friday\", \"day_of_week\": 5}]}');
 /*!40000 ALTER TABLE `time_table` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -450,7 +452,7 @@ CREATE TABLE `users` (
 
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
-INSERT INTO `users` VALUES (2,'Coordinator@utm.my','$2b$10$3iFLLswvlZPI4lu3Cqk/KOogNwWePP1Z8yIskCPgrtAU8ENGPf4XK','coordinator','1234567890','2026-05-07','2026-05-07',1,'coordinator',NULL,'coordinator'),(3,'test@gmail.com','$2b$10$q6xPpRPMjNj931ktxClDweIivNHUP6p4WNp6P3xCiNUwA8IqL50M2','test','3447688','2026-05-07','2026-05-07',0,NULL,'test','test'),(4001,'ali.abu@graduate.utm.my','$2b$10$dummyHashStringHere','Ali bin Abu','0123456781','2026-05-30','2026-05-30',0,NULL,NULL,NULL),(4002,'wong.mei@graduate.utm.my','$2b$10$dummyHashStringHere','Wong Mei Ling','0123456782','2026-05-30','2026-05-30',0,NULL,NULL,NULL),(4003,'siti.n@graduate.utm.my','$2b$10$dummyHashStringHere','Siti Nurhaliza','0123456783','2026-05-30','2026-05-30',0,NULL,NULL,NULL),(4004,'david.k@graduate.utm.my','$2b$10$dummyHashStringHere','David Kumar','0123456784','2026-05-30','2026-05-30',0,NULL,NULL,NULL),(4005,'lim.wei@graduate.utm.my','$2b$10$dummyHashStringHere','Lim Wei Jie','0123456785','2026-05-30','2026-05-30',0,NULL,NULL,NULL),(4016,'ali.abu@.utm.my','$2b$10$dummyHashStringHere','Dr Ali bin Abu','0133456781','2026-05-30','2026-05-30',1,NULL,NULL,NULL),(4017,'wong.mei@.utm.my','$2b$10$dummyHashStringHere','Ts. Dr. Wong Mei Ling','0123454782','2026-05-30','2026-05-30',1,NULL,NULL,NULL),(4018,'siti.n@.utm.my','$2b$10$dummyHashStringHere','Ts. Ir. Dr. Siti Nurhaliza','0128256783','2026-05-30','2026-05-30',1,NULL,NULL,NULL),(4019,'david.k@.utm.my','$2b$10$dummyHashStringHere','Dr. David Kumar','0124456787','2026-05-30','2026-05-30',1,NULL,NULL,NULL),(4020,'lim.wei@.utm.my','$2b$10$dummyHashStringHere','Dr. Lim Wei Jie','0123457585','2026-05-30','2026-05-30',1,NULL,NULL,NULL),(4021,'snk.aishah@utm.my','test123','Dr Siti Nur Khadijah Aishah Binti Ibrahim','213242242','2026-05-30','2026-05-30',1,NULL,NULL,'System electronics');
+INSERT INTO `users` VALUES (2,'Coordinator@utm.my','$2b$10$3iFLLswvlZPI4lu3Cqk/KOogNwWePP1Z8yIskCPgrtAU8ENGPf4XK','coordinator','1234567890','2026-05-07','2026-05-07',1,'coordinator',NULL,'coordinator'),(3,'test@gmail.com','$2b$10$q6xPpRPMjNj931ktxClDweIivNHUP6p4WNp6P3xCiNUwA8IqL50M2','test','3447688','2026-05-07','2026-05-07',0,NULL,'test','test'),(4001,'ali.abu@graduate.utm.my','$2b$10$dummyHashStringHere','Ali bin Abu','0123456781','2026-05-30','2026-05-30',0,NULL,NULL,NULL),(4002,'wong.mei@graduate.utm.my','$2b$10$dummyHashStringHere','Wong Mei Ling','0123456782','2026-05-30','2026-05-30',0,NULL,NULL,NULL),(4003,'siti.n@graduate.utm.my','$2b$10$dummyHashStringHere','Siti Nurhaliza','0123456783','2026-05-30','2026-05-30',0,NULL,NULL,NULL),(4004,'david.k@graduate.utm.my','$2b$10$dummyHashStringHere','David Kumar','0123456784','2026-05-30','2026-05-30',0,NULL,NULL,NULL),(4005,'lim.wei@graduate.utm.my','$2b$10$dummyHashStringHere','Lim Wei Jie','0123456785','2026-05-30','2026-05-30',0,NULL,NULL,NULL),(4016,'ali.abu@utm.my','$2b$10$dummyHashStringHere','Dr Ali bin Abu','0133456781','2026-05-30','2026-05-30',1,NULL,NULL,NULL),(4017,'wong.mei@utm.my','$2b$10$dummyHashStringHere','Ts. Dr. Wong Mei Ling','0123454782','2026-05-30','2026-05-30',1,NULL,NULL,NULL),(4018,'siti.n@utm.my','$2b$10$dummyHashStringHere','Ts. Ir. Dr. Siti Nurhaliza','0128256783','2026-05-30','2026-05-30',1,NULL,NULL,NULL),(4019,'david.k@utm.my','$2b$10$dummyHashStringHere','Dr. David Kumar','0124456787','2026-05-30','2026-05-30',1,NULL,NULL,NULL),(4020,'lim.wei@utm.my','$2b$10$dummyHashStringHere','Dr. Lim Wei Jie','0123457585','2026-05-30','2026-05-30',1,NULL,NULL,NULL),(4021,'snk.aishah@utm.my','test123','Dr Siti Nur Khadijah Aishah Binti Ibrahim','213242242','2026-05-30','2026-05-30',1,NULL,NULL,'System electronics, System Design and Analysis, Machine Learning, Artificial Intelligence, Educational Technology, Education Engineering');
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -470,6 +472,552 @@ SET @saved_cs_client     = @@character_set_client;
  1 AS `supervisor_details`,
  1 AS `examiners_json`*/;
 SET character_set_client = @saved_cs_client;
+
+--
+-- Dumping events for database 'ifamous_dbms'
+--
+
+--
+-- Dumping routines for database 'ifamous_dbms'
+--
+/*!50003 DROP PROCEDURE IF EXISTS `sp_CheckClassExists` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_0900_ai_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_CheckClassExists`(
+    IN p_fyp_session_id INT,
+    IN p_section_name VARCHAR(50)
+)
+BEGIN
+    -- Returns the class_id if this section already exists in this session
+    SELECT class_id 
+    FROM fyp_classes
+    WHERE fyp_session_id = p_fyp_session_id 
+      AND section_name = p_section_name;
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 DROP PROCEDURE IF EXISTS `sp_CreateCalendarSchedule` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_unicode_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'IGNORE_SPACE,ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_CreateCalendarSchedule`(
+    IN p_fyp_session_id INT,
+    IN p_user_id INT,
+    IN p_class_id INT,
+    IN p_schedule_json JSON
+)
+BEGIN
+    DECLARE v_session_exists INT DEFAULT 0;
+    SELECT 1 INTO v_session_exists 
+    FROM fyp_session 
+    WHERE fyp_session_id = p_fyp_session_id LIMIT 1;
+
+    IF v_session_exists = 0 THEN
+        SIGNAL SQLSTATE '45000' 
+        SET MESSAGE_TEXT = 'Validation Error: The specified FYP Session does not exist.';
+    ELSE
+        INSERT INTO time_table (
+            fyp_session_id, 
+            user_id,
+            class_id, 
+            schedule_json
+        ) 
+        VALUES (
+            p_fyp_session_id, 
+            p_user_id, 
+            p_class_id, 
+            p_schedule_json
+        );
+        SELECT LAST_INSERT_ID() AS new_time_table_id;
+    END IF;
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 DROP PROCEDURE IF EXISTS `sp_CreateClass` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_0900_ai_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_CreateClass`(
+    IN p_fyp_session_id INT,
+    IN p_section_name VARCHAR(50)
+)
+BEGIN
+    -- Inserts the new class
+    INSERT INTO fyp_classes (fyp_session_id, section_name) 
+    VALUES (p_fyp_session_id, p_section_name);
+    
+    -- Returns the newly generated class_id
+    SELECT LAST_INSERT_ID() AS class_id;
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 DROP PROCEDURE IF EXISTS `sp_DeleteCalendarSchedule` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_0900_ai_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_DeleteCalendarSchedule`(
+    IN p_time_table_id INT
+)
+BEGIN
+    -- Deletes the specific schedule record
+    DELETE FROM time_table 
+    WHERE time_table_id = p_time_table_id;
+    
+    -- Return the number of affected rows to confirm success to the backend
+    SELECT ROW_COUNT() AS affected_rows;
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 DROP PROCEDURE IF EXISTS `sp_delete_session` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_0900_ai_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_delete_session`(
+	IN session_id INT
+)
+BEGIN
+	DELETE FROM fyp_session WHERE  fyp_session_id = session_id;
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 DROP PROCEDURE IF EXISTS `sp_GetRecentUsersByCategory` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_unicode_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'IGNORE_SPACE,ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_GetRecentUsersByCategory`()
+BEGIN
+    -- 1. Students (Limit 20, sorted by latest)
+    SELECT u.user_id, u.email, u.full_name, u.phone_number, s.metric_number
+    FROM users u
+    JOIN students s ON u.user_id = s.student_id
+    ORDER BY u.date_created DESC, u.user_id DESC
+    LIMIT 20;
+
+    -- 2. Lecturers / Staff (Limit 20, sorted by latest)
+    SELECT u.user_id, u.email, u.full_name, u.phone_number, u.expertise
+    FROM users u
+    WHERE u.is_utm_staff = 1
+    ORDER BY u.date_created DESC, u.user_id DESC
+    LIMIT 20;
+
+    -- 3. Outsiders / Normal Users (Limit 20, sorted by latest)
+    SELECT u.user_id, u.email, u.full_name, u.phone_number, u.co_org_name
+    FROM users u
+    WHERE u.is_utm_staff = 0 AND u.user_id NOT IN (SELECT student_id FROM students)
+    ORDER BY u.date_created DESC, u.user_id DESC
+    LIMIT 20;
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 DROP PROCEDURE IF EXISTS `sp_GetSessionCalendarData` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_unicode_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'IGNORE_SPACE,ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_GetSessionCalendarData`(IN p_session_id INT)
+BEGIN
+    SELECT fyp_session_id 
+    FROM fyp_session 
+    WHERE fyp_session_id = p_session_id;
+
+    SELECT 
+        tt.time_table_id,
+        tt.user_id,
+        u.full_name AS staff_name,
+        u.email AS staff_email,
+        tt.class_id,
+        c.section_name,
+        tt.schedule_json
+    FROM time_table tt
+    LEFT JOIN users u ON tt.user_id = u.user_id
+    LEFT JOIN fyp_classes c ON tt.class_id = c.class_id
+    WHERE tt.fyp_session_id = p_session_id;
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 DROP PROCEDURE IF EXISTS `sp_get_all_session` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_0900_ai_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_get_all_session`()
+BEGIN
+	SELECT * FROM fyp_session;
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 DROP PROCEDURE IF EXISTS `sp_insert_session` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_0900_ai_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_insert_session`(
+IN session_number INT)
+BEGIN
+	INSERT INTO fyp_session (fyp_session_id) VALUES (session_number);
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 DROP PROCEDURE IF EXISTS `sp_lookup_user_role` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_0900_ai_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_lookup_user_role`(
+	IN email_address VARCHAR(255),
+	IN user_id INT
+)
+BEGIN
+	SELECT
+		-- Check for presence in sub-tables
+		IF(s.student_id IS NOT NULL, 1, 0) AS is_student,
+		IF(sv.supervisor_id IS NOT NULL, 1, 0) AS is_supervisor,
+		IF(e.examiners_id IS NOT NULL, 1, 0) AS is_examiner,
+		IF(c.user_id IS NOT NULL, 1, 0) AS is_coordinator
+	FROM users u
+	LEFT JOIN students s ON u.user_id = s.student_id
+	LEFT JOIN supervisor sv ON u.user_id = sv.supervisor_id
+	LEFT JOIN examiners e ON u.user_id = e.examiners_id
+	LEFT JOIN coordinator c ON u.user_id = c.user_id
+	WHERE u.email = email_address AND u.user_id = user_id;
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 DROP PROCEDURE IF EXISTS `sp_SearchNonStudentUsers` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_unicode_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'IGNORE_SPACE,ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_SearchNonStudentUsers`(
+    IN p_search_query VARCHAR(255),
+    IN p_session_id INT
+)
+BEGIN
+    SELECT user_id, email, full_name, is_utm_staff 
+    FROM users 
+    WHERE (email LIKE p_search_query OR full_name LIKE p_search_query) 
+      AND user_id NOT IN (SELECT student_id FROM students)
+      AND user_id NOT IN (SELECT user_id FROM time_table WHERE fyp_session_id = p_session_id AND user_id IS NOT NULL)
+    LIMIT 10;
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 DROP PROCEDURE IF EXISTS `sp_select_session` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_0900_ai_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_select_session`(
+	IN session_number int
+)
+BEGIN
+	SELECT fyp_session_id FROM fyp_session WHERE fyp_session_id = session_number;
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 DROP PROCEDURE IF EXISTS `sp_SetActiveFYPSession` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_0900_ai_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_SetActiveFYPSession`(
+    IN p_target_session_id INT
+)
+BEGIN
+    -- Updates all rows in the table. 
+    -- If the ID matches the target, it becomes 1 (Active). 
+    -- If it doesn't match, it becomes 0 (Inactive).
+    UPDATE fyp_session 
+    SET is_active = IF(fyp_session_id = p_target_session_id, 1, 0);
+    
+    -- Return the number of rows that were changed so the backend can verify
+    SELECT ROW_COUNT() AS affected_rows;
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 DROP PROCEDURE IF EXISTS `sp_signup_normal_user` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_0900_ai_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_signup_normal_user`(
+    IN p_email CHAR(255),
+    IN p_password_hash VARCHAR(255),
+    IN p_full_name VARCHAR(255),
+    IN p_phone_number VARCHAR(12),
+    IN co_org_name VARCHAR(255),
+    IN expertise VARCHAR(255),
+    IN p_affiliation VARCHAR(255)
+)
+BEGIN
+    DECLARE v_is_utm_staff TINYINT DEFAULT 0;
+    
+    -- 1. Check if email or phone number already exists
+    IF EXISTS (SELECT 1 FROM `ifamous_dbms`.`users` WHERE `email` = p_email) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error: Email already registered.';
+    ELSEIF EXISTS (SELECT 1 FROM `ifamous_dbms`.`users` WHERE `phone_number` = p_phone_number) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error: Phone number already registered.';
+    ELSE
+        -- 2. Automatic Role Identification based on email suffix (UC102 Step 3-5)
+        -- If email contains @utm.my, identify as Internal Staff
+        IF p_email LIKE '%@utm.my' THEN
+            SET v_is_utm_staff = 1;
+        END IF;
+
+		START TRANSACTION;
+        -- 3. Insert into users table
+        INSERT INTO `ifamous_dbms`.`users` (
+            `email`, 
+            `password_hash`, 
+            `full_name`, 
+            `phone_number`, 
+            `date_created`, 
+            `last_date_login`, 
+            `is_utm_staff`, 
+            `co_org_name`,
+            `expertise`,
+            `affiliation`
+        ) 
+        VALUES (
+            p_email, 
+            p_password_hash, 
+            p_full_name, 
+            p_phone_number, 
+            CURDATE(), 
+            CURDATE(), 
+            v_is_utm_staff, 
+            co_org_name,
+            expertise,
+            p_affiliation
+        );
+        COMMIT;
+        -- 4. Return the new User ID for the application to use
+        SELECT LAST_INSERT_ID() AS new_user_id;
+    END IF;
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 DROP PROCEDURE IF EXISTS `sp_UpdateCalendarSchedule` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_unicode_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'IGNORE_SPACE,ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_UpdateCalendarSchedule`(
+    IN p_time_table_id INT,
+    IN p_user_id INT,
+    IN p_class_id INT,
+    IN p_schedule_json JSON
+)
+BEGIN
+    UPDATE time_table 
+    SET 
+        user_id = p_user_id,
+        class_id = p_class_id,
+        schedule_json = p_schedule_json
+    WHERE 
+        time_table_id = p_time_table_id;
+        
+    SELECT ROW_COUNT() AS affected_rows;
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 DROP PROCEDURE IF EXISTS `sp_UpdateUserProfile` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_0900_ai_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_UpdateUserProfile`(
+    IN p_user_id INT,
+    IN p_full_name VARCHAR(255),
+    IN p_email VARCHAR(255),
+    IN p_phone_number VARCHAR(20),
+    IN p_expertise VARCHAR(255),
+    IN p_affiliation VARCHAR(255)
+)
+BEGIN
+    -- Perform the update on the specific user
+    UPDATE users 
+    SET 
+        full_name = p_full_name,
+        email = p_email,
+        phone_number = p_phone_number,
+        expertise = p_expertise,
+        affiliation = p_affiliation
+    WHERE 
+        user_id = p_user_id;
+        
+    -- Return the number of affected rows to the backend
+    -- 1 = Success, 0 = User ID not found or no data was changed
+    SELECT ROW_COUNT() AS affected_rows;
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 DROP PROCEDURE IF EXISTS `sp_update_session` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_0900_ai_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_update_session`(
+	IN old_session_id INT,
+    IN new_session_id INT
+)
+BEGIN
+	UPDATE time_table 
+    SET 
+        user_id = p_user_id,
+        class_id = p_class_id,
+        schedule_json = p_schedule_json
+    WHERE 
+        time_table_id = p_time_table_id;
+        
+    -- Return the number of affected rows to confirm success
+    SELECT ROW_COUNT() AS affected_rows;
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
 
 --
 -- Final view structure for view `vw_project_scheduling_roster`
@@ -498,4 +1046,4 @@ SET character_set_client = @saved_cs_client;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-05-30 14:40:37
+-- Dump completed on 2026-05-30 16:58:49
