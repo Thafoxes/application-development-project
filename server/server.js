@@ -450,15 +450,21 @@ app.post("/api/timetable/crosscheck", (req, res) => {
 // TODO: POST temporary meeting generation
 const fs = require('fs');
 const path = require('path');
-app.post("/api/timetable/generate-temp", (req, res) => {
-  const { project_id, date, start_time, end_time, duration } = req.body;
+const tempFilePath = path.join(__dirname, '..', 'localData', 'temp_meeting.json');
 
-  if (!project_id || !date || !start_time || !end_time) {
+app.post("/api/timetable/generate-temp", (req, res) => {
+  const { project, date, start_time, end_time, duration } = req.body;
+
+  if (!project || !date || !start_time || !end_time) {
     return res.status(400).json({ success: false, error: "Missing required fields" });
   }
 
   const payload = {
-    project_id,
+    project_id: project.project_id,
+    project_title: project.fyp_title,
+    student: project.student,
+    supervisor: project.supervisor,
+    examiners: project.examiners || [],
     date,
     start_time,
     end_time,
@@ -467,12 +473,37 @@ app.post("/api/timetable/generate-temp", (req, res) => {
   };
 
   try {
-    const filePath = path.join(__dirname, '..', 'localData', 'temp_meeting.json');
-    fs.writeFileSync(filePath, JSON.stringify(payload, null, 4));
-    res.json({ success: true, message: "Temporary schedule saved successfully" });
+    fs.writeFileSync(tempFilePath, JSON.stringify(payload, null, 4));
+    res.json({ success: true, message: "Temporary schedule saved successfully", data: payload });
   } catch (err) {
     console.error("Failed to write temporary schedule:", err);
     res.status(500).json({ success: false, error: "Server file write error" });
+  }
+});
+
+// TODO: GET temporary meeting
+app.get("/api/timetable/temp", (req, res) => {
+  try {
+    if (fs.existsSync(tempFilePath)) {
+      const data = fs.readFileSync(tempFilePath, 'utf8');
+      res.json({ success: true, data: JSON.parse(data) });
+    } else {
+      res.json({ success: true, data: null });
+    }
+  } catch (err) {
+    res.status(500).json({ success: false, error: "Failed to read temp meeting" });
+  }
+});
+
+// DELETE temporary meeting
+app.delete("/api/timetable/temp", (req, res) => {
+  try {
+    if (fs.existsSync(tempFilePath)) {
+      fs.unlinkSync(tempFilePath);
+    }
+    res.json({ success: true, message: "Temp meeting deleted" });
+  } catch (err) {
+    res.status(500).json({ success: false, error: "Failed to delete temp meeting" });
   }
 });
 
