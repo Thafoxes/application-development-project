@@ -39,7 +39,12 @@ const endingTime = ref('14:00')
 
 const avoidWeekend = ref(true)
 const avoidOffWorkingHour = ref(true)
+const workingHourStart = ref('08:00')
+const workingHourEnd = ref('17:00')
+
 const avoidLunchHour = ref(true)
+const lunchHourStart = ref('13:00')
+const lunchHourEnd = ref('14:00')
 
 const generateSchedule = () => {
   console.log('Generate meeting schedule clicked')
@@ -99,6 +104,7 @@ const generateSchedule = () => {
                 </label>
               </div>
             </div>
+          </div>
 
           <!-- Middle: Calendar Component (Sidebar removed) -->
           <div class="flex-1 flex flex-col shadow-lg rounded-xl overflow-hidden bg-white min-w-0 border border-gray-100">
@@ -106,7 +112,7 @@ const generateSchedule = () => {
             <CalendarSchedule 
               :events="displayedEvents" 
               :hideAddMeetingButton="true"
-              :constraints="{ avoidWeekend, avoidOffWorkingHour, avoidLunchHour }"
+              :constraints="{ avoidWeekend, avoidOffWorkingHour, avoidLunchHour, workingHourStart, workingHourEnd, lunchHourStart, lunchHourEnd }"
             />
           </div>
 
@@ -163,15 +169,37 @@ const generateSchedule = () => {
                 <span class="text-sm font-bold text-gray-700 group-hover:text-[#5C001F] transition-colors">Avoid weekend</span>
               </label>
 
-              <label class="flex items-center gap-4 cursor-pointer group">
-                <input type="checkbox" v-model="avoidOffWorkingHour" class="w-5 h-5 border-2 border-gray-300 rounded appearance-none checked:border-[#5C001F] checked:bg-[#5C001F] checked:after:content-['✓'] checked:after:text-white checked:after:absolute checked:after:left-[3px] checked:after:top-[0px] checked:after:text-sm relative flex items-center justify-center cursor-pointer shrink-0 transition-colors shadow-sm group-hover:border-[#5C001F]/50" />
-                <span class="text-sm font-bold text-gray-700 group-hover:text-[#5C001F] transition-colors">Avoid off-working hours</span>
-              </label>
+              <div class="flex flex-col gap-2">
+                <label class="flex items-center gap-4 cursor-pointer group">
+                  <input type="checkbox" v-model="avoidOffWorkingHour" class="w-5 h-5 border-2 border-gray-300 rounded appearance-none checked:border-[#5C001F] checked:bg-[#5C001F] checked:after:content-['✓'] checked:after:text-white checked:after:absolute checked:after:left-[3px] checked:after:top-[0px] checked:after:text-sm relative flex items-center justify-center cursor-pointer shrink-0 transition-colors shadow-sm group-hover:border-[#5C001F]/50" />
+                  <span class="text-sm font-bold text-gray-700 group-hover:text-[#5C001F] transition-colors">Avoid off-working hours</span>
+                </label>
+                <div v-if="avoidOffWorkingHour" class="flex items-center gap-2 pl-9">
+                  <div class="flex flex-col flex-1 min-w-0">
+                    <input type="time" v-model="workingHourStart" class="rounded-lg px-2 py-1.5 text-center bg-gray-50 border border-gray-200 shadow-inner text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[#5C001F]/50 focus:border-[#5C001F] w-full transition-all" />
+                  </div>
+                  <span class="text-xs font-bold text-gray-400">-</span>
+                  <div class="flex flex-col flex-1 min-w-0">
+                    <input type="time" v-model="workingHourEnd" class="rounded-lg px-2 py-1.5 text-center bg-gray-50 border border-gray-200 shadow-inner text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[#5C001F]/50 focus:border-[#5C001F] w-full transition-all" />
+                  </div>
+                </div>
+              </div>
 
-              <label class="flex items-center gap-4 cursor-pointer group">
-                <input type="checkbox" v-model="avoidLunchHour" class="w-5 h-5 border-2 border-gray-300 rounded appearance-none checked:border-[#5C001F] checked:bg-[#5C001F] checked:after:content-['✓'] checked:after:text-white checked:after:absolute checked:after:left-[3px] checked:after:top-[0px] checked:after:text-sm relative flex items-center justify-center cursor-pointer shrink-0 transition-colors shadow-sm group-hover:border-[#5C001F]/50" />
-                <span class="text-sm font-bold text-gray-700 group-hover:text-[#5C001F] transition-colors">Avoid lunch hour</span>
-              </label>
+              <div class="flex flex-col gap-2">
+                <label class="flex items-center gap-4 cursor-pointer group">
+                  <input type="checkbox" v-model="avoidLunchHour" class="w-5 h-5 border-2 border-gray-300 rounded appearance-none checked:border-[#5C001F] checked:bg-[#5C001F] checked:after:content-['✓'] checked:after:text-white checked:after:absolute checked:after:left-[3px] checked:after:top-[0px] checked:after:text-sm relative flex items-center justify-center cursor-pointer shrink-0 transition-colors shadow-sm group-hover:border-[#5C001F]/50" />
+                  <span class="text-sm font-bold text-gray-700 group-hover:text-[#5C001F] transition-colors">Avoid lunch hour</span>
+                </label>
+                <div v-if="avoidLunchHour" class="flex items-center gap-2 pl-9">
+                  <div class="flex flex-col flex-1 min-w-0">
+                    <input type="time" v-model="lunchHourStart" class="rounded-lg px-2 py-1.5 text-center bg-gray-50 border border-gray-200 shadow-inner text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[#5C001F]/50 focus:border-[#5C001F] w-full transition-all" />
+                  </div>
+                  <span class="text-xs font-bold text-gray-400">-</span>
+                  <div class="flex flex-col flex-1 min-w-0">
+                    <input type="time" v-model="lunchHourEnd" class="rounded-lg px-2 py-1.5 text-center bg-gray-50 border border-gray-200 shadow-inner text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[#5C001F]/50 focus:border-[#5C001F] w-full transition-all" />
+                  </div>
+                </div>
+              </div>
             </div>
 
             <!-- Generate Button -->
@@ -183,6 +211,7 @@ const generateSchedule = () => {
             </div>
           </div>
         </div>
+        
       </main>
     </div>
     <AppFooter class="mt-auto -mb-[30px]" />

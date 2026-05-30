@@ -155,9 +155,7 @@
               class="h-[60px] border-b border-gray-100 transition-colors duration-300"
               :class="{
                 'bg-[url(\'data:image/svg+xml;utf8,%3Csvg width=%2212%22 height=%2212%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cpath d=%22M-2,2 l4,-4 M0,12 l12,-12 M10,14 l4,-4%22 stroke=%22%23e5e7eb%22 stroke-width=%222%22/%3E%3C/svg%3E\')] bg-gray-50': 
-                  (props.constraints.avoidWeekend && (weekDays[dayIndex-1].date.getDay() === 0 || weekDays[dayIndex-1].date.getDay() === 6)) ||
-                  (props.constraints.avoidOffWorkingHour && (hour < 8 || hour >= 17)) ||
-                  (props.constraints.avoidLunchHour && (hour === 13))
+                  isHourBlockedByConstraints(hour, dayIndex)
               }"
             ></div>
           </div>
@@ -227,6 +225,30 @@ const currentYear = computed(() => {
 })
 
 // --- HELPERS ---
+const isHourBlockedByConstraints = (hour, dayIndex) => {
+  const c = props.constraints;
+  if (!c) return false;
+
+  if (c.avoidWeekend && dayIndex !== undefined) {
+    const dayOfWeek = weekDays.value[dayIndex - 1].date.getDay();
+    if (dayOfWeek === 0 || dayOfWeek === 6) return true;
+  }
+
+  if (c.avoidOffWorkingHour) {
+    const wStart = c.workingHourStart ? parseInt(c.workingHourStart.split(':')[0], 10) : 8;
+    const wEnd = c.workingHourEnd ? parseInt(c.workingHourEnd.split(':')[0], 10) : 17;
+    if (hour < wStart || hour >= wEnd) return true;
+  }
+
+  if (c.avoidLunchHour) {
+    const lStart = c.lunchHourStart ? parseInt(c.lunchHourStart.split(':')[0], 10) : 13;
+    const lEnd = c.lunchHourEnd ? parseInt(c.lunchHourEnd.split(':')[0], 10) : 14;
+    if (hour >= lStart && hour < lEnd) return true;
+  }
+
+  return false;
+}
+
 const isSameDay = (date1, date2) => {
   return date1.getDate() === date2.getDate() &&
          date1.getMonth() === date2.getMonth() &&
