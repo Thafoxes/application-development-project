@@ -460,6 +460,7 @@ app.post("/api/timetable/generate-temp", (req, res) => {
   }
 
   const payload = {
+    id: Date.now().toString(),
     project_id: project.project_id,
     project_title: project.fyp_title,
     student: project.student,
@@ -473,8 +474,17 @@ app.post("/api/timetable/generate-temp", (req, res) => {
   };
 
   try {
-    fs.writeFileSync(tempFilePath, JSON.stringify(payload, null, 4));
-    res.json({ success: true, message: "Temporary schedule saved successfully", data: payload });
+    let meetings = [];
+    if (fs.existsSync(tempFilePath)) {
+      const data = fs.readFileSync(tempFilePath, 'utf8');
+      if (data) {
+        meetings = JSON.parse(data);
+        if (!Array.isArray(meetings)) meetings = [meetings];
+      }
+    }
+    meetings.push(payload);
+    fs.writeFileSync(tempFilePath, JSON.stringify(meetings, null, 4));
+    res.json({ success: true, message: "Temporary schedule saved successfully", data: meetings });
   } catch (err) {
     console.error("Failed to write temporary schedule:", err);
     res.status(500).json({ success: false, error: "Server file write error" });
@@ -486,10 +496,13 @@ app.get("/api/timetable/temp", (req, res) => {
   try {
     if (fs.existsSync(tempFilePath)) {
       const data = fs.readFileSync(tempFilePath, 'utf8');
-      res.json({ success: true, data: JSON.parse(data) });
-    } else {
-      res.json({ success: true, data: null });
+      if (data) {
+        let meetings = JSON.parse(data);
+        if (!Array.isArray(meetings)) meetings = [meetings];
+        return res.json({ success: true, data: meetings });
+      }
     }
+    res.json({ success: true, data: [] });
   } catch (err) {
     res.status(500).json({ success: false, error: "Failed to read temp meeting" });
   }
@@ -498,10 +511,18 @@ app.get("/api/timetable/temp", (req, res) => {
 // DELETE temporary meeting
 app.delete("/api/timetable/temp", (req, res) => {
   try {
+    const id = req.query.id;
     if (fs.existsSync(tempFilePath)) {
-      fs.unlinkSync(tempFilePath);
+      if (id) {
+        let meetings = JSON.parse(fs.readFileSync(tempFilePath, 'utf8'));
+        if (!Array.isArray(meetings)) meetings = [meetings];
+        meetings = meetings.filter(m => m.id !== id);
+        fs.writeFileSync(tempFilePath, JSON.stringify(meetings, null, 4));
+      } else {
+        fs.writeFileSync(tempFilePath, JSON.stringify([], null, 4));
+      }
     }
-    res.json({ success: true, message: "Temp meeting deleted" });
+    res.json({ success: true, message: "Temp meeting(s) deleted" });
   } catch (err) {
     res.status(500).json({ success: false, error: "Failed to delete temp meeting" });
   }

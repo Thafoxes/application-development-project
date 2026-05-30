@@ -10,28 +10,32 @@ import AppFooter from '@/components/AppFooter.vue'
 
 const calendarStore = useCalendarStore()
 
-const generatedMeeting = ref(null)
+const generatedMeetings = ref([])
 
 const fetchTempMeeting = async () => {
   try {
     const res = await axios.get('http://localhost:3000/api/timetable/temp')
     if (res.data.success && res.data.data) {
-      generatedMeeting.value = res.data.data
+      generatedMeetings.value = res.data.data
     } else {
-      generatedMeeting.value = null
+      generatedMeetings.value = []
     }
   } catch(e) {
     console.error("Failed to fetch temp meeting:", e)
   }
 }
 
-const deleteTempMeeting = async () => {
+const deleteTempMeeting = async (id) => {
   try {
-    await axios.delete('http://localhost:3000/api/timetable/temp')
-    generatedMeeting.value = null
+    await axios.delete(`http://localhost:3000/api/timetable/temp?id=${id}`)
+    generatedMeetings.value = generatedMeetings.value.filter(m => m.id !== id)
   } catch(e) {
     console.error("Failed to delete temp meeting:", e)
   }
+}
+
+const exportToPdf = () => {
+  alert("PDF Export functionality will be implemented in the next phase!")
 }
 
 onMounted(() => {
@@ -48,16 +52,18 @@ import { computed } from 'vue'
 
 const combinedEvents = computed(() => {
   const arr = [...displayedEvents.value]
-  if (generatedMeeting.value) {
-    arr.push({
-      id: 'generated-meeting-temp',
-      title: 'FYP Mtg: ' + generatedMeeting.value.project_title,
-      date: generatedMeeting.value.date,
-      start_time: generatedMeeting.value.start_time,
-      end_time: generatedMeeting.value.end_time,
-      owner: 'Scheduled Meeting',
-      is_class: false,
-      color: '#10b981' // emerald green for planned meeting
+  if (generatedMeetings.value && generatedMeetings.value.length > 0) {
+    generatedMeetings.value.forEach(meeting => {
+      arr.push({
+        id: `generated-meeting-${meeting.id}`,
+        title: 'FYP Mtg: ' + meeting.project_title,
+        date: meeting.date,
+        start_time: meeting.start_time,
+        end_time: meeting.end_time,
+        owner: 'Scheduled Meeting',
+        is_class: false,
+        color: '#10b981' // emerald green for planned meeting
+      })
     })
   }
   return arr
@@ -172,8 +178,8 @@ const generateSchedule = async () => {
     });
 
     if (response.data.success) {
-      generatedMeeting.value = response.data.data;
-      alert("Success: No conflicts! Meeting successfully generated and saved to temporary JSON report.");
+      generatedMeetings.value = response.data.data;
+      alert("Success: No conflicts! Meeting successfully generated and saved.");
     } else {
       alert("Error: Could not save the temporary file.");
     }
@@ -238,28 +244,41 @@ const generateSchedule = async () => {
               </div>
             </div>
 
-            <!-- Generated Meeting Card -->
-            <div v-if="generatedMeeting" class="flex flex-col bg-white border border-[#10b981] rounded-xl shadow-lg mt-0 p-5 relative overflow-hidden">
-              <div class="absolute top-0 left-0 right-0 h-2 bg-[#10b981]"></div>
-              <h3 class="font-extrabold text-[#10b981] mb-3 uppercase text-xs tracking-wider flex items-center gap-2 mt-1">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                </svg>
-                Scheduled Meeting
-              </h3>
-              <div class="flex flex-col gap-1.5 text-sm">
-                <span class="font-bold text-gray-800">{{ generatedMeeting.project_title }}</span>
-                <div class="flex items-center gap-2 text-gray-600 mt-1">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                  <span class="font-medium">{{ generatedMeeting.date }}</span>
-                </div>
-                <div class="flex items-center gap-2 text-gray-600">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                  <span class="font-medium">{{ generatedMeeting.start_time }} - {{ generatedMeeting.end_time }}</span>
-                </div>
-                <button @click="deleteTempMeeting" class="mt-4 bg-red-50 text-red-600 border border-red-100 font-bold py-2 rounded-lg hover:bg-red-600 hover:text-white transition-all text-xs uppercase tracking-wide">
-                  Delete Schedule
+            <!-- Generated Meetings List -->
+            <div v-if="generatedMeetings.length > 0" class="flex flex-col gap-4 mt-2">
+              <div class="flex items-center justify-between border-b border-gray-200 pb-2">
+                <h3 class="font-extrabold text-[#5C001F] uppercase text-sm tracking-wider">Scheduled Meetings</h3>
+                <button @click="exportToPdf" class="bg-[#5C001F] text-white text-[10px] font-bold px-3 py-1.5 rounded-md hover:bg-[#4a0018] transition-colors shadow-sm uppercase tracking-wide flex items-center gap-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                  Export PDF
                 </button>
+              </div>
+
+              <div 
+                v-for="meeting in generatedMeetings" 
+                :key="meeting.id" 
+                class="flex flex-col bg-white border border-[#10b981] rounded-xl shadow-sm relative overflow-hidden"
+              >
+                <div class="absolute top-0 left-0 right-0 h-1.5 bg-[#10b981]"></div>
+                <div class="p-4">
+                  <div class="flex justify-between items-start mb-2">
+                    <span class="font-bold text-gray-800 text-sm leading-tight pr-4">{{ meeting.project_title }}</span>
+                    <button @click="deleteTempMeeting(meeting.id)" class="text-red-400 hover:text-red-600 transition-colors p-1" title="Delete Schedule">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                    </button>
+                  </div>
+                  
+                  <div class="flex flex-col gap-1 text-xs">
+                    <div class="flex items-center gap-2 text-gray-600">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                      <span class="font-medium">{{ meeting.date }}</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-gray-600">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                      <span class="font-medium">{{ meeting.start_time }} - {{ meeting.end_time }}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
