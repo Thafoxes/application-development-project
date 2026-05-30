@@ -138,6 +138,8 @@ Rules:
     }
 });
 
+const Tesseract = require('tesseract.js');
+
 // Route: Extract User Profile from Image
 router.post('/api/assistant/extract-user-profile', upload.single('image'), async (req, res) => {
     try {
@@ -145,9 +147,17 @@ router.post('/api/assistant/extract-user-profile', upload.single('image'), async
             return res.status(400).json({ error: "No image provided" });
         }
 
-        const base64Image = req.file.buffer.toString('base64');
+        // 1. Fast OCR using Tesseract.js
+        const { data: { text } } = await Tesseract.recognize(req.file.buffer, 'eng');
+        console.log("OCR Extracted Text:", text);
 
-        const PROMPT = `You are an expert AI system designed to extract user profile information from images (like CVs, business cards, or university profile cards) and output the result strictly in JSON.
+        // 2. Pass the extracted text to Gemma for lightning-fast JSON structuring
+        const PROMPT = `You are an expert AI system designed to extract user profile information from raw OCR text (from CVs, business cards, or university profile cards) and output the result strictly in JSON.
+
+Here is the raw extracted text from the profile image:
+"""
+${text}
+"""
 
 Extract the following information:
 1. Full Name (e.g. "TS. DR. Ali bin Abu ")
@@ -167,7 +177,7 @@ Format the extracted data into the following exact JSON schema:
 
 Rules:
 1. Return ONLY the JSON object. Do not include markdown blocks (\`\`\`json), greetings, or explanations.
-2. If the image is not a profile or business card, do your best to extract any text that fits the fields.
+2. If the text does not contain profile details, do your best to extract any text that fits the fields.
 `;
 
         const ollamaPayload = {
@@ -176,8 +186,7 @@ Rules:
             messages: [
                 {
                     role: "user",
-                    content: PROMPT,
-                    images: [base64Image]
+                    content: PROMPT
                 }
             ]
         };
