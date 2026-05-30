@@ -1,56 +1,51 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import LoginView from '../views/LoginView.vue'
-import CalendarView from '../views/CalendarView.vue'
-import SignupView from '../views/SignupView.vue'
-import DashboardView from '../views/DashboardView.vue'
-import ManageSessionView from '../views/ManageSessionView.vue'
-
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
-      path: '/signup',
-      name: 'signup',
-      component: SignupView
-    },
-    {
       path: '/',
       name: 'login',
-      component: LoginView
+      component: () => import('../views/auth/LoginView.vue')
     },
     {
-      path: '/calendar',
-      name: 'calendar',
-      component: CalendarView
+      path: '/signup',
+      name: 'signup',
+      component: () => import('../views/auth/SignupView.vue')
     },
     {
       path: '/dashboard',
       name: 'dashboard',
-      component: DashboardView,
+      component: () => import('../views/coordinator/DashboardView.vue'),
       meta: { requiresAuth: true }
     },
     {
       path: '/manage-session',
       name: 'manage-session',
-      component: ManageSessionView,
+      component: () => import('../views/coordinator/ManageSessionView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/calendar',
+      name: 'calendar',
+      component: () => import('../views/coordinator/CalendarView.vue'),
       meta: { requiresAuth: true }
     },
     {
       path: '/add-time-table',
       name: 'add-time-table',
-      component: () => import('../views/ManageTimeTableView.vue'),
+      component: () => import('../views/coordinator/ManageTimeTableView.vue'),
       meta: { requiresAuth: true }
     },
     {
       path: '/edit-time-table',
       name: 'edit-time-table',
-      component: () => import('../views/EditTimeTableView.vue'),
+      component: () => import('../views/coordinator/EditTimeTableView.vue'),
       meta: { requiresAuth: true }
     },
     {
       path: '/manage-user',
       name: 'manage-user',
-      component: () => import('../views/ManageUserView.vue'),
+      component: () => import('../views/coordinator/ManageUserView.vue'),
       meta: { requiresAuth: true }
     }
   ],
