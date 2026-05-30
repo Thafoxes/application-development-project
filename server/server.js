@@ -4,9 +4,9 @@ const mysql = require("mysql2");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
 
+require("dotenv").config();
 const JWT_SECRET = process.env.JWT_SECRET;
 const bcrypt = require("bcrypt");
-require("dotenv").config();
 
 const app = express();
 app.use(cors());
