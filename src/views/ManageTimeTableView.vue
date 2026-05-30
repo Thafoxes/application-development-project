@@ -100,9 +100,48 @@ const jsDayToJsonDay = (jsDay) => jsDay === 0 ? 7 : jsDay
 
 const isCreating = ref(false)
 
+const searchResults = ref([])
+const showDropdown = ref(false)
+const selectedTargetId = ref(null)
+
+
+let searchTimeout = null
+watch(targetName, (newVal) => {
+  if (selectedTargetId.value && newVal !== searchResults.value.find(r => r.id === selectedTargetId.value)?.label) {
+    selectedTargetId.value = null // reset if user starts typing something else
+  }
+  
+  if (newVal.length >= 3 && !selectedTargetId.value) {
+    clearTimeout(searchTimeout)
+    searchTimeout = setTimeout(async () => {
+      try {
+        if (targetType.value === 'Lecturer') {
+          const results = await apiService.searchUsers(newVal)
+          searchResults.value = results.map(u => ({ id: u.user_id, label: `${u.full_name} (${u.email})` }))
+        } else {
+          const sessionId = calendarStore.activeSessionId
+          const results = await apiService.searchClasses(newVal, sessionId)
+          searchResults.value = results.map(c => ({ id: c.class_id, label: c.section_name }))
+        }
+        showDropdown.value = true
+      } catch (e) {
+        console.error(e)
+      }
+    }, 300)
+  } else {
+    showDropdown.value = false
+  }
+})
+
+const selectSearchResult = (result) => {
+  targetName.value = result.label
+  selectedTargetId.value = result.id
+  showDropdown.value = false
+}
+
 const createTimeTable = async () => {
-  if (!targetName.value.trim()) {
-    alert("Please provide an identifier for this timetable.")
+  if (!selectedTargetId.value) {
+    alert("Please search and select a valid identifier from the dropdown.")
     return
   }
   
@@ -116,7 +155,7 @@ const createTimeTable = async () => {
     return
   }
 
-  const targetId = parseInt(targetName.value.trim()) || null;
+  const targetId = selectedTargetId.value;
   const userId = targetType.value === 'Lecturer' ? targetId : null;
   const classId = targetType.value === 'Section Class' ? targetId : null;
   
@@ -512,8 +551,30 @@ const updateFromJson = () => {
                   <option value="Lecturer">Lecturer</option>
                   <option value="Section Class">Section Class</option>
                 </select>
-                <label class="text-sm font-medium mt-2 text-gray-700">{{ targetType === 'Lecturer' ? 'Lecturer Name or email' : 'Section number' }}</label>
-                <input v-model="targetName" type="text" class="border border-gray-400 p-2 w-64 outline-none focus:border-[#5c001f] rounded shadow-sm" />
+                <label class="text-sm font-medium mt-2 text-gray-700">{{ targetType === 'Lecturer' ? 'Search Lecturer or Staff email (min 3 chars)' : 'Search Section number (min 3 chars)' }}</label>
+                <div class="relative">
+                  <input 
+                    v-model="targetName" 
+                    type="text" 
+                    @focus="targetName.length >= 3 && !selectedTargetId && (showDropdown = true)"
+                    class="border border-gray-400 p-2 w-64 outline-none focus:border-[#5c001f] rounded shadow-sm" 
+                    :placeholder="targetType === 'Lecturer' ? 'e.g. john@utm.my' : 'e.g. 01'"
+                  />
+                  <div v-if="showDropdown" class="absolute z-50 w-64 mt-1 bg-white border border-gray-300 rounded shadow-lg max-h-48 overflow-y-auto">
+                    <div 
+                      v-for="res in searchResults" 
+                      :key="res.id" 
+                      @click="selectSearchResult(res)"
+                      class="px-3 py-2 cursor-pointer hover:bg-gray-100 text-sm"
+                    >
+                      {{ res.label }}
+                    </div>
+                    <div v-if="searchResults.length === 0" class="px-3 py-2 text-sm text-gray-500">
+                      Not found.
+                      <router-link v-if="targetType === 'Lecturer'" to="/manage-user" class="text-[#5c001f] font-bold underline block mt-1">Create new user in Manage User</router-link>
+                    </div>
+                  </div>
+                </div>
               </div>
               <button 
                 @click="createTimeTable"
