@@ -1,7 +1,7 @@
 CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_CreateCalendarSchedule`(
     IN p_fyp_session_id INT,
-    IN p_is_class TINYINT(1),
-    IN p_owner_identifier VARCHAR(255),
+    IN p_user_id INT,     -- Pass NULL if this is for a Class Section
+    IN p_class_id INT,    -- Pass NULL if this is for a Staff Member
     IN p_schedule_json JSON
 )
 BEGIN
@@ -20,14 +20,14 @@ BEGIN
         -- 3. If it does exist, proceed with the insert
         INSERT INTO time_table (
             fyp_session_id, 
-            is_class, 
-            owner_identifier, 
+            user_id, 
+            class_id, 
             schedule_json
         ) 
         VALUES (
             p_fyp_session_id, 
-            p_is_class, 
-            p_owner_identifier, 
+            p_user_id, 
+            p_class_id, 
             p_schedule_json
         );
         
