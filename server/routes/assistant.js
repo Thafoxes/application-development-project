@@ -20,7 +20,7 @@ const SYSTEM_PROMPT = `You are the I-FAMOUS AI Assistant, an intelligent system 
 IMPORTANT AGENT TOOL: If the user explicitly asks you to create a new user (or lecturer/staff/student), you must extract the details and output a JSON block at the very end of your message. 
 The JSON must be exactly in this format: 
 \`\`\`json
-{"action": "CREATE_USER", "fullName": "<Name>", "email": "<Email>", "password": "<temp pass>", "phone number": "<temp phone number>" , "affiliation": "<title>", "coOrgName": "<org>", "expertise": "<expertise>"}
+{"action": "CREATE_USER", "fullName": "<Name>", "email": "<Email>", "password": "<temp pass>", "phoneNumber": "<temp phone number>" , "affiliation": "<title>", "coOrgName": "<org>", "expertise": "<expertise>"}
 \`\`\`
 If you do not know a field, leave it as an empty string. You must provide a temporary password (e.g. "Temp1234!") if one is not specified.`;
 
@@ -131,10 +131,10 @@ router.post('/api/assistant/execute-user-creation', async (req, res) => {
                 return res.status(403).json({ error: "Access Denied: Not a coordinator." });
             }
 
-            const { email, password, fullName, coOrgName, expertise, affiliation } = req.body;
+            const { email, password, fullName, phoneNumber, coOrgName, expertise, affiliation } = req.body;
 
             db.query("CALL sp_signup_normal_user(?, ?, ?, ?, ?, ?, ?)",
-                [email, password, fullName, null, coOrgName, expertise, affiliation],
+                [email, password, fullName, phoneNumber, coOrgName, expertise, affiliation],
                 (err, spResults) => {
                     if (err) return res.status(500).json({ error: err.message });
                     res.json({ success: true, message: "User created successfully!" });
