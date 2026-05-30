@@ -47,6 +47,12 @@ const router = createRouter({
       name: 'manage-user',
       component: () => import('../views/coordinator/ManageUserView.vue'),
       meta: { requiresAuth: true }
+    },
+    {
+      path: '/stud-dashboard',
+      name: 'stud-dashboard',
+      component: () => import('../views/student/StudDashboardView.vue'),
+      meta: { requiresAuth: true }
     }
   ],
 })

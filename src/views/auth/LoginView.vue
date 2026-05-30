@@ -44,7 +44,7 @@ const handleLogin = async () => {
     login(data.user, data.token)
 
     // Redirect to dashboard
-    router.push('/dashboard')
+    router.push('/stud-dashboard')
   } catch (error) {
     errorMessage.value = error.message
   }
