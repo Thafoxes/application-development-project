@@ -237,7 +237,6 @@ app.get("/api/sessions/:id/data", (req, res) => {
 
     const rawTimetables = results[1] || [];
 
-    // Parse the schedule_json for each timetable
     const timetables = rawTimetables.map(row => {
       let schedule = {};
       if (row.schedule_json) {
@@ -251,8 +250,11 @@ app.get("/api/sessions/:id/data", (req, res) => {
       }
       return {
         time_table_id: row.time_table_id,
-        is_class: row.is_class,
-        owner_identifier: row.owner_identifier,
+        user_id: row.user_id,
+        staff_name: row.staff_name,
+        staff_email: row.staff_email,
+        class_id: row.class_id,
+        section_name: row.section_name,
         schedule
       };
     });
@@ -267,15 +269,18 @@ app.get("/api/sessions/:id/data", (req, res) => {
 
 // POST create calendar schedule
 app.post("/api/timetables", (req, res) => {
-  const { fyp_session_id, is_class, owner_identifier, schedule_json } = req.body;
+  const { fyp_session_id, user_id, class_id, schedule_json } = req.body;
   
-  if (!fyp_session_id || is_class === undefined || !owner_identifier || !schedule_json) {
+  if (!fyp_session_id || !schedule_json) {
     return res.status(400).json({ error: "Missing required fields" });
   }
 
+  const p_user_id = user_id ? parseInt(user_id) : null;
+  const p_class_id = class_id ? parseInt(class_id) : null;
+
   db.query(
     "CALL sp_CreateCalendarSchedule(?, ?, ?, ?)",
-    [fyp_session_id, is_class, owner_identifier, JSON.stringify(schedule_json)],
+    [fyp_session_id, p_user_id, p_class_id, JSON.stringify(schedule_json)],
     (err, results) => {
       if (err) return res.status(500).json({ error: "Failed to create schedule: " + err.message });
       
@@ -300,12 +305,16 @@ app.delete("/api/timetables/:id", (req, res) => {
 // PUT update calendar schedule
 app.put("/api/timetables/:id", (req, res) => {
   const timeTableId = req.params.id;
-  const { owner_identifier, schedule_json } = req.body;
-  if (!owner_identifier || !schedule_json) {
-    return res.status(400).json({ error: "owner_identifier and schedule_json are required" });
+  const { user_id, class_id, schedule_json } = req.body;
+  
+  if (!schedule_json) {
+    return res.status(400).json({ error: "schedule_json is required" });
   }
 
-  db.query("CALL sp_UpdateCalendarSchedule(?, ?, ?)", [timeTableId, owner_identifier, JSON.stringify(schedule_json)], (err, results) => {
+  const p_user_id = user_id ? parseInt(user_id) : null;
+  const p_class_id = class_id ? parseInt(class_id) : null;
+
+  db.query("CALL sp_UpdateCalendarSchedule(?, ?, ?, ?)", [timeTableId, p_user_id, p_class_id, JSON.stringify(schedule_json)], (err, results) => {
     if (err) return res.status(500).json({ error: "Failed to update schedule: " + err.message });
     res.json({ message: "Schedule updated successfully" });
   });

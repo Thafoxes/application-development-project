@@ -77,11 +77,11 @@ export const apiService = {
     const response = await axios.get(`${API_BASE_URL}/api/sessions/active`);
     return response.data;
   },
-  createCalendarSchedule: async (fypSessionId, isClass, ownerIdentifier, scheduleJson) => {
+  createCalendarSchedule: async (fypSessionId, userId, classId, scheduleJson) => {
     const response = await axios.post(`${API_BASE_URL}/api/timetables`, {
       fyp_session_id: fypSessionId,
-      is_class: isClass,
-      owner_identifier: ownerIdentifier,
+      user_id: userId,
+      class_id: classId,
       schedule_json: scheduleJson
     });
     return response.data;
@@ -92,9 +92,10 @@ export const apiService = {
     return response.data;
   },
 
-  updateCalendarSchedule: async (timeTableId, ownerIdentifier, scheduleJson) => {
+  updateCalendarSchedule: async (timeTableId, userId, classId, scheduleJson) => {
     const response = await axios.put(`${API_BASE_URL}/api/timetables/${timeTableId}`, {
-      owner_identifier: ownerIdentifier,
+      user_id: userId,
+      class_id: classId,
       schedule_json: scheduleJson
     });
     return response.data;
