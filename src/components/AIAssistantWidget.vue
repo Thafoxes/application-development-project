@@ -146,8 +146,11 @@ const sendMessage = async () => {
   scrollToBottom()
 
   try {
+    const token = localStorage.getItem('token')
     const response = await axios.post('http://localhost:3000/api/assistant/chat', {
       messages: chatHistory.value
+    }, {
+      headers: { Authorization: `Bearer ${token}` }
     })
 
     if (response.data.success && response.data.reply) {
