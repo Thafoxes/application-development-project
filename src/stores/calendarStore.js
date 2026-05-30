@@ -25,7 +25,7 @@ export const useCalendarStore = defineStore('calendar', () => {
     if (!sessionData.value || !sessionData.value.timetables) return {}
     const map = {}
     sessionData.value.timetables.forEach((tb, index) => {
-      map[tb.owner_identifier] = colorsList[index % colorsList.length]
+      map[tb.time_table_id] = colorsList[index % colorsList.length]
     })
     return map
   })
@@ -38,13 +38,15 @@ export const useCalendarStore = defineStore('calendar', () => {
     const classes = []
     const lecturers = []
     sessionData.value.timetables.forEach(tb => {
+      const isClass = tb.class_id != null;
+      const label = isClass ? tb.section_name : (tb.staff_name || tb.staff_email || `User ${tb.user_id}`);
       const item = {
-        id: tb.owner_identifier,
-        label: tb.owner_identifier,
-        is_class: tb.is_class === 1,
-        color: colorMap.value[tb.owner_identifier]
+        id: tb.time_table_id,
+        label: label,
+        is_class: isClass,
+        color: colorMap.value[tb.time_table_id]
       }
-      if (tb.is_class === 1) {
+      if (isClass) {
         classes.push(item)
       } else {
         lecturers.push(item)
@@ -61,7 +63,7 @@ export const useCalendarStore = defineStore('calendar', () => {
       const data = await apiService.getFYPSessionData(sessionId)
       sessionData.value = data
       // Select all schedule filters by default
-      selectedSchedules.value = data.timetables.map(t => t.owner_identifier)
+      selectedSchedules.value = data.timetables.map(t => t.time_table_id)
     } catch (err) {
       console.error('Error fetching calendar session data:', err)
       error.value = err.message || 'Failed to load session data'
@@ -120,7 +122,8 @@ export const useCalendarStore = defineStore('calendar', () => {
     let idCounter = 1
 
     sessionData.value.timetables.forEach(tb => {
-      const owner = tb.owner_identifier
+      const isClass = tb.class_id != null;
+      const ownerLabel = isClass ? tb.section_name : (tb.staff_name || tb.staff_email || `User ${tb.user_id}`);
       const schedule = tb.schedule || {}
 
       // 1. Specific calendar events
@@ -132,9 +135,10 @@ export const useCalendarStore = defineStore('calendar', () => {
             date: e.date || e.target_date,
             start_time: e.start_time || '08:00',
             end_time: e.end_time || '09:00',
-            owner: owner,
-            is_class: tb.is_class === 1,
-            color: colorMap.value[owner]
+            owner: ownerLabel,
+            owner_id: tb.time_table_id,
+            is_class: isClass,
+            color: colorMap.value[tb.time_table_id]
           })
         })
       }
@@ -158,9 +162,10 @@ export const useCalendarStore = defineStore('calendar', () => {
                 date: dateStr,
                 start_time: slot.start_time,
                 end_time: slot.end_time,
-                owner: owner,
-                is_class: tb.is_class === 1,
-                color: colorMap.value[owner]
+                owner: ownerLabel,
+                owner_id: tb.time_table_id,
+                is_class: isClass,
+                color: colorMap.value[tb.time_table_id]
               })
             })
           }
@@ -173,7 +178,7 @@ export const useCalendarStore = defineStore('calendar', () => {
 
   // Derived state: events that are active/checked in the filter checkboxes
   const visibleEvents = computed(() => {
-    return flatEvents.value.filter(event => selectedSchedules.value.includes(event.owner))
+    return flatEvents.value.filter(event => selectedSchedules.value.includes(event.owner_id))
   })
 
   return {
