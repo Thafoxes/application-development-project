@@ -115,11 +115,11 @@ watch(targetName, (newVal) => {
     clearTimeout(searchTimeout)
     searchTimeout = setTimeout(async () => {
       try {
+        const sessionId = calendarStore.activeSessionId
         if (targetType.value === 'Lecturer') {
-          const results = await apiService.searchUsers(newVal)
+          const results = await apiService.searchUsers(newVal, sessionId)
           searchResults.value = results.map(u => ({ id: u.user_id, label: `${u.full_name} (${u.email})`, value: u.email }))
         } else {
-          const sessionId = calendarStore.activeSessionId
           const results = await apiService.searchClasses(newVal, sessionId)
           searchResults.value = results.map(c => ({ id: c.class_id, label: c.section_name, value: c.section_name }))
         }
@@ -546,7 +546,7 @@ const updateFromJson = () => {
           <div class="flex-[1.5] flex flex-col gap-4">
             <div class="flex justify-between items-start mb-2">
               <div class="flex flex-col gap-2">
-                <label class="text-sm font-medium text-gray-700">Time table for</label>
+                <label class="text-sm font-medium text-gray-700">Time table for</label> <caption>This will only show non student time table that does not exist any time table in the system</caption>
                 <select v-model="targetType" class="border border-gray-400 p-2 w-64 outline-none focus:border-[#5c001f] rounded shadow-sm">
                   <option value="Lecturer">Lecturer</option>
                   <option value="Section Class">Section Class</option>

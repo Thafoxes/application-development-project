@@ -331,9 +331,10 @@ app.get("/api/users", (req, res) => {
 // Search API Endpoints for Autocomplete
 app.get("/api/users/search", (req, res) => {
   const query = req.query.q;
-  if (!query) return res.json([]);
+  const sessionId = req.query.session_id;
+  if (!query || !sessionId) return res.json([]);
   const searchStr = `%${query}%`;
-  db.query("CALL sp_SearchNonStudentUsers(?)", [searchStr], (err, results) => {
+  db.query("CALL sp_SearchNonStudentUsers(?, ?)", [searchStr, sessionId], (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
     // results[0] contains the actual rows returned by the procedure
     res.json(results[0] || []);
@@ -344,8 +345,8 @@ app.get("/api/classes/search", (req, res) => {
   const query = req.query.q;
   const sessionId = req.query.session_id;
   if (!query || !sessionId) return res.json([]);
-  const sql = "SELECT class_id, section_name FROM fyp_classes WHERE fyp_session_id = ? AND section_name LIKE ? LIMIT 10";
-  db.query(sql, [sessionId, `%${query}%`], (err, results) => {
+  const sql = "SELECT class_id, section_name FROM fyp_classes WHERE fyp_session_id = ? AND section_name LIKE ? AND class_id NOT IN (SELECT class_id FROM time_table WHERE fyp_session_id = ? AND class_id IS NOT NULL) LIMIT 10";
+  db.query(sql, [sessionId, `%${query}%`, sessionId], (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(results);
   });

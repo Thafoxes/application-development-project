@@ -101,8 +101,8 @@ export const apiService = {
     return response.data;
   },
 
-  searchUsers: async (query) => {
-    const response = await axios.get(`${API_BASE_URL}/api/users/search`, { params: { q: query } });
+  searchUsers: async (query, sessionId) => {
+    const response = await axios.get(`${API_BASE_URL}/api/users/search`, { params: { q: query, session_id: sessionId } });
     return response.data;
   },
 
