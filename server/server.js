@@ -139,7 +139,13 @@ app.post("/api/login", (req, res) => {
           console.warn("WARNING: sp_lookup_user_role returned 0 rows for email:", user.email);
         }
 
-        res.json({ message: "Login successful", user });
+        const token = jwt.sign(
+          { user_id: user.user_id, is_coordinator: user.is_coordinator },
+          JWT_SECRET,
+          { expiresIn: "24h" }
+        );
+
+        res.json({ message: "Login successful", user, token });
       });
     } catch (compareError) {
       console.error("Password comparison error:", compareError);
@@ -411,7 +417,7 @@ app.put("/api/users/:id", (req, res) => {
   }
 
   db.query(
-    "UPDATE users SET full_name=?, email=?, phone_number=?, expertise=?, affiliation=? WHERE user_id=?",
+    "CALL sp_UpdateUserProfile(?,?,?,?,?,?);",
     [full_name, email, phone_number || null, expertise || null, affiliation || null, userId],
     (err, results) => {
       if (err) return res.status(500).json({ error: err.message });
