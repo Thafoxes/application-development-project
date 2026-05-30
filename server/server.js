@@ -328,6 +328,21 @@ app.get("/api/users", (req, res) => {
   });
 });
 
+app.post("/api/users", (req, res) => {
+  const { email, password, full_name, phone_number, co_org_name, expertise, affiliation } = req.body;
+  if (!email || !password || !full_name) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  // Uses sp_signup_normal_user (email, password_hash, full_name, phone_number, co_org_name, expertise, affiliation)
+  db.query("CALL sp_signup_normal_user(?, ?, ?, ?, ?, ?, ?)", 
+    [email, password, full_name, phone_number || null, co_org_name || null, expertise || null, affiliation || null], 
+    (err, results) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ message: "User created successfully" });
+  });
+});
+
 // Search API Endpoints for Autocomplete
 app.get("/api/users/search", (req, res) => {
   const query = req.query.q;

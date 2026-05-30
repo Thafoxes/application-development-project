@@ -46,6 +46,12 @@ const router = createRouter({
       name: 'edit-time-table',
       component: () => import('../views/EditTimeTableView.vue'),
       meta: { requiresAuth: true }
+    },
+    {
+      path: '/manage-user',
+      name: 'manage-user',
+      component: () => import('../views/ManageUserView.vue'),
+      meta: { requiresAuth: true }
     }
   ],
 })
