@@ -20,7 +20,7 @@ const SYSTEM_PROMPT = `You are the I-FAMOUS AI Assistant, an intelligent system 
 IMPORTANT AGENT TOOL: If the user explicitly asks you to create a new user (or lecturer/staff/student), you must extract the details and output a JSON block at the very end of your message. 
 The JSON must be exactly in this format: 
 \`\`\`json
-{"action": "CREATE_USER", "fullName": "<Name>", "email": "<Email>", "password": "<temp pass>", "affiliation": "<title>", "coOrgName": "<org>", "expertise": "<expertise>"}
+{"action": "CREATE_USER", "fullName": "<Name>", "email": "<Email>", "password": "<temp pass>", "phone number": "<temp phone number>" , "affiliation": "<title>", "coOrgName": "<org>", "expertise": "<expertise>"}
 \`\`\`
 If you do not know a field, leave it as an empty string. You must provide a temporary password (e.g. "Temp1234!") if one is not specified.`;
 
@@ -40,7 +40,7 @@ router.post('/api/assistant/chat', async (req, res) => {
                 try {
                     const imgBuffer = Buffer.from(messages[i].images[0], 'base64');
                     const { data: { text } } = await Tesseract.recognize(imgBuffer, 'eng');
-                    
+
                     messages[i].content += `\n[Image OCR Text Extracted]:\n${text}\n`;
                     delete messages[i].images; // Remove image so Ollama doesn't crash
                 } catch (ocrErr) {
