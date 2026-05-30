@@ -107,7 +107,7 @@ const selectedTargetId = ref(null)
 
 let searchTimeout = null
 watch(targetName, (newVal) => {
-  if (selectedTargetId.value && newVal !== searchResults.value.find(r => r.id === selectedTargetId.value)?.label) {
+  if (selectedTargetId.value && newVal !== searchResults.value.find(r => r.id === selectedTargetId.value)?.value) {
     selectedTargetId.value = null // reset if user starts typing something else
   }
   
@@ -117,11 +117,11 @@ watch(targetName, (newVal) => {
       try {
         if (targetType.value === 'Lecturer') {
           const results = await apiService.searchUsers(newVal)
-          searchResults.value = results.map(u => ({ id: u.user_id, label: `${u.full_name} (${u.email})` }))
+          searchResults.value = results.map(u => ({ id: u.user_id, label: `${u.full_name} (${u.email})`, value: u.email }))
         } else {
           const sessionId = calendarStore.activeSessionId
           const results = await apiService.searchClasses(newVal, sessionId)
-          searchResults.value = results.map(c => ({ id: c.class_id, label: c.section_name }))
+          searchResults.value = results.map(c => ({ id: c.class_id, label: c.section_name, value: c.section_name }))
         }
         showDropdown.value = true
       } catch (e) {
@@ -134,7 +134,7 @@ watch(targetName, (newVal) => {
 })
 
 const selectSearchResult = (result) => {
-  targetName.value = result.label
+  targetName.value = result.value
   selectedTargetId.value = result.id
   showDropdown.value = false
 }

@@ -783,8 +783,30 @@ DELIMITER ;
 /*!50013 DEFINER=`root`@`localhost` SQL SECURITY DEFINER */
 /*!50001 VIEW `vw_project_scheduling_roster` AS select `project`.`project_id` AS `project_id`,`project`.`fyp_session_id` AS `fyp_session_id`,`project`.`title` AS `project_title`,json_object('student_id',`project`.`student_id`,'full_name',`stu_user`.`full_name`,'metric_number',`s`.`metric_number`,'email',`stu_user`.`email`) AS `student_details`,json_object('supervisor_id',`project`.`supervisor_id`,'full_name',`sv_user`.`full_name`,'email',`sv_user`.`email`) AS `supervisor_details`,coalesce((select json_arrayagg(json_object('examiner_id',`ea`.`examiners_id`,'name',`ex_user`.`full_name`,'email',`ex_user`.`email`)) from (`examine` `ea` join `users` `ex_user` on((`ea`.`examiners_id` = `ex_user`.`user_id`))) where (`ea`.`project_id` = `project`.`project_id`)),json_array()) AS `examiners_json` from (((`projects` `project` join `students` `s` on((`project`.`student_id` = `s`.`student_id`))) join `users` `stu_user` on((`project`.`student_id` = `stu_user`.`user_id`))) join `users` `sv_user` on((`project`.`supervisor_id` = `sv_user`.`user_id`))) */;
 /*!50001 SET character_set_client      = @saved_cs_client */;
-/*!50001 SET character_set_results     = @saved_cs_results */;
-/*!50001 SET collation_connection      = @saved_col_connection */;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 DROP PROCEDURE IF EXISTS `sp_SearchNonStudentUsers` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_0900_ai_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_SearchNonStudentUsers`(IN p_search_query VARCHAR(255))
+BEGIN
+    SELECT user_id, email, full_name, is_utm_staff 
+    FROM users 
+    WHERE (email LIKE p_search_query OR full_name LIKE p_search_query) 
+      AND user_id NOT IN (SELECT student_id FROM students) 
+    LIMIT 10;
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;

@@ -270,7 +270,7 @@ app.get("/api/sessions/:id/data", (req, res) => {
 // POST create calendar schedule
 app.post("/api/timetables", (req, res) => {
   const { fyp_session_id, user_id, class_id, schedule_json } = req.body;
-  
+
   if (!fyp_session_id || !schedule_json) {
     return res.status(400).json({ error: "Missing required fields" });
   }
@@ -283,11 +283,11 @@ app.post("/api/timetables", (req, res) => {
     [fyp_session_id, p_user_id, p_class_id, JSON.stringify(schedule_json)],
     (err, results) => {
       if (err) return res.status(500).json({ error: "Failed to create schedule: " + err.message });
-      
+
       // The procedure returns the new ID in the first result set
       const newIdRow = results[0] && results[0][0];
       const new_time_table_id = newIdRow ? newIdRow.new_time_table_id : null;
-      
+
       res.json({ message: "Schedule created successfully", time_table_id: new_time_table_id });
     }
   );
@@ -306,7 +306,7 @@ app.delete("/api/timetables/:id", (req, res) => {
 app.put("/api/timetables/:id", (req, res) => {
   const timeTableId = req.params.id;
   const { user_id, class_id, schedule_json } = req.body;
-  
+
   if (!schedule_json) {
     return res.status(400).json({ error: "schedule_json is required" });
   }
@@ -332,11 +332,11 @@ app.get("/api/users", (req, res) => {
 app.get("/api/users/search", (req, res) => {
   const query = req.query.q;
   if (!query) return res.json([]);
-  const sql = "SELECT user_id, email, full_name, is_utm_staff FROM users WHERE email LIKE ? OR full_name LIKE ? LIMIT 10";
   const searchStr = `%${query}%`;
-  db.query(sql, [searchStr, searchStr], (err, results) => {
+  db.query("CALL sp_SearchNonStudentUsers(?)", [searchStr], (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
-    res.json(results);
+    // results[0] contains the actual rows returned by the procedure
+    res.json(results[0] || []);
   });
 });
 
