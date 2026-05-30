@@ -68,7 +68,7 @@
           :class="[
             !dateInfo.isCurrentMonth ? 'opacity-50' : '',
             props.constraints.avoidWeekend && (dateInfo.date.getDay() === 0 || dateInfo.date.getDay() === 6) 
-              ? 'bg-[url(\'data:image/svg+xml;utf8,%3Csvg width=%2212%22 height=%2212%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cpath d=%22M-2,2 l4,-4 M0,12 l12,-12 M10,14 l4,-4%22 stroke=%22%23e5e7eb%22 stroke-width=%222%22/%3E%3C/svg%3E\')] bg-gray-100'
+              ? 'bg-[url(\'data:image/svg+xml;utf8,%3Csvg width=%2212%22 height=%2212%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cpath d=%22M-2,2 l4,-4 M0,12 l12,-12 M10,14 l4,-4%22 stroke=%22%2394a3b8%22 stroke-width=%222%22/%3E%3C/svg%3E\')] bg-gray-200/80 shadow-inner'
               : 'bg-white'
           ]"
         >
@@ -154,7 +154,7 @@
               :key="'cell-'+dayIndex+'-'+hour" 
               class="h-[60px] border-b border-gray-100 transition-colors duration-300"
               :class="{
-                'bg-[url(\'data:image/svg+xml;utf8,%3Csvg width=%2212%22 height=%2212%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cpath d=%22M-2,2 l4,-4 M0,12 l12,-12 M10,14 l4,-4%22 stroke=%22%23e5e7eb%22 stroke-width=%222%22/%3E%3C/svg%3E\')] bg-gray-50': 
+                'bg-[url(\'data:image/svg+xml;utf8,%3Csvg width=%2212%22 height=%2212%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cpath d=%22M-2,2 l4,-4 M0,12 l12,-12 M10,14 l4,-4%22 stroke=%22%2394a3b8%22 stroke-width=%222%22/%3E%3C/svg%3E\')] bg-gray-200/80 shadow-inner': 
                   isHourBlockedByConstraints(hour, dayIndex)
               }"
             ></div>
@@ -211,8 +211,8 @@ const today = new Date()
 // --- CONSTANTS ---
 const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 const daysOfWeekShort = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-const START_HOUR = 8
-const END_HOUR = 18
+const START_HOUR = 6
+const END_HOUR = 22
 const hours = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i)
 
 // --- COMPUTED: HEADER INFO ---
