@@ -116,7 +116,10 @@ const createTimeTable = async () => {
     return
   }
 
-  const isClass = targetType.value === 'Section' ? 1 : 0
+  const targetId = parseInt(targetName.value.trim()) || null;
+  const userId = targetType.value === 'Lecturer' ? targetId : null;
+  const classId = targetType.value === 'Section Class' ? targetId : null;
+  
   const scheduleJson = {
     weekly_recurring: calendarData.value.weekly_recurring_occupancy,
     specific_events: calendarData.value.specific_calendar_events
@@ -124,7 +127,7 @@ const createTimeTable = async () => {
 
   isCreating.value = true
   try {
-    await apiService.createCalendarSchedule(fypSessionId, isClass, targetName.value.trim(), scheduleJson)
+    await apiService.createCalendarSchedule(fypSessionId, userId, classId, scheduleJson)
     alert("Time table created successfully!")
     router.push('/calendar')
   } catch (error) {
