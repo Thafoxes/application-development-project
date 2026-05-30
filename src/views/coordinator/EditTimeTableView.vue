@@ -6,7 +6,7 @@ import { useCalendarStore } from '@/stores/calendarStore'
 import AppHeader from '@/components/AppHeader.vue'
 import AppSidebar from '@/components/AppSidebar.vue'
 import AppFooter from '@/components/AppFooter.vue'
-import EditSlotModal from '@/components/EditSlotModal.vue'
+import EditSlotModal from '@/components/calendar_components/EditSlotModal.vue'
 import { apiService } from '@/services/api'
 
 const { user } = useAuth()

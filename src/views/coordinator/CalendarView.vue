@@ -2,7 +2,7 @@
 import { onMounted } from 'vue'
 import { useCalendarStore } from '@/stores/calendarStore'
 
-import ViewCalendarComponent from '@/components/ViewCalendarComponent.vue'
+import ViewCalendarComponent from '@/components/calendar_components/ViewCalendarComponent.vue'
 import AppHeader from '@/components/AppHeader.vue'
 import AppSidebar from '@/components/AppSidebar.vue'
 import AppFooter from '@/components/AppFooter.vue'

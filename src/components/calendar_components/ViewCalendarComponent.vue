@@ -131,7 +131,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useCalendarStore } from '@/stores/calendarStore'
-import CalendarSchedule from '@/components/CalendarSchedule.vue'
+import CalendarSchedule from '@/components/calendar_components/CalendarSchedule.vue'
 
 const calendarStore = useCalendarStore()
 
