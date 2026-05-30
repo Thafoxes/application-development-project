@@ -34,8 +34,83 @@ const deleteTempMeeting = async (id) => {
   }
 }
 
-const exportToPdf = () => {
-  alert("PDF Export functionality will be implemented in the next phase!")
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
+import utmLogoUrl from '@/assets/UTM_ASCEND2030_COLOR.png'
+
+const exportToPdf = async () => {
+  if (generatedMeetings.value.length === 0) {
+    alert("No meetings to export!")
+    return
+  }
+
+  const doc = new jsPDF()
+  
+  // Load Logo
+  const img = await new Promise((resolve, reject) => {
+    const imgObj = new Image()
+    imgObj.src = utmLogoUrl
+    imgObj.onload = () => resolve(imgObj)
+    imgObj.onerror = (e) => reject(e)
+  }).catch(() => null)
+
+  let startY = 20
+  if (img) {
+    const imgWidth = 70
+    const imgHeight = (img.height / img.width) * imgWidth
+    const x = (doc.internal.pageSize.getWidth() - imgWidth) / 2
+    doc.addImage(img, 'PNG', x, 15, imgWidth, imgHeight)
+    startY = 15 + imgHeight + 10
+  }
+  
+  // Session info
+  doc.setTextColor(0, 0, 0)
+  doc.setFont("helvetica", "normal")
+  doc.setFontSize(11)
+  doc.text("Session", 105, startY, { align: "center" })
+  doc.text(calendarStore.activeSession?.session_name || "2025/2026 Semester 1", 105, startY + 6, { align: "center" })
+  doc.text("Coordinator name: Coordinator Admin", 105, startY + 12, { align: "center" })
+  
+  // Title
+  doc.setFont("helvetica", "bold")
+  doc.setFontSize(20)
+  doc.text("FYP Project", 105, startY + 25, { align: "center" })
+  
+  // Table Data
+  const tableData = generatedMeetings.value.map(meeting => {
+    return [
+      meeting.student?.full_name || "-",
+      meeting.student?.user_id || "-",
+      meeting.date || "-",
+      `${meeting.start_time} - ${meeting.end_time}`,
+      meeting.supervisor?.full_name || "-",
+      meeting.examiners?.[0]?.full_name || "-",
+      meeting.examiners?.[1]?.full_name || "-"
+    ]
+  })
+  
+  autoTable(doc, {
+    startY: startY + 35,
+    head: [['Student\nName', 'Metric\nnumber', 'Date', 'Time', 'Supervisor\nname', 'Examiner\nname 1', 'Examiner\nname 2']],
+    body: tableData,
+    theme: 'plain',
+    styles: {
+      lineColor: [0, 0, 0],
+      lineWidth: 0.1,
+      textColor: [0, 0, 0],
+      fontSize: 9
+    },
+    headStyles: {
+      fontStyle: 'bold',
+      halign: 'left'
+    },
+    bodyStyles: {
+      halign: 'left'
+    },
+    margin: { top: startY + 35, left: 14, right: 14 }
+  })
+  
+  doc.save("FYP_Project_Schedule.pdf")
 }
 
 onMounted(() => {
