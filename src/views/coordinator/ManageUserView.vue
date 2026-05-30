@@ -10,18 +10,55 @@ import { apiService } from '@/services/api'
 const { user } = useAuth()
 const router = useRouter()
 
-const recentUsers = ref({ students: [], lecturers: [], outsiders: [] })
+const pagination = ref({
+  students: { page: 1, totalPages: 1, data: [] },
+  lecturers: { page: 1, totalPages: 1, data: [] },
+  outsiders: { page: 1, totalPages: 1, data: [] }
+})
+
 const isLoadingUsers = ref(false)
+
+const loadCategory = async (category) => {
+  try {
+    const res = await apiService.getPaginatedUsers(category, pagination.value[category].page)
+    pagination.value[category].data = res.data
+    pagination.value[category].totalPages = res.totalPages || 1
+  } catch (err) {
+    console.error(`Failed to load ${category}:`, err)
+  }
+}
 
 const loadRecentUsers = async () => {
   isLoadingUsers.value = true
-  try {
-    const data = await apiService.getRecentUsers()
-    recentUsers.value = data
-  } catch (err) {
-    console.error("Failed to load users:", err)
-  } finally {
-    isLoadingUsers.value = false
+  await Promise.all([
+    loadCategory('students'),
+    loadCategory('lecturers'),
+    loadCategory('outsiders')
+  ])
+  isLoadingUsers.value = false
+}
+
+const changePage = (category, dir) => {
+  const current = pagination.value[category]
+  if (dir === -1 && current.page > 1) {
+    current.page--
+    loadCategory(category)
+  } else if (dir === 1 && current.page < current.totalPages) {
+    current.page++
+    loadCategory(category)
+  }
+}
+
+const confirmDelete = async (user) => {
+  if (confirm(`Are you sure you want to delete ${user.full_name}?`)) {
+    try {
+      await apiService.deleteUser(user.user_id)
+      alert("User deleted successfully!")
+      loadRecentUsers()
+    } catch (e) {
+      console.error(e)
+      alert("Failed to delete user.")
+    }
   }
 }
 
@@ -96,16 +133,24 @@ const onUserUpdatedOrCreated = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    <tr v-for="l in recentUsers.lecturers" :key="l.user_id" class="border-b border-gray-100 hover:bg-gray-50">
+                    <tr v-for="l in pagination.lecturers.data" :key="l.user_id" class="border-b border-gray-100 hover:bg-gray-50">
                       <td class="p-3">{{ l.full_name }}</td>
                       <td class="p-3 text-gray-500">{{ l.email }}</td>
-                      <td class="p-3"><button @click="openEditModal(l)" class="text-blue-600 font-semibold hover:underline">Edit</button></td>
+                      <td class="p-3">
+                        <button @click="openEditModal(l)" class="text-blue-600 font-semibold hover:underline">Edit</button>
+                        <button @click="confirmDelete(l)" class="text-red-600 font-semibold hover:underline ml-3">Delete</button>
+                      </td>
                     </tr>
-                    <tr v-if="recentUsers.lecturers.length === 0">
-                      <td colspan="3" class="p-4 text-center text-gray-500">No recent lecturers found.</td>
+                    <tr v-if="pagination.lecturers.data.length === 0">
+                      <td colspan="3" class="p-4 text-center text-gray-500">No lecturers found.</td>
                     </tr>
                   </tbody>
                 </table>
+                <div class="bg-gray-50 px-4 py-2 border-t border-gray-200 flex justify-between items-center text-sm text-gray-600">
+                  <button @click="changePage('lecturers', -1)" :disabled="pagination.lecturers.page === 1" class="px-3 py-1 bg-white border border-gray-300 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed">&lt; Prev</button>
+                  <span>Page {{ pagination.lecturers.page }} of {{ pagination.lecturers.totalPages }}</span>
+                  <button @click="changePage('lecturers', 1)" :disabled="pagination.lecturers.page === pagination.lecturers.totalPages" class="px-3 py-1 bg-white border border-gray-300 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed">Next &gt;</button>
+                </div>
               </div>
             </div>
 
@@ -125,16 +170,24 @@ const onUserUpdatedOrCreated = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    <tr v-for="s in recentUsers.students" :key="s.user_id" class="border-b border-gray-100 hover:bg-gray-50">
+                    <tr v-for="s in pagination.students.data" :key="s.user_id" class="border-b border-gray-100 hover:bg-gray-50">
                       <td class="p-3">{{ s.full_name }}</td>
                       <td class="p-3 text-gray-500">{{ s.metric_number }}</td>
-                      <td class="p-3"><button @click="openEditModal(s)" class="text-blue-600 font-semibold hover:underline">Edit</button></td>
+                      <td class="p-3">
+                        <button @click="openEditModal(s)" class="text-blue-600 font-semibold hover:underline">Edit</button>
+                        <button @click="confirmDelete(s)" class="text-red-600 font-semibold hover:underline ml-3">Delete</button>
+                      </td>
                     </tr>
-                    <tr v-if="recentUsers.students.length === 0">
-                      <td colspan="3" class="p-4 text-center text-gray-500">No recent students found.</td>
+                    <tr v-if="pagination.students.data.length === 0">
+                      <td colspan="3" class="p-4 text-center text-gray-500">No students found.</td>
                     </tr>
                   </tbody>
                 </table>
+                <div class="bg-gray-50 px-4 py-2 border-t border-gray-200 flex justify-between items-center text-sm text-gray-600">
+                  <button @click="changePage('students', -1)" :disabled="pagination.students.page === 1" class="px-3 py-1 bg-white border border-gray-300 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed">&lt; Prev</button>
+                  <span>Page {{ pagination.students.page }} of {{ pagination.students.totalPages }}</span>
+                  <button @click="changePage('students', 1)" :disabled="pagination.students.page === pagination.students.totalPages" class="px-3 py-1 bg-white border border-gray-300 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed">Next &gt;</button>
+                </div>
               </div>
             </div>
 
@@ -154,16 +207,24 @@ const onUserUpdatedOrCreated = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    <tr v-for="o in recentUsers.outsiders" :key="o.user_id" class="border-b border-gray-100 hover:bg-gray-50">
+                    <tr v-for="o in pagination.outsiders.data" :key="o.user_id" class="border-b border-gray-100 hover:bg-gray-50">
                       <td class="p-3">{{ o.full_name }}</td>
                       <td class="p-3 text-gray-500">{{ o.email }} <br/> <span class="text-xs text-gray-400">{{ o.co_org_name }}</span></td>
-                      <td class="p-3"><button @click="openEditModal(o)" class="text-blue-600 font-semibold hover:underline">Edit</button></td>
+                      <td class="p-3">
+                        <button @click="openEditModal(o)" class="text-blue-600 font-semibold hover:underline">Edit</button>
+                        <button @click="confirmDelete(o)" class="text-red-600 font-semibold hover:underline ml-3">Delete</button>
+                      </td>
                     </tr>
-                    <tr v-if="recentUsers.outsiders.length === 0">
-                      <td colspan="3" class="p-4 text-center text-gray-500">No recent outsiders found.</td>
+                    <tr v-if="pagination.outsiders.data.length === 0">
+                      <td colspan="3" class="p-4 text-center text-gray-500">No outsiders found.</td>
                     </tr>
                   </tbody>
                 </table>
+                <div class="bg-gray-50 px-4 py-2 border-t border-gray-200 flex justify-between items-center text-sm text-gray-600">
+                  <button @click="changePage('outsiders', -1)" :disabled="pagination.outsiders.page === 1" class="px-3 py-1 bg-white border border-gray-300 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed">&lt; Prev</button>
+                  <span>Page {{ pagination.outsiders.page }} of {{ pagination.outsiders.totalPages }}</span>
+                  <button @click="changePage('outsiders', 1)" :disabled="pagination.outsiders.page === pagination.outsiders.totalPages" class="px-3 py-1 bg-white border border-gray-300 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed">Next &gt;</button>
+                </div>
               </div>
             </div>
           </template>

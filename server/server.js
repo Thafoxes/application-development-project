@@ -352,11 +352,11 @@ app.get("/api/users/paginated", (req, res) => {
     countQuery = `SELECT COUNT(*) as total FROM users u JOIN students s ON u.user_id = s.student_id`;
     dataQuery = `SELECT u.*, s.metric_number FROM users u JOIN students s ON u.user_id = s.student_id ORDER BY u.date_created DESC LIMIT ? OFFSET ?`;
   } else if (category === 'lecturers') {
-    countQuery = `SELECT COUNT(*) as total FROM users u WHERE u.email LIKE '%@utm.my' AND u.user_id NOT IN (SELECT student_id FROM students)`;
-    dataQuery = `SELECT u.* FROM users u WHERE u.email LIKE '%@utm.my' AND u.user_id NOT IN (SELECT student_id FROM students) ORDER BY u.date_created DESC LIMIT ? OFFSET ?`;
+    countQuery = `SELECT COUNT(*) as total FROM users u WHERE u.is_utm_staff = 1 AND u.user_id NOT IN (SELECT student_id FROM students)`;
+    dataQuery = `SELECT u.* FROM users u WHERE u.is_utm_staff = 1 AND u.user_id NOT IN (SELECT student_id FROM students) ORDER BY u.date_created DESC LIMIT ? OFFSET ?`;
   } else if (category === 'outsiders') {
-    countQuery = `SELECT COUNT(*) as total FROM users u WHERE u.email NOT LIKE '%@utm.my' AND u.user_id NOT IN (SELECT student_id FROM students)`;
-    dataQuery = `SELECT u.* FROM users u WHERE u.email NOT LIKE '%@utm.my' AND u.user_id NOT IN (SELECT student_id FROM students) ORDER BY u.date_created DESC LIMIT ? OFFSET ?`;
+    countQuery = `SELECT COUNT(*) as total FROM users u WHERE (u.is_utm_staff = 0 OR u.is_utm_staff IS NULL) AND u.user_id NOT IN (SELECT student_id FROM students)`;
+    dataQuery = `SELECT u.* FROM users u WHERE (u.is_utm_staff = 0 OR u.is_utm_staff IS NULL) AND u.user_id NOT IN (SELECT student_id FROM students) ORDER BY u.date_created DESC LIMIT ? OFFSET ?`;
   } else {
     return res.status(400).json({error: "Invalid category"});
   }
