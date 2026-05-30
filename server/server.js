@@ -328,4 +328,27 @@ app.get("/api/users", (req, res) => {
   });
 });
 
+// Search API Endpoints for Autocomplete
+app.get("/api/users/search", (req, res) => {
+  const query = req.query.q;
+  if (!query) return res.json([]);
+  const sql = "SELECT user_id, email, full_name, is_utm_staff FROM users WHERE email LIKE ? OR full_name LIKE ? LIMIT 10";
+  const searchStr = `%${query}%`;
+  db.query(sql, [searchStr, searchStr], (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(results);
+  });
+});
+
+app.get("/api/classes/search", (req, res) => {
+  const query = req.query.q;
+  const sessionId = req.query.session_id;
+  if (!query || !sessionId) return res.json([]);
+  const sql = "SELECT class_id, section_name FROM fyp_classes WHERE fyp_session_id = ? AND section_name LIKE ? LIMIT 10";
+  db.query(sql, [sessionId, `%${query}%`], (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(results);
+  });
+});
+
 app.listen(3000, () => console.log("Backend running on port 3000"));
