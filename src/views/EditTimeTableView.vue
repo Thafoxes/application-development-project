@@ -44,7 +44,7 @@ const selectSchedule = (newId) => {
   selectedScheduleId.value = newId
   editingOwnerIdentifier.value = newId
   
-  const tb = calendarStore.sessionData?.timetables.find(t => t.owner_identifier === newId)
+  const tb = calendarStore.sessionData?.timetables.find(t => t.time_table_id === newId)
   if (tb && tb.schedule) {
     calendarData.value = {
       weekly_recurring_occupancy: JSON.parse(JSON.stringify(tb.schedule.weekly_recurring || [])),
@@ -61,12 +61,13 @@ const isSaving = ref(false)
 const saveTimeTable = async () => {
   if (!selectedScheduleId.value) return
   
-  const tb = calendarStore.sessionData?.timetables.find(t => t.owner_identifier === selectedScheduleId.value)
+  const tb = calendarStore.sessionData?.timetables.find(t => t.time_table_id === selectedScheduleId.value)
   if (!tb) return
   
-  const newOwner = (editingOwnerIdentifier.value && editingOwnerIdentifier.value.trim() !== '') 
-    ? editingOwnerIdentifier.value.trim() 
-    : tb.owner_identifier
+  // Parse the input as targetId for updates
+  const targetId = parseInt(editingOwnerIdentifier.value.trim()) || null;
+  const newUserId = tb.class_id != null ? null : (targetId || tb.user_id);
+  const newClassId = tb.class_id != null ? (targetId || tb.class_id) : null;
     
   const newSchedule = {
     weekly_recurring: JSON.parse(JSON.stringify(calendarData.value.weekly_recurring_occupancy)),
@@ -75,13 +76,12 @@ const saveTimeTable = async () => {
   
   isSaving.value = true
   try {
-    await apiService.updateCalendarSchedule(tb.time_table_id, newOwner, newSchedule)
+    await apiService.updateCalendarSchedule(tb.time_table_id, newUserId, newClassId, newSchedule)
     
     tb.schedule = newSchedule
-    if (newOwner !== tb.owner_identifier) {
-      tb.owner_identifier = newOwner
-      selectedScheduleId.value = newOwner
-    }
+    if (newUserId !== tb.user_id) tb.user_id = newUserId;
+    if (newClassId !== tb.class_id) tb.class_id = newClassId;
+    
     hasUnsavedChanges.value = false
     alert('Time table saved successfully!')
   } catch (error) {
@@ -96,14 +96,14 @@ const deleteTimeTable = async () => {
   if (!selectedScheduleId.value) return
   const confirmation = prompt(`Type "${selectedScheduleId.value}" to confirm deletion of this time table:`)
   if (confirmation === selectedScheduleId.value) {
-    const tb = calendarStore.sessionData?.timetables.find(t => t.owner_identifier === selectedScheduleId.value)
+    const tb = calendarStore.sessionData?.timetables.find(t => t.time_table_id === selectedScheduleId.value)
     if (!tb) return
     
     isSaving.value = true
     try {
       await apiService.deleteCalendarSchedule(tb.time_table_id)
       
-      calendarStore.sessionData.timetables = calendarStore.sessionData.timetables.filter(t => t.owner_identifier !== selectedScheduleId.value)
+      calendarStore.sessionData.timetables = calendarStore.sessionData.timetables.filter(t => t.time_table_id !== selectedScheduleId.value)
       selectedScheduleId.value = null
       editingOwnerIdentifier.value = ''
       calendarData.value = { weekly_recurring_occupancy: [], specific_calendar_events: [] }
