@@ -37,6 +37,12 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
+      path: '/create-meeting',
+      name: 'create-meeting',
+      component: () => import('../views/coordinator/CreateMeetingView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
       path: '/edit-time-table',
       name: 'edit-time-table',
       component: () => import('../views/coordinator/EditTimeTableView.vue'),

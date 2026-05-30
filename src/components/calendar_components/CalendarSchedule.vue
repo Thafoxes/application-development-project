@@ -41,9 +41,9 @@
         </div>
 
         <!-- Call to Action -->
-         <!-- Add new meeting link here  -->
         <router-link 
-          to="/" 
+          v-if="!hideAddMeetingButton"
+          to="/create-meeting" 
           class="bg-[#F8BE17] hover:bg-[#e0ab15] text-[#5C001F] font-bold px-4 py-2 rounded-lg shadow-sm transition-all flex items-center gap-2 transform active:scale-95"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
@@ -64,8 +64,13 @@
         <div 
           v-for="(dateInfo, index) in monthDays" 
           :key="index"
-          class="bg-white min-h-[100px] p-2 hover:bg-[#FFFFAB]/20 transition-colors relative"
-          :class="{ 'opacity-50': !dateInfo.isCurrentMonth }"
+          class="min-h-[100px] p-2 hover:bg-[#FFFFAB]/20 transition-colors duration-300 relative"
+          :class="[
+            !dateInfo.isCurrentMonth ? 'opacity-50' : '',
+            props.constraints.avoidWeekend && (dateInfo.date.getDay() === 0 || dateInfo.date.getDay() === 6) 
+              ? 'bg-[url(\'data:image/svg+xml;utf8,%3Csvg width=%2212%22 height=%2212%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cpath d=%22M-2,2 l4,-4 M0,12 l12,-12 M10,14 l4,-4%22 stroke=%22%23e5e7eb%22 stroke-width=%222%22/%3E%3C/svg%3E\')] bg-gray-100'
+              : 'bg-white'
+          ]"
         >
           <div 
             class="w-7 h-7 flex items-center justify-center rounded-full text-sm font-medium mb-1"
@@ -144,7 +149,17 @@
         <div class="flex-1 grid grid-cols-7 relative">
           <!-- Background grid lines -->
           <div v-for="dayIndex in 7" :key="'col-'+dayIndex" class="border-r border-gray-100 last:border-r-0 relative">
-            <div v-for="hour in hours" :key="'cell-'+dayIndex+'-'+hour" class="h-[60px] border-b border-gray-100"></div>
+            <div 
+              v-for="hour in hours" 
+              :key="'cell-'+dayIndex+'-'+hour" 
+              class="h-[60px] border-b border-gray-100 transition-colors duration-300"
+              :class="{
+                'bg-[url(\'data:image/svg+xml;utf8,%3Csvg width=%2212%22 height=%2212%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cpath d=%22M-2,2 l4,-4 M0,12 l12,-12 M10,14 l4,-4%22 stroke=%22%23e5e7eb%22 stroke-width=%222%22/%3E%3C/svg%3E\')] bg-gray-50': 
+                  (props.constraints.avoidWeekend && (weekDays[dayIndex-1].date.getDay() === 0 || weekDays[dayIndex-1].date.getDay() === 6)) ||
+                  (props.constraints.avoidOffWorkingHour && (hour < 8 || hour >= 17)) ||
+                  (props.constraints.avoidLunchHour && (hour === 13))
+              }"
+            ></div>
           </div>
           
           <!-- Events -->
@@ -179,6 +194,14 @@ const props = defineProps({
   events: {
     type: Array,
     default: () => []
+  },
+  hideAddMeetingButton: {
+    type: Boolean,
+    default: false
+  },
+  constraints: {
+    type: Object,
+    default: () => ({ avoidWeekend: false, avoidOffWorkingHour: false, avoidLunchHour: false })
   }
 })
 
