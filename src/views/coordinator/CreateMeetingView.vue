@@ -10,14 +10,58 @@ import AppFooter from '@/components/AppFooter.vue'
 
 const calendarStore = useCalendarStore()
 
+const generatedMeeting = ref(null)
+
+const fetchTempMeeting = async () => {
+  try {
+    const res = await axios.get('http://localhost:3000/api/timetable/temp')
+    if (res.data.success && res.data.data) {
+      generatedMeeting.value = res.data.data
+    } else {
+      generatedMeeting.value = null
+    }
+  } catch(e) {
+    console.error("Failed to fetch temp meeting:", e)
+  }
+}
+
+const deleteTempMeeting = async () => {
+  try {
+    await axios.delete('http://localhost:3000/api/timetable/temp')
+    generatedMeeting.value = null
+  } catch(e) {
+    console.error("Failed to delete temp meeting:", e)
+  }
+}
+
 onMounted(() => {
   if (calendarStore.availableSchedules.lecturers.length === 0) {
     calendarStore.fetchActiveSession()
   }
+  fetchTempMeeting()
 })
 
 const selectedProjectId = ref(null)
 const displayedEvents = ref([])
+
+import { computed } from 'vue'
+
+const combinedEvents = computed(() => {
+  const arr = [...displayedEvents.value]
+  if (generatedMeeting.value) {
+    arr.push({
+      id: 'generated-meeting-temp',
+      title: 'FYP Mtg: ' + generatedMeeting.value.project_title,
+      date: generatedMeeting.value.date,
+      start_time: generatedMeeting.value.start_time,
+      end_time: generatedMeeting.value.end_time,
+      owner: 'Scheduled Meeting',
+      is_class: false,
+      color: '#10b981' // emerald green for planned meeting
+    })
+  }
+  return arr
+})
 
 // Watch for project selection and fetch actual crosscheck schedule data from backend
 watch(selectedProjectId, async (newProjectId) => {
@@ -26,7 +70,7 @@ watch(selectedProjectId, async (newProjectId) => {
     return
   }
 
-  const project = fypMockData.find(p => p.project_id === newProjectId)
+  const project = fypMockData.find(p => p.project_id == newProjectId)
   if (!project) {
     displayedEvents.value = []
     return
@@ -118,8 +162,9 @@ const generateSchedule = async () => {
 
   // 2. Write to temporary JSON file via backend
   try {
+    const projectFull = fypMockData.find(p => p.project_id == selectedProjectId.value);
     const response = await axios.post('http://localhost:3000/api/timetable/generate-temp', {
-      project_id: selectedProjectId.value,
+      project: projectFull,
       date: startingDate.value,
       start_time: startingTime.value,
       end_time: endingTime.value,
@@ -127,6 +172,7 @@ const generateSchedule = async () => {
     });
 
     if (response.data.success) {
+      generatedMeeting.value = response.data.data;
       alert("Success: No conflicts! Meeting successfully generated and saved to temporary JSON report.");
     } else {
       alert("Error: Could not save the temporary file.");
@@ -158,7 +204,7 @@ const generateSchedule = async () => {
         </div>
 
         <div class="flex flex-col lg:flex-row flex-1 gap-6 w-full">
-          <!-- LEFT COLUMN: Projects & Constraints -->
+          <!-- LEFT COLUMN: Projects & Meeting -->
           <div class="w-full lg:w-1/4 lg:min-w-[280px] flex flex-col gap-6 shrink-0">
             <!-- FYP Projects Card -->
             <div class="flex flex-col h-1/2 min-h-[300px]">
@@ -191,13 +237,39 @@ const generateSchedule = async () => {
                 </label>
               </div>
             </div>
+
+            <!-- Generated Meeting Card -->
+            <div v-if="generatedMeeting" class="flex flex-col bg-white border border-[#10b981] rounded-xl shadow-lg mt-0 p-5 relative overflow-hidden">
+              <div class="absolute top-0 left-0 right-0 h-2 bg-[#10b981]"></div>
+              <h3 class="font-extrabold text-[#10b981] mb-3 uppercase text-xs tracking-wider flex items-center gap-2 mt-1">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                </svg>
+                Scheduled Meeting
+              </h3>
+              <div class="flex flex-col gap-1.5 text-sm">
+                <span class="font-bold text-gray-800">{{ generatedMeeting.project_title }}</span>
+                <div class="flex items-center gap-2 text-gray-600 mt-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                  <span class="font-medium">{{ generatedMeeting.date }}</span>
+                </div>
+                <div class="flex items-center gap-2 text-gray-600">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  <span class="font-medium">{{ generatedMeeting.start_time }} - {{ generatedMeeting.end_time }}</span>
+                </div>
+                <button @click="deleteTempMeeting" class="mt-4 bg-red-50 text-red-600 border border-red-100 font-bold py-2 rounded-lg hover:bg-red-600 hover:text-white transition-all text-xs uppercase tracking-wide">
+                  Delete Schedule
+                </button>
+              </div>
+            </div>
+
           </div>
 
           <!-- Middle: Calendar Component (Sidebar removed) -->
           <div class="flex-1 flex flex-col shadow-lg rounded-xl overflow-hidden bg-white min-w-0 border border-gray-100">
             <!-- Render empty state if no project selected, otherwise show events and hide the native Add Meeting button -->
             <CalendarSchedule 
-              :events="displayedEvents" 
+              :events="combinedEvents" 
               :hideAddMeetingButton="true"
               :constraints="{ avoidWeekend, avoidOffWorkingHour, avoidLunchHour, workingHourStart, workingHourEnd, lunchHourStart, lunchHourEnd }"
             />
@@ -213,15 +285,10 @@ const generateSchedule = async () => {
             <div class="h-px w-full bg-gray-100 mb-2"></div>
 
             <!-- Date Settings -->
-            <div class="flex items-center justify-between gap-3">
-              <div class="flex flex-col flex-1 text-center min-w-0">
-                <label class="text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-1">Start Date</label>
+            <div class="flex items-center justify-center gap-3">
+              <div class="flex flex-col w-full text-center min-w-0">
+                <label class="text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-1">Meeting Date</label>
                 <input type="date" v-model="startingDate" class="rounded-lg px-2 py-2 text-center bg-gray-50 border border-gray-200 shadow-inner text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#5C001F]/50 focus:border-[#5C001F] w-full transition-all" />
-              </div>
-              <span class="font-bold text-gray-300 mt-5">-</span>
-              <div class="flex flex-col flex-1 text-center min-w-0">
-                <label class="text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-1">End Date</label>
-                <input type="date" v-model="endingDate" class="rounded-lg px-2 py-2 text-center bg-gray-50 border border-gray-200 shadow-inner text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#5C001F]/50 focus:border-[#5C001F] w-full transition-all" />
               </div>
             </div>
 
