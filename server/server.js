@@ -2,6 +2,9 @@
 const express = require("express");
 const mysql = require("mysql2");
 const cors = require("cors");
+const jwt = require("jsonwebtoken");
+
+const JWT_SECRET = process.env.JWT_SECRET;
 const bcrypt = require("bcrypt");
 require("dotenv").config();
 
@@ -358,7 +361,7 @@ app.get("/api/users/paginated", (req, res) => {
     countQuery = `SELECT COUNT(*) as total FROM users u WHERE (u.is_utm_staff = 0 OR u.is_utm_staff IS NULL) AND u.user_id NOT IN (SELECT student_id FROM students)`;
     dataQuery = `SELECT u.* FROM users u WHERE (u.is_utm_staff = 0 OR u.is_utm_staff IS NULL) AND u.user_id NOT IN (SELECT student_id FROM students) ORDER BY u.date_created DESC LIMIT ? OFFSET ?`;
   } else {
-    return res.status(400).json({error: "Invalid category"});
+    return res.status(400).json({ error: "Invalid category" });
   }
 
   db.query(countQuery, (err, countResults) => {
@@ -391,29 +394,29 @@ app.post("/api/users", (req, res) => {
   }
 
   // Uses sp_signup_normal_user (email, password_hash, full_name, phone_number, co_org_name, expertise, affiliation)
-  db.query("CALL sp_signup_normal_user(?, ?, ?, ?, ?, ?, ?)", 
-    [email, password, full_name, phone_number || null, co_org_name || null, expertise || null, affiliation || null], 
+  db.query("CALL sp_signup_normal_user(?, ?, ?, ?, ?, ?, ?)",
+    [email, password, full_name, phone_number || null, co_org_name || null, expertise || null, affiliation || null],
     (err, results) => {
       if (err) return res.status(500).json({ error: err.message });
       res.json({ message: "User created successfully" });
-  });
+    });
 });
 
 app.put("/api/users/:id", (req, res) => {
   const { full_name, email, phone_number, expertise, affiliation } = req.body;
   const userId = req.params.id;
-  
+
   if (!full_name || !email) {
     return res.status(400).json({ error: "Missing required fields" });
   }
 
   db.query(
-    "UPDATE users SET full_name=?, email=?, phone_number=?, expertise=?, affiliation=? WHERE user_id=?", 
-    [full_name, email, phone_number || null, expertise || null, affiliation || null, userId], 
+    "UPDATE users SET full_name=?, email=?, phone_number=?, expertise=?, affiliation=? WHERE user_id=?",
+    [full_name, email, phone_number || null, expertise || null, affiliation || null, userId],
     (err, results) => {
       if (err) return res.status(500).json({ error: err.message });
       res.json({ message: "User updated successfully" });
-  });
+    });
 });
 
 // Search API Endpoints for Autocomplete
