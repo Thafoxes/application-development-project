@@ -138,4 +138,76 @@ Rules:
     }
 });
 
+// Route: Extract User Profile from Image
+router.post('/api/assistant/extract-user-profile', upload.single('image'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: "No image provided" });
+        }
+
+        const base64Image = req.file.buffer.toString('base64');
+
+        const PROMPT = `You are an expert AI system designed to extract user profile information from images (like CVs, business cards, or university profile cards) and output the result strictly in JSON.
+
+Extract the following information:
+1. Full Name (e.g. "TS. DR. Ali bin Abu ")
+2. Email Address
+3. Affiliation/Title (e.g. "Senior Lecturer")
+4. Organization/Department (e.g. "ESE" or "MJIIT", "Faculty of Computing")
+5. Expertise (a list of comma-separated strings representing areas of expertise)
+
+Format the extracted data into the following exact JSON schema:
+{
+  "fullName": "<Extracted full name, empty string if none>",
+  "email": "<Extracted email address, empty string if none>",
+  "affiliation": "<Extracted title/affiliation, empty string if none>",
+  "coOrgName": "<Extracted organization, empty string if none>",
+  "expertise": ["<Area 1>", "<Area 2>", "..."]
+}
+
+Rules:
+1. Return ONLY the JSON object. Do not include markdown blocks (\`\`\`json), greetings, or explanations.
+2. If the image is not a profile or business card, do your best to extract any text that fits the fields.
+`;
+
+        const ollamaPayload = {
+            model: process.env.OLLAMA_MODEL || 'gemma4:latest',
+            stream: false,
+            messages: [
+                {
+                    role: "user",
+                    content: PROMPT,
+                    images: [base64Image]
+                }
+            ]
+        };
+
+        const ollamaResponse = await axios.post('http://localhost:11434/api/chat', ollamaPayload);
+        let reply = ollamaResponse.data.message.content;
+
+        if (reply.startsWith('\`\`\`json')) {
+            reply = reply.replace(/^\`\`\`json/, '').replace(/\`\`\`$/, '').trim();
+        } else if (reply.startsWith('\`\`\`')) {
+            reply = reply.replace(/^\`\`\`/, '').replace(/\`\`\`$/, '').trim();
+        }
+
+        let parsedJson;
+        try {
+            parsedJson = JSON.parse(reply);
+        } catch (e) {
+            console.error("Failed to parse JSON from AI response:", reply);
+            return res.status(500).json({ success: false, error: "AI output was not valid JSON." });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: parsedJson
+        });
+
+    } catch (error) {
+        console.error("AI Backend Error (extract-user-profile):", error.message);
+        res.status(500).json({ success: false, error: "AI Assistant is currently unavailable for image processing." });
+    }
+});
+
 module.exports = router;

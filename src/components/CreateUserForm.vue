@@ -33,6 +33,56 @@ const removeTag = (index) => {
 }
 
 const isSubmitting = ref(false)
+const isUploading = ref(false)
+const uploadError = ref('')
+
+const handleFileUpload = async (event) => {
+  const file = event.target.files[0]
+  if (!file) return
+  
+  uploadError.value = ''
+  
+  if (!['image/png', 'image/jpeg', 'image/jpg'].includes(file.type)) {
+    uploadError.value = 'Invalid file type. Please upload a PNG or JPEG.'
+    return
+  }
+
+  isUploading.value = true
+  
+  try {
+    const formData = new FormData()
+    formData.append('image', file)
+
+    const response = await fetch('http://localhost:3000/api/assistant/extract-user-profile', {
+      method: 'POST',
+      body: formData
+    })
+
+    const result = await response.json()
+
+    if (response.ok && result.success) {
+      if (result.data.fullName) form.value.fullName = result.data.fullName;
+      if (result.data.email) form.value.email = result.data.email;
+      if (result.data.affiliation) form.value.affiliation = result.data.affiliation;
+      if (result.data.coOrgName) form.value.coOrgName = result.data.coOrgName;
+      if (result.data.expertise && Array.isArray(result.data.expertise)) {
+        result.data.expertise.forEach(tag => {
+          if (tag && !expertiseTags.value.includes(tag)) {
+            expertiseTags.value.push(tag)
+          }
+        })
+      }
+    } else {
+      uploadError.value = result.error || 'Failed to process image'
+    }
+  } catch (error) {
+    console.error("Upload error:", error)
+    uploadError.value = 'An error occurred while uploading.'
+  } finally {
+    isUploading.value = false
+    event.target.value = '' // reset input
+  }
+}
 
 const submitForm = async () => {
   if (!form.value.fullName || !form.value.email || !form.value.password) {
@@ -74,7 +124,38 @@ const submitForm = async () => {
 
 <template>
   <div class="bg-white border border-gray-300 rounded-lg p-8 shadow-sm flex-1 h-fit">
-    <h2 class="text-2xl font-bold text-[#5c001f] mb-6">Create New User</h2>
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-2xl font-bold text-[#5c001f]">Create New User</h2>
+    </div>
+
+    <!-- AI Upload Area -->
+    <div class="mb-6 p-6 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 flex flex-col items-center justify-center relative hover:bg-gray-100 transition-colors">
+      <div v-if="!isUploading" class="flex flex-col items-center pointer-events-none">
+        <svg class="w-10 h-10 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+        </svg>
+        <span class="text-sm font-semibold text-gray-700">Auto-fill from Profile Image (AI)</span>
+        <span class="text-xs text-gray-500 mt-1">PNG, JPG up to 10MB</span>
+      </div>
+      
+      <div v-if="isUploading" class="flex flex-col items-center">
+        <div class="w-8 h-8 border-4 border-gray-300 border-t-[#5c001f] rounded-full animate-spin"></div>
+        <span class="mt-2 text-sm font-bold text-[#5c001f]">Extracting details...</span>
+      </div>
+
+      <input 
+        v-if="!isUploading"
+        type="file" 
+        accept="image/png, image/jpeg, image/jpg" 
+        class="absolute inset-0 opacity-0 cursor-pointer"
+        @change="handleFileUpload" 
+      />
+    </div>
+    
+    <div v-if="uploadError" class="mb-4 text-sm text-red-600 font-bold bg-red-100 px-4 py-2 rounded-lg">
+      {{ uploadError }}
+    </div>
+
     <form @submit.prevent="submitForm" class="flex flex-col gap-6">
       <!-- Full Name -->
       <div class="flex flex-col gap-2">
