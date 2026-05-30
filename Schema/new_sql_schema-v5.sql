@@ -1,3 +1,5 @@
+CREATE DATABASE  IF NOT EXISTS `ifamous_dbms` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci */ /*!80016 DEFAULT ENCRYPTION='N' */;
+USE `ifamous_dbms`;
 -- MySQL dump 10.13  Distrib 8.0.46, for Win64 (x86_64)
 --
 -- Host: localhost    Database: ifamous_dbms
@@ -284,7 +286,7 @@ CREATE TABLE `time_table` (
   CONSTRAINT `fk_tt_session` FOREIGN KEY (`fyp_session_id`) REFERENCES `fyp_session` (`fyp_session_id`) ON DELETE CASCADE,
   CONSTRAINT `fk_tt_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE,
   CONSTRAINT `chk_exclusive_owner` CHECK ((((`user_id` is not null) and (`class_id` is null)) or ((`user_id` is null) and (`class_id` is not null))))
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -310,7 +312,7 @@ CREATE TABLE `users` (
   UNIQUE KEY `user_id` (`user_id`),
   UNIQUE KEY `email` (`email`),
   UNIQUE KEY `phone_number` (`phone_number`)
-) ENGINE=InnoDB AUTO_INCREMENT=4021 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=4022 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -329,6 +331,10 @@ SET @saved_cs_client     = @@character_set_client;
  1 AS `supervisor_details`,
  1 AS `examiners_json`*/;
 SET character_set_client = @saved_cs_client;
+
+--
+-- Dumping events for database 'ifamous_dbms'
+--
 
 --
 -- Dumping routines for database 'ifamous_dbms'
@@ -479,6 +485,44 @@ DELIMITER ;
 /*!50003 SET character_set_client  = @saved_cs_client */ ;
 /*!50003 SET character_set_results = @saved_cs_results */ ;
 /*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 DROP PROCEDURE IF EXISTS `sp_GetRecentUsersByCategory` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_unicode_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'IGNORE_SPACE,ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_GetRecentUsersByCategory`()
+BEGIN
+    -- 1. Students (Limit 20, sorted by latest)
+    SELECT u.user_id, u.email, u.full_name, u.phone_number, s.metric_number
+    FROM users u
+    JOIN students s ON u.user_id = s.student_id
+    ORDER BY u.date_created DESC, u.user_id DESC
+    LIMIT 20;
+
+    -- 2. Lecturers / Staff (Limit 20, sorted by latest)
+    SELECT u.user_id, u.email, u.full_name, u.phone_number, u.expertise
+    FROM users u
+    WHERE u.is_utm_staff = 1
+    ORDER BY u.date_created DESC, u.user_id DESC
+    LIMIT 20;
+
+    -- 3. Outsiders / Normal Users (Limit 20, sorted by latest)
+    SELECT u.user_id, u.email, u.full_name, u.phone_number, u.co_org_name
+    FROM users u
+    WHERE u.is_utm_staff = 0 AND u.user_id NOT IN (SELECT student_id FROM students)
+    ORDER BY u.date_created DESC, u.user_id DESC
+    LIMIT 20;
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
 /*!50003 DROP PROCEDURE IF EXISTS `sp_GetSessionCalendarData` */;
 /*!50003 SET @saved_cs_client      = @@character_set_client */ ;
 /*!50003 SET @saved_cs_results     = @@character_set_results */ ;
@@ -579,6 +623,33 @@ BEGIN
 	LEFT JOIN examiners e ON u.user_id = e.examiners_id
 	LEFT JOIN coordinator c ON u.user_id = c.user_id
 	WHERE u.email = email_address AND u.user_id = user_id;
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 DROP PROCEDURE IF EXISTS `sp_SearchNonStudentUsers` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_unicode_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'IGNORE_SPACE,ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_SearchNonStudentUsers`(
+    IN p_search_query VARCHAR(255),
+    IN p_session_id INT
+)
+BEGIN
+    SELECT user_id, email, full_name, is_utm_staff 
+    FROM users 
+    WHERE (email LIKE p_search_query OR full_name LIKE p_search_query) 
+      AND user_id NOT IN (SELECT student_id FROM students)
+      AND user_id NOT IN (SELECT user_id FROM time_table WHERE fyp_session_id = p_session_id AND user_id IS NOT NULL)
+    LIMIT 10;
 END ;;
 DELIMITER ;
 /*!50003 SET sql_mode              = @saved_sql_mode */ ;
@@ -736,6 +807,45 @@ DELIMITER ;
 /*!50003 SET character_set_client  = @saved_cs_client */ ;
 /*!50003 SET character_set_results = @saved_cs_results */ ;
 /*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 DROP PROCEDURE IF EXISTS `sp_UpdateUserProfile` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_0900_ai_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_UpdateUserProfile`(
+    IN p_user_id INT,
+    IN p_full_name VARCHAR(255),
+    IN p_email VARCHAR(255),
+    IN p_phone_number VARCHAR(20),
+    IN p_expertise VARCHAR(255),
+    IN p_affiliation VARCHAR(255)
+)
+BEGIN
+    -- Perform the update on the specific user
+    UPDATE users 
+    SET 
+        full_name = p_full_name,
+        email = p_email,
+        phone_number = p_phone_number,
+        expertise = p_expertise,
+        affiliation = p_affiliation
+    WHERE 
+        user_id = p_user_id;
+        
+    -- Return the number of affected rows to the backend
+    -- 1 = Success, 0 = User ID not found or no data was changed
+    SELECT ROW_COUNT() AS affected_rows;
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
 /*!50003 DROP PROCEDURE IF EXISTS `sp_update_session` */;
 /*!50003 SET @saved_cs_client      = @@character_set_client */ ;
 /*!50003 SET @saved_cs_results     = @@character_set_results */ ;
@@ -783,30 +893,8 @@ DELIMITER ;
 /*!50013 DEFINER=`root`@`localhost` SQL SECURITY DEFINER */
 /*!50001 VIEW `vw_project_scheduling_roster` AS select `project`.`project_id` AS `project_id`,`project`.`fyp_session_id` AS `fyp_session_id`,`project`.`title` AS `project_title`,json_object('student_id',`project`.`student_id`,'full_name',`stu_user`.`full_name`,'metric_number',`s`.`metric_number`,'email',`stu_user`.`email`) AS `student_details`,json_object('supervisor_id',`project`.`supervisor_id`,'full_name',`sv_user`.`full_name`,'email',`sv_user`.`email`) AS `supervisor_details`,coalesce((select json_arrayagg(json_object('examiner_id',`ea`.`examiners_id`,'name',`ex_user`.`full_name`,'email',`ex_user`.`email`)) from (`examine` `ea` join `users` `ex_user` on((`ea`.`examiners_id` = `ex_user`.`user_id`))) where (`ea`.`project_id` = `project`.`project_id`)),json_array()) AS `examiners_json` from (((`projects` `project` join `students` `s` on((`project`.`student_id` = `s`.`student_id`))) join `users` `stu_user` on((`project`.`student_id` = `stu_user`.`user_id`))) join `users` `sv_user` on((`project`.`supervisor_id` = `sv_user`.`user_id`))) */;
 /*!50001 SET character_set_client      = @saved_cs_client */;
-/*!50003 SET character_set_results = @saved_cs_results */ ;
-/*!50003 SET collation_connection  = @saved_col_connection */ ;
-/*!50003 DROP PROCEDURE IF EXISTS `sp_SearchNonStudentUsers` */;
-/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
-/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
-/*!50003 SET @saved_col_connection = @@collation_connection */ ;
-/*!50003 SET character_set_client  = utf8mb4 */ ;
-/*!50003 SET character_set_results = utf8mb4 */ ;
-/*!50003 SET collation_connection  = utf8mb4_0900_ai_ci */ ;
-/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
-/*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
-DELIMITER ;;
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_SearchNonStudentUsers`(IN p_search_query VARCHAR(255))
-BEGIN
-    SELECT user_id, email, full_name, is_utm_staff 
-    FROM users 
-    WHERE (email LIKE p_search_query OR full_name LIKE p_search_query) 
-      AND user_id NOT IN (SELECT student_id FROM students) 
-    LIMIT 10;
-END ;;
-DELIMITER ;
-/*!50003 SET sql_mode              = @saved_sql_mode */ ;
-/*!50003 SET character_set_client  = @saved_cs_client */ ;
-/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50001 SET character_set_results     = @saved_cs_results */;
+/*!50001 SET collation_connection      = @saved_col_connection */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
@@ -817,4 +905,4 @@ DELIMITER ;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-05-30 13:54:58
+-- Dump completed on 2026-05-30 17:01:28
