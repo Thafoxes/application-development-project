@@ -447,6 +447,35 @@ app.post("/api/timetable/crosscheck", (req, res) => {
     });
 });
 
+// TODO: POST temporary meeting generation
+const fs = require('fs');
+const path = require('path');
+app.post("/api/timetable/generate-temp", (req, res) => {
+  const { project_id, date, start_time, end_time, duration } = req.body;
+
+  if (!project_id || !date || !start_time || !end_time) {
+    return res.status(400).json({ success: false, error: "Missing required fields" });
+  }
+
+  const payload = {
+    project_id,
+    date,
+    start_time,
+    end_time,
+    duration,
+    generated_at: new Date().toISOString()
+  };
+
+  try {
+    const filePath = path.join(__dirname, '..', 'localData', 'temp_meeting.json');
+    fs.writeFileSync(filePath, JSON.stringify(payload, null, 4));
+    res.json({ success: true, message: "Temporary schedule saved successfully" });
+  } catch (err) {
+    console.error("Failed to write temporary schedule:", err);
+    res.status(500).json({ success: false, error: "Server file write error" });
+  }
+});
+
 // Simple API Endpoint
 app.get("/api/users", (req, res) => {
   db.query("SELECT * FROM users", (err, results) => {
