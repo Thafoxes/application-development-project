@@ -2,8 +2,27 @@ const express = require('express');
 const axios = require('axios');
 const router = express.Router();
 
+const jwt = require('jsonwebtoken');
+const mysql = require("mysql2");
+
+const db = mysql.createConnection({
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT || 3306,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+});
+const JWT_SECRET = process.env.JWT_SECRET;
+
 // The secret persona instruction that stays hidden on your server
-const SYSTEM_PROMPT = `You are the I-FAMOUS AI Assistant, an intelligent system embedded within the Universiti Teknologi Malaysia (UTM) Final Year Project (FYP) management dashboard. Your role is to help students, coordinators, and examiners navigate schedules and understand FYP submission phases. Keep your answers concise, academic, and helpful. Do not hallucinate database records.`;
+const SYSTEM_PROMPT = `You are the I-FAMOUS AI Assistant, an intelligent system embedded within the Universiti Teknologi Malaysia (UTM) Final Year Project (FYP) management dashboard. Your role is to help students, coordinators, and examiners navigate schedules and understand FYP submission phases. Keep your answers concise, academic, and helpful. Do not hallucinate database records.
+
+IMPORTANT AGENT TOOL: If the user explicitly asks you to create a new user (or lecturer/staff/student), you must extract the details and output a JSON block at the very end of your message. 
+The JSON must be exactly in this format: 
+\`\`\`json
+{"action": "CREATE_USER", "fullName": "<Name>", "email": "<Email>", "password": "<temp pass>", "affiliation": "<title>", "coOrgName": "<org>", "expertise": "<expertise>"}
+\`\`\`
+If you do not know a field, leave it as an empty string. You must provide a temporary password (e.g. "Temp1234!") if one is not specified.`;
 
 router.post('/api/assistant/chat', async (req, res) => {
     try {
@@ -26,12 +45,54 @@ router.post('/api/assistant/chat', async (req, res) => {
 
         // 3. Send request to local Ollama instance
         const ollamaResponse = await axios.post('http://localhost:11434/api/chat', ollamaPayload);
+        let replyContent = ollamaResponse.data.message.content;
 
-        // 4. Send Gemma's response back to the Vue frontend
-        res.status(200).json({
-            success: true,
-            reply: ollamaResponse.data.message
-        });
+        // 4. Check if the AI wants to create a user (Function Calling Simulation)
+        if (replyContent.includes('"action": "CREATE_USER"')) {
+            // VERIFY JWT FIRST
+            const authHeader = req.headers['authorization'];
+            if (!authHeader) {
+                return res.status(200).json({ success: true, reply: { role: 'assistant', content: "Security Error: You are not logged in. Missing authentication token." } });
+            }
+
+            const token = authHeader.split(' ')[1];
+            try {
+                const decoded = jwt.verify(token, JWT_SECRET);
+
+                // Security check in DB
+                db.query("SELECT 1 FROM coordinator c JOIN users u ON c.user_id = u.user_id WHERE c.user_id = ? LIMIT 1", [decoded.user_id], (err, results) => {
+                    if (err || results.length === 0) {
+                        return res.status(200).json({ success: true, reply: { role: 'assistant', content: "Access Denied: You do not have coordinator privileges to create users." } });
+                    }
+
+                    // Extract JSON from LLM response
+                    const jsonMatch = replyContent.match(/```json\s*(\{[\s\S]*?\})\s*```/);
+                    if (jsonMatch) {
+                        const parsedAction = JSON.parse(jsonMatch[1]);
+
+                        db.query("CALL sp_signup_normal_user(?, ?, ?, ?, ?, ?, ?)",
+                            [parsedAction.email, parsedAction.password, parsedAction.fullName, null, parsedAction.coOrgName, parsedAction.expertise, parsedAction.affiliation],
+                            (err, spResults) => {
+                                if (err) {
+                                    return res.status(200).json({ success: true, reply: { role: 'assistant', content: `Database Error: Could not create user. (${err.message})` } });
+                                }
+                                res.status(200).json({ success: true, reply: { role: 'assistant', content: `Success! I have securely created the user **${parsedAction.fullName}** (${parsedAction.email}).` } });
+                            });
+                    } else {
+                        res.status(200).json({ success: true, reply: { role: 'assistant', content: replyContent } });
+                    }
+                });
+                return; // Wait for async DB query
+            } catch (jwtErr) {
+                return res.status(200).json({ success: true, reply: { role: 'assistant', content: "Security Error: Invalid or expired authentication token." } });
+            }
+        } else {
+            // Normal conversational reply
+            res.status(200).json({
+                success: true,
+                reply: ollamaResponse.data.message
+            });
+        }
 
     } catch (error) {
         console.error("AI Backend Error:", error.message);
