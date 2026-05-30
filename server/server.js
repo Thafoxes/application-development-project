@@ -328,6 +328,18 @@ app.get("/api/users", (req, res) => {
   });
 });
 
+app.get("/api/users/recent", (req, res) => {
+  db.query("CALL sp_GetRecentUsersByCategory()", (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    // results is an array of result sets + okPacket
+    res.json({
+      students: results[0] || [],
+      lecturers: results[1] || [],
+      outsiders: results[2] || []
+    });
+  });
+});
+
 app.post("/api/users", (req, res) => {
   const { email, password, full_name, phone_number, co_org_name, expertise, affiliation } = req.body;
   if (!email || !password || !full_name) {
