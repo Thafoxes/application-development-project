@@ -70,8 +70,71 @@ const avoidLunchHour = ref(true)
 const lunchHourStart = ref('13:00')
 const lunchHourEnd = ref('14:00')
 
-const generateSchedule = () => {
-  console.log('Generate meeting schedule clicked')
+// Watch to update endingTime when startingTime or meetingDuration changes
+watch([startingTime, meetingDuration], ([newStart, newDuration]) => {
+  if (newStart && newDuration) {
+    const [h, m] = newStart.split(':').map(Number)
+    const totalMins = h * 60 + m + newDuration
+    const endH = Math.floor(totalMins / 60).toString().padStart(2, '0')
+    const endM = (totalMins % 60).toString().padStart(2, '0')
+    endingTime.value = `${endH}:${endM}`
+  }
+})
+
+// Watch to update meetingDuration when endingTime changes manually
+watch(endingTime, (newEnd) => {
+  if (newEnd && startingTime.value) {
+    const [eh, em] = newEnd.split(':').map(Number)
+    const [sh, sm] = startingTime.value.split(':').map(Number)
+    const diff = (eh * 60 + em) - (sh * 60 + sm)
+    if (diff > 0) {
+      meetingDuration.value = diff
+    }
+  }
+})
+
+const generateSchedule = async () => {
+  if (!selectedProjectId.value) {
+    alert("Please select an FYP Project first.")
+    return
+  }
+
+  // 1. Check for conflicts
+  const hasConflict = displayedEvents.value.some(event => {
+    // Only check if it's the exact same date
+    if (event.date !== startingDate.value) return false;
+    
+    const reqStart = startingTime.value;
+    const reqEnd = endingTime.value;
+    
+    // Check overlap: conflict if requested start is before event ends AND requested end is after event starts
+    return (reqStart < event.end_time && reqEnd > event.start_time);
+  });
+
+  if (hasConflict) {
+    alert("Conflict Detected: The selected time overlaps with an existing schedule for the student or lecturers.");
+    return;
+  }
+
+  // 2. Write to temporary JSON file via backend
+  try {
+    const response = await axios.post('http://localhost:3000/api/timetable/generate-temp', {
+      project_id: selectedProjectId.value,
+      date: startingDate.value,
+      start_time: startingTime.value,
+      end_time: endingTime.value,
+      duration: meetingDuration.value
+    });
+
+    if (response.data.success) {
+      alert("Success: No conflicts! Meeting successfully generated and saved to temporary JSON report.");
+    } else {
+      alert("Error: Could not save the temporary file.");
+    }
+  } catch (err) {
+    console.error(err);
+    alert("Error communicating with the backend to save the temporary file.");
+  }
 }
 </script>
 
@@ -94,9 +157,9 @@ const generateSchedule = () => {
           <span class="font-bold underline">Add new meeting</span>
         </div>
 
-        <div class="flex flex-1 gap-6 w-full">
+        <div class="flex flex-col lg:flex-row flex-1 gap-6 w-full">
           <!-- LEFT COLUMN: Projects & Constraints -->
-          <div class="w-1/4 flex flex-col gap-6 shrink-0">
+          <div class="w-full lg:w-1/4 lg:min-w-[280px] flex flex-col gap-6 shrink-0">
             <!-- FYP Projects Card -->
             <div class="flex flex-col h-1/2 min-h-[300px]">
               <div class="bg-[#FFFFAB] p-4 font-extrabold text-[#5C001F] text-xl tracking-wider rounded-t-lg shadow-sm border-b-2 border-gray-200">
@@ -141,7 +204,7 @@ const generateSchedule = () => {
           </div>
 
           <!-- Right Sidebar: Meeting Settings -->
-          <div class="w-1/4 bg-white border-2 border-[#5C001F]/20 p-6 rounded-[2rem] shadow-xl flex flex-col gap-6 shrink-0 relative overflow-hidden">
+          <div class="w-full lg:w-1/4 lg:min-w-[280px] bg-white border-2 border-[#5C001F]/20 p-6 rounded-[2rem] shadow-xl flex flex-col gap-6 shrink-0 relative overflow-hidden">
             <!-- Decorative Header Accent -->
             <div class="absolute top-0 left-0 right-0 h-3 bg-[#5C001F]"></div>
             
