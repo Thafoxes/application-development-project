@@ -99,6 +99,24 @@ const handleFileUpload = (event) => {
   }
 }
 
+const expertiseTags = ref([])
+const expertiseInput = ref('')
+
+const addTag = (event) => {
+  if (event.key === 'Enter' || event.key === ',') {
+    event.preventDefault()
+    const val = expertiseInput.value.trim().replace(/,$/, '')
+    if (val && !expertiseTags.value.includes(val)) {
+      expertiseTags.value.push(val)
+    }
+    expertiseInput.value = ''
+  }
+}
+
+const removeTag = (index) => {
+  expertiseTags.value.splice(index, 1)
+}
+
 const submitRegistration = async () => {
   try {
     // Map data to match the stored procedure signature expectations
@@ -110,7 +128,7 @@ const submitRegistration = async () => {
       // Pass null if the field doesn't apply to the user's role
       companyName: emailDomain.value === 'outsider' ? step2Data.value.companyName : null,
       expertise: ['staff', 'outsider'].includes(emailDomain.value)
-        ? step2Data.value.expertise
+        ? expertiseTags.value.join(', ')
         : null,
       // Map metric number (student) or department (staff) to p_affiliation
       affiliation:
@@ -440,12 +458,19 @@ const submitRegistration = async () => {
             <template v-else-if="emailDomain === 'staff'">
               <div class="flex flex-col gap-1">
                 <label class="text-sm font-medium text-[#0d0b26]">Expertise</label>
-                <input
-                  v-model="step2Data.expertise"
-                  type="text"
-                  placeholder="Value"
-                  class="px-4 py-3 rounded-lg border border-[#d9d9d9] focus:ring-1 focus:ring-[#5c001f] focus:border-[#5c001f] outline-none w-full text-sm text-gray-900 placeholder:text-gray-500"
-                />
+                <div class="px-4 py-2 rounded-lg border border-[#d9d9d9] flex flex-wrap gap-2 items-center focus-within:ring-1 focus-within:ring-[#5c001f] focus-within:border-[#5c001f] bg-white">
+                  <div v-for="(tag, index) in expertiseTags" :key="index" class="bg-[#e7ded3] text-[#5c001f] px-3 py-1 rounded-full flex items-center gap-2 text-sm font-medium">
+                    {{ tag }}
+                    <button type="button" @click.prevent="removeTag(index)" class="text-[#5c001f] hover:text-red-600 font-bold leading-none">&times;</button>
+                  </div>
+                  <input 
+                    v-model="expertiseInput" 
+                    @keydown="addTag"
+                    type="text" 
+                    placeholder="Type tag and press Enter" 
+                    class="flex-1 min-w-[150px] outline-none bg-transparent text-sm text-gray-900 placeholder:text-gray-500"
+                  />
+                </div>
               </div>
 
               <div class="flex flex-col gap-1">
@@ -488,12 +513,19 @@ const submitRegistration = async () => {
 
               <div class="flex flex-col gap-1">
                 <label class="text-sm font-medium text-[#0d0b26]">Your Expertise</label>
-                <input
-                  v-model="step2Data.expertise"
-                  type="text"
-                  placeholder="Value"
-                  class="px-4 py-3 rounded-lg border border-[#d9d9d9] focus:ring-1 focus:ring-[#5c001f] focus:border-[#5c001f] outline-none w-full text-sm text-gray-900 placeholder:text-gray-500"
-                />
+                <div class="px-4 py-2 rounded-lg border border-[#d9d9d9] flex flex-wrap gap-2 items-center focus-within:ring-1 focus-within:ring-[#5c001f] focus-within:border-[#5c001f] bg-white">
+                  <div v-for="(tag, index) in expertiseTags" :key="index" class="bg-[#e7ded3] text-[#5c001f] px-3 py-1 rounded-full flex items-center gap-2 text-sm font-medium">
+                    {{ tag }}
+                    <button type="button" @click.prevent="removeTag(index)" class="text-[#5c001f] hover:text-red-600 font-bold leading-none">&times;</button>
+                  </div>
+                  <input 
+                    v-model="expertiseInput" 
+                    @keydown="addTag"
+                    type="text" 
+                    placeholder="Type tag and press Enter" 
+                    class="flex-1 min-w-[150px] outline-none bg-transparent text-sm text-gray-900 placeholder:text-gray-500"
+                  />
+                </div>
               </div>
             </template>
 
