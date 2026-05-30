@@ -111,6 +111,11 @@ export const apiService = {
     return response.data;
   },
 
+  updateUser: async (userId, userData) => {
+    const response = await axios.put(`${API_BASE_URL}/api/users/${userId}`, userData);
+    return response.data;
+  },
+
   searchUsers: async (query, sessionId) => {
     const response = await axios.get(`${API_BASE_URL}/api/users/search`, { params: { q: query, session_id: sessionId } });
     return response.data;

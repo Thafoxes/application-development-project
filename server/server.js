@@ -355,6 +355,23 @@ app.post("/api/users", (req, res) => {
   });
 });
 
+app.put("/api/users/:id", (req, res) => {
+  const { full_name, email, phone_number, expertise, affiliation } = req.body;
+  const userId = req.params.id;
+  
+  if (!full_name || !email) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  db.query(
+    "UPDATE users SET full_name=?, email=?, phone_number=?, expertise=?, affiliation=? WHERE user_id=?", 
+    [full_name, email, phone_number || null, expertise || null, affiliation || null, userId], 
+    (err, results) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ message: "User updated successfully" });
+  });
+});
+
 // Search API Endpoints for Autocomplete
 app.get("/api/users/search", (req, res) => {
   const query = req.query.q;
