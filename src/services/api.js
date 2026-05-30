@@ -116,6 +116,16 @@ export const apiService = {
     return response.data;
   },
 
+  deleteUser: async (userId) => {
+    const response = await axios.delete(`${API_BASE_URL}/api/users/${userId}`);
+    return response.data;
+  },
+
+  getPaginatedUsers: async (category, page) => {
+    const response = await axios.get(`${API_BASE_URL}/api/users/paginated`, { params: { category, page } });
+    return response.data;
+  },
+
   searchUsers: async (query, sessionId) => {
     const response = await axios.get(`${API_BASE_URL}/api/users/search`, { params: { q: query, session_id: sessionId } });
     return response.data;

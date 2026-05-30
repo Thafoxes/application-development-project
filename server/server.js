@@ -331,12 +331,56 @@ app.get("/api/users", (req, res) => {
 app.get("/api/users/recent", (req, res) => {
   db.query("CALL sp_GetRecentUsersByCategory()", (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
-    // results is an array of result sets + okPacket
     res.json({
       students: results[0] || [],
       lecturers: results[1] || [],
       outsiders: results[2] || []
     });
+  });
+});
+
+app.get("/api/users/paginated", (req, res) => {
+  const category = req.query.category;
+  const page = parseInt(req.query.page) || 1;
+  const limit = 20;
+  const offset = (page - 1) * limit;
+
+  let countQuery = "";
+  let dataQuery = "";
+
+  if (category === 'students') {
+    countQuery = `SELECT COUNT(*) as total FROM users u JOIN students s ON u.user_id = s.student_id`;
+    dataQuery = `SELECT u.*, s.metric_number FROM users u JOIN students s ON u.user_id = s.student_id ORDER BY u.date_created DESC LIMIT ? OFFSET ?`;
+  } else if (category === 'lecturers') {
+    countQuery = `SELECT COUNT(*) as total FROM users u WHERE u.email LIKE '%@utm.my' AND u.user_id NOT IN (SELECT student_id FROM students)`;
+    dataQuery = `SELECT u.* FROM users u WHERE u.email LIKE '%@utm.my' AND u.user_id NOT IN (SELECT student_id FROM students) ORDER BY u.date_created DESC LIMIT ? OFFSET ?`;
+  } else if (category === 'outsiders') {
+    countQuery = `SELECT COUNT(*) as total FROM users u WHERE u.email NOT LIKE '%@utm.my' AND u.user_id NOT IN (SELECT student_id FROM students)`;
+    dataQuery = `SELECT u.* FROM users u WHERE u.email NOT LIKE '%@utm.my' AND u.user_id NOT IN (SELECT student_id FROM students) ORDER BY u.date_created DESC LIMIT ? OFFSET ?`;
+  } else {
+    return res.status(400).json({error: "Invalid category"});
+  }
+
+  db.query(countQuery, (err, countResults) => {
+    if (err) return res.status(500).json({ error: err.message });
+    const total = countResults[0].total;
+
+    db.query(dataQuery, [limit, offset], (err, results) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({
+        data: results,
+        total: total,
+        page: page,
+        totalPages: Math.ceil(total / limit)
+      });
+    });
+  });
+});
+
+app.delete("/api/users/:id", (req, res) => {
+  db.query("DELETE FROM users WHERE user_id = ?", [req.params.id], (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ message: "User deleted successfully" });
   });
 });
 
