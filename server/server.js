@@ -18,25 +18,22 @@ const assistantRouter = require("./routes/assistant");
 app.use(assistantRouter);
 
 // Database Connection
-const db = mysql.createConnection({
+const db = mysql.createPool({
   host: process.env.DB_HOST,
   port: process.env.DB_PORT || 3306,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
 });
 
-db.connect((err) => {
-  if (err) {
-    console.error("Database connection failed:", err.stack);
-    return;
-  }
-  console.log("Connected to database.");
-});
+console.log("Connected to database.");
 
 // Status API Endpoint
 app.get("/api/status", (req, res) => {
-  db.ping((err) => {
+  db.query('SELECT 1', (err) => {
     if (err)
       return res.status(500).json({ error: "Database connection failed" });
     res.json({ message: "connected" });
