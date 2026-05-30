@@ -330,6 +330,123 @@ app.put("/api/timetables/:id", (req, res) => {
   });
 });
 
+// POST crosscheck timetable data
+app.post("/api/timetable/crosscheck", (req, res) => {
+  const { fyp_session_id, class_id, user_ids } = req.body;
+
+  if (!fyp_session_id) {
+    return res.status(400).json({ error: "fyp_session_id is required" });
+  }
+
+  const queries = [];
+  const queryValues = [];
+
+  if (class_id) {
+    queries.push(`SELECT class_id, schedule_json FROM time_table WHERE class_id = ? AND fyp_session_id = ?`);
+    queryValues.push([class_id, fyp_session_id]);
+  }
+
+  if (user_ids && user_ids.length > 0) {
+    const placeholders = user_ids.map(() => '?').join(',');
+    queries.push(`SELECT user_id, schedule_json FROM time_table WHERE user_id IN (${placeholders}) AND fyp_session_id = ?`);
+    queryValues.push([...user_ids, fyp_session_id]);
+  }
+
+  if (queries.length === 0) {
+    return res.json({ status: "success", data: { occupied_events: [] } });
+  }
+
+  const promises = queries.map((q, idx) => {
+    return new Promise((resolve, reject) => {
+      db.query(q, queryValues[idx], (err, results) => {
+        if (err) reject(err);
+        else resolve(results);
+      });
+    });
+  });
+
+  Promise.all(promises)
+    .then(resultsArray => {
+      const aggregatedEvents = [];
+      let idCounter = 1;
+
+      const formatDate = (date) => {
+        let month = '' + (date.getMonth() + 1);
+        let day = '' + date.getDate();
+        const year = date.getFullYear();
+        if (month.length < 2) month = '0' + month;
+        if (day.length < 2) day = '0' + day;
+        return [year, month, day].join('-');
+      };
+
+      resultsArray.forEach(results => {
+        results.forEach(row => {
+          let schedule = {};
+          try {
+            schedule = typeof row.schedule_json === 'string' ? JSON.parse(row.schedule_json) : row.schedule_json;
+          } catch (e) {
+            console.error("Failed to parse schedule_json", e);
+            return;
+          }
+
+          const isClass = row.class_id != null;
+          const ownerLabel = isClass ? `Class ID: ${row.class_id}` : `User ID: ${row.user_id}`;
+          const color = isClass ? '#eab308' : '#5C001F'; // Gold for class, Maroon for user
+
+          // 1. Specific calendar events
+          if (schedule.specific_events && Array.isArray(schedule.specific_events)) {
+            schedule.specific_events.forEach(e => {
+              aggregatedEvents.push({
+                id: `crosscheck-sp-${idCounter++}`,
+                title: e.label || e.title,
+                date: e.date || e.target_date,
+                start_time: e.start_time || '08:00',
+                end_time: e.end_time || '09:00',
+                owner: ownerLabel,
+                is_class: isClass,
+                color: color
+              });
+            });
+          }
+
+          // 2. Weekly recurring slots (mapped to the year 2026)
+          if (schedule.weekly_recurring && Array.isArray(schedule.weekly_recurring)) {
+            const startDate = new Date(2026, 0, 1);
+            const endDate = new Date(2026, 11, 31);
+
+            for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+              const jsDay = d.getDay();
+              const jsonDayOfWeek = jsDay === 0 ? 7 : jsDay; // Convert: 0 (Sun) -> 7 (Sun)
+              const dateStr = formatDate(d);
+
+              const recurringDay = schedule.weekly_recurring.find(r => r.day_of_week === jsonDayOfWeek);
+              if (recurringDay && recurringDay.slots) {
+                recurringDay.slots.forEach(slot => {
+                  aggregatedEvents.push({
+                    id: `crosscheck-rc-${idCounter++}`,
+                    title: slot.label,
+                    date: dateStr,
+                    start_time: slot.start_time,
+                    end_time: slot.end_time,
+                    owner: ownerLabel,
+                    is_class: isClass,
+                    color: color
+                  });
+                });
+              }
+            }
+          }
+        });
+      });
+
+      res.json({ status: "success", data: { occupied_events: aggregatedEvents } });
+    })
+    .catch(err => {
+      console.error("Crosscheck Query Error:", err);
+      res.status(500).json({ error: "Failed to crosscheck timetables: " + err.message });
+    });
+});
+
 // Simple API Endpoint
 app.get("/api/users", (req, res) => {
   db.query("SELECT * FROM users", (err, results) => {

@@ -1,5 +1,6 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, watch, onMounted } from 'vue'
+import axios from 'axios'
 import { useCalendarStore } from '@/stores/calendarStore'
 import fypMockData from '../../../localData/fyp_mock_structure.json'
 import CalendarSchedule from '@/components/calendar_components/CalendarSchedule.vue'
@@ -16,19 +17,42 @@ onMounted(() => {
 })
 
 const selectedProjectId = ref(null)
+const displayedEvents = ref([])
 
-// Compute simulated cross-check events
-const displayedEvents = computed(() => {
-  if (!selectedProjectId.value) return [] // Empty state initially
-  
-  // Simulation: Find the selected project
-  const project = fypMockData.find(p => p.project_id === selectedProjectId.value)
-  if (!project) return []
+// Watch for project selection and fetch actual crosscheck schedule data from backend
+watch(selectedProjectId, async (newProjectId) => {
+  if (!newProjectId) {
+    displayedEvents.value = []
+    return
+  }
 
-  // If you want to dynamically fetch and filter the calendarStore events by project.supervisor / examiners,
-  // you would do that here. For now, we simulate by showing all visible events if a project is selected
-  // (or you can filter them specifically).
-  return calendarStore.visibleEvents
+  const project = fypMockData.find(p => p.project_id === newProjectId)
+  if (!project) {
+    displayedEvents.value = []
+    return
+  }
+
+  const userIds = [project.supervisor.user_id]
+  if (project.examiners) {
+    project.examiners.forEach(ex => userIds.push(ex.user_id))
+  }
+
+  try {
+    const response = await axios.post('http://localhost:3000/api/timetable/crosscheck', {
+      fyp_session_id: project.fyp_session_id,
+      class_id: project.student?.class_id,
+      user_ids: userIds
+    })
+    
+    if (response.data && response.data.status === 'success') {
+      displayedEvents.value = response.data.data.occupied_events
+    } else {
+      displayedEvents.value = []
+    }
+  } catch (err) {
+    console.error("Failed to crosscheck timetable:", err)
+    displayedEvents.value = []
+  }
 })
 
 const startingDate = ref('2026-06-28')
@@ -174,6 +198,7 @@ const generateSchedule = () => {
                   <input type="checkbox" v-model="avoidOffWorkingHour" class="w-5 h-5 border-2 border-gray-300 rounded appearance-none checked:border-[#5C001F] checked:bg-[#5C001F] checked:after:content-['✓'] checked:after:text-white checked:after:absolute checked:after:left-[3px] checked:after:top-[0px] checked:after:text-sm relative flex items-center justify-center cursor-pointer shrink-0 transition-colors shadow-sm group-hover:border-[#5C001F]/50" />
                   <span class="text-sm font-bold text-gray-700 group-hover:text-[#5C001F] transition-colors">Avoid off-working hours</span>
                 </label>
+                <p class="text-xs text-gray-500 font-medium pl-9 -mt-2">Time for working duration</p>
                 <div v-if="avoidOffWorkingHour" class="flex items-center gap-2 pl-9">
                   <div class="flex flex-col flex-1 min-w-0">
                     <input type="time" v-model="workingHourStart" class="rounded-lg px-2 py-1.5 text-center bg-gray-50 border border-gray-200 shadow-inner text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[#5C001F]/50 focus:border-[#5C001F] w-full transition-all" />
