@@ -6,9 +6,12 @@ import AppHeader from '@/components/AppHeader.vue'
 import AppSidebar from '@/components/AppSidebar.vue'
 import AppFooter from '@/components/AppFooter.vue'
 import EditSlotModal from '@/components/EditSlotModal.vue'
+import { apiService } from '@/services/api'
+import { useCalendarStore } from '@/stores/calendarStore'
 
 const { user } = useAuth()
 const router = useRouter()
+const calendarStore = useCalendarStore()
 
 const targetType = ref('Lecturer')
 const targetName = ref('')
@@ -94,6 +97,43 @@ const handleFileUpload = async (event) => {
 }
 
 const jsDayToJsonDay = (jsDay) => jsDay === 0 ? 7 : jsDay
+
+const isCreating = ref(false)
+
+const createTimeTable = async () => {
+  if (!targetName.value.trim()) {
+    alert("Please provide an identifier for this timetable.")
+    return
+  }
+  
+  // Ensure calendarStore is ready
+  if (!calendarStore.activeSessionId) {
+    await calendarStore.fetchActiveSession()
+  }
+  const fypSessionId = calendarStore.activeSessionId
+  if (!fypSessionId) {
+    alert("No active session found. Please set an active session first.")
+    return
+  }
+
+  const isClass = targetType.value === 'Section' ? 1 : 0
+  const scheduleJson = {
+    weekly_recurring: calendarData.value.weekly_recurring_occupancy,
+    specific_events: calendarData.value.specific_calendar_events
+  }
+
+  isCreating.value = true
+  try {
+    await apiService.createCalendarSchedule(fypSessionId, isClass, targetName.value.trim(), scheduleJson)
+    alert("Time table created successfully!")
+    router.push('/calendar')
+  } catch (error) {
+    console.error("Failed to create time table:", error)
+    alert("Failed to create time table. Please try again.")
+  } finally {
+    isCreating.value = false
+  }
+}
 
 const today = new Date(2026, 4, 7) // May 2026
 const currentYear = ref(today.getFullYear())
@@ -472,8 +512,13 @@ const updateFromJson = () => {
                 <label class="text-sm font-medium mt-2 text-gray-700">{{ targetType === 'Lecturer' ? 'Lecturer Name or email' : 'Section number' }}</label>
                 <input v-model="targetName" type="text" class="border border-gray-400 p-2 w-64 outline-none focus:border-[#5c001f] rounded shadow-sm" />
               </div>
-              <button class="bg-[#5c001f] text-white px-8 py-3 rounded-full font-bold hover:bg-[#4a0019] transition-colors shadow-lg">
-                Save time table
+              <button 
+                @click="createTimeTable"
+                :disabled="isCreating"
+                class="bg-[#5c001f] text-white px-8 py-3 rounded-full font-bold hover:bg-[#4a0019] transition-colors shadow-lg"
+                :class="{ 'opacity-50 cursor-not-allowed': isCreating }"
+              >
+                {{ isCreating ? 'Creating...' : 'Create time table' }}
               </button>
             </div>
 

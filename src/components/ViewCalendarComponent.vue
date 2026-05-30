@@ -13,13 +13,13 @@
       <!-- Accordion Area (Scrollable) -->
       <div class="flex-1 overflow-y-auto px-4 py-4 space-y-4">
         
-        <!-- Accordion 1: STUDENT SCHEDULES (Lecturers) -->
+        <!-- Accordion 1: STAFF SCHEDULES (Lecturers) -->
         <div class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
           <button 
             @click="accordions.lecturers = !accordions.lecturers"
             class="w-full flex items-center justify-between p-3 bg-white hover:bg-gray-50 transition-colors"
           >
-            <span class="text-xs font-bold text-gray-800 tracking-wider">STUDENT SCHEDULES</span>
+            <span class="text-xs font-bold text-gray-800 tracking-wider">STAFF SCHEDULES</span>
             <svg 
               class="w-4 h-4 text-gray-600 transition-transform duration-200" 
               :class="{ 'rotate-180': accordions.lecturers }"
