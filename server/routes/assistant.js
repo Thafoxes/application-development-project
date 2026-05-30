@@ -33,6 +33,22 @@ router.post('/api/assistant/chat', async (req, res) => {
             return res.status(400).json({ error: "Invalid message format" });
         }
 
+        // 1.5 Process OCR for any images in the chat history
+        const Tesseract = require('tesseract.js');
+        for (let i = 0; i < messages.length; i++) {
+            if (messages[i].images && messages[i].images.length > 0) {
+                try {
+                    const imgBuffer = Buffer.from(messages[i].images[0], 'base64');
+                    const { data: { text } } = await Tesseract.recognize(imgBuffer, 'eng');
+                    
+                    messages[i].content += `\n[Image OCR Text Extracted]:\n${text}\n`;
+                    delete messages[i].images; // Remove image so Ollama doesn't crash
+                } catch (ocrErr) {
+                    console.error("OCR Error:", ocrErr);
+                }
+            }
+        }
+
         // 2. Format the payload for Ollama (Injecting the System Prompt first)
         const ollamaPayload = {
             model: process.env.OLLAMA_MODEL || 'gemma4:latest', // Loaded from env variable, fallback to default
@@ -70,14 +86,16 @@ router.post('/api/assistant/chat', async (req, res) => {
                     if (jsonMatch) {
                         const parsedAction = JSON.parse(jsonMatch[1]);
 
-                        db.query("CALL sp_signup_normal_user(?, ?, ?, ?, ?, ?, ?)",
-                            [parsedAction.email, parsedAction.password, parsedAction.fullName, null, parsedAction.coOrgName, parsedAction.expertise, parsedAction.affiliation],
-                            (err, spResults) => {
-                                if (err) {
-                                    return res.status(200).json({ success: true, reply: { role: 'assistant', content: `Database Error: Could not create user. (${err.message})` } });
-                                }
-                                res.status(200).json({ success: true, reply: { role: 'assistant', content: `Success! I have securely created the user **${parsedAction.fullName}** (${parsedAction.email}).` } });
-                            });
+                        // INSTEAD of creating right away, return it to the frontend for confirmation
+                        return res.status(200).json({
+                            success: true,
+                            reply: {
+                                role: 'assistant',
+                                content: "I've extracted the user details. Please review and confirm below before I create the account.",
+                                action: 'CONFIRM_CREATE_USER',
+                                payload: parsedAction
+                            }
+                        });
                     } else {
                         res.status(200).json({ success: true, reply: { role: 'assistant', content: replyContent } });
                     }
@@ -90,13 +108,40 @@ router.post('/api/assistant/chat', async (req, res) => {
             // Normal conversational reply
             res.status(200).json({
                 success: true,
-                reply: ollamaResponse.data.message
+                reply: { role: 'assistant', content: ollamaResponse.data.message.content }
             });
         }
 
     } catch (error) {
         console.error("AI Backend Error:", error.message);
         res.status(500).json({ success: false, error: "AI Assistant is currently unavailable." });
+    }
+});
+
+router.post('/api/assistant/execute-user-creation', async (req, res) => {
+    try {
+        const authHeader = req.headers['authorization'];
+        if (!authHeader) return res.status(401).json({ error: "Missing token" });
+
+        const token = authHeader.split(' ')[1];
+        const decoded = jwt.verify(token, JWT_SECRET);
+
+        db.query("SELECT 1 FROM coordinator c JOIN users u ON c.user_id = u.user_id WHERE c.user_id = ? LIMIT 1", [decoded.user_id], (err, results) => {
+            if (err || results.length === 0) {
+                return res.status(403).json({ error: "Access Denied: Not a coordinator." });
+            }
+
+            const { email, password, fullName, coOrgName, expertise, affiliation } = req.body;
+
+            db.query("CALL sp_signup_normal_user(?, ?, ?, ?, ?, ?, ?)",
+                [email, password, fullName, null, coOrgName, expertise, affiliation],
+                (err, spResults) => {
+                    if (err) return res.status(500).json({ error: err.message });
+                    res.json({ success: true, message: "User created successfully!" });
+                });
+        });
+    } catch (error) {
+        res.status(401).json({ error: "Invalid token" });
     }
 });
 
