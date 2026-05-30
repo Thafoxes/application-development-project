@@ -101,6 +101,11 @@ export const apiService = {
     return response.data;
   },
 
+  getRecentUsers: async () => {
+    const response = await axios.get(`${API_BASE_URL}/api/users/recent`);
+    return response.data;
+  },
+
   createUser: async (userData) => {
     const response = await axios.post(`${API_BASE_URL}/api/users`, userData);
     return response.data;
