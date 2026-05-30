@@ -41,10 +41,11 @@ const selectSchedule = (newId) => {
       return
     }
   }
-  selectedScheduleId.value = newId
-  editingOwnerIdentifier.value = newId
-  
   const tb = calendarStore.sessionData?.timetables.find(t => t.time_table_id === newId)
+  selectedScheduleId.value = newId
+  editingOwnerIdentifier.value = tb 
+    ? (tb.class_id != null ? tb.section_name : (tb.staff_email || tb.staff_name || tb.user_id)) 
+    : newId
   if (tb && tb.schedule) {
     calendarData.value = {
       weekly_recurring_occupancy: JSON.parse(JSON.stringify(tb.schedule.weekly_recurring || [])),
@@ -65,7 +66,7 @@ const saveTimeTable = async () => {
   if (!tb) return
   
   // Parse the input as targetId for updates
-  const targetId = parseInt(editingOwnerIdentifier.value.trim()) || null;
+  const targetId = parseInt(String(editingOwnerIdentifier.value).trim()) || null;
   const newUserId = tb.class_id != null ? null : (targetId || tb.user_id);
   const newClassId = tb.class_id != null ? (targetId || tb.class_id) : null;
     
