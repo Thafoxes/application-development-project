@@ -99,5 +99,15 @@ export const apiService = {
       schedule_json: scheduleJson
     });
     return response.data;
+  },
+
+  searchUsers: async (query) => {
+    const response = await axios.get(`${API_BASE_URL}/api/users/search`, { params: { q: query } });
+    return response.data;
+  },
+
+  searchClasses: async (query, sessionId) => {
+    const response = await axios.get(`${API_BASE_URL}/api/classes/search`, { params: { q: query, session_id: sessionId } });
+    return response.data;
   }
 };
