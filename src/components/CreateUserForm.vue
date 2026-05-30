@@ -1,8 +1,10 @@
 <script setup>
 import { ref } from 'vue'
 import { apiService } from '@/services/api'
+import { Eye, EyeOff } from 'lucide-vue-next'
 
 const emit = defineEmits(['user-created'])
+const showPassword = ref(false)
 
 const form = ref({
   fullName: '',
@@ -173,7 +175,23 @@ const submitForm = async () => {
       <!-- Password -->
       <div class="flex flex-col gap-2">
         <label class="font-semibold text-gray-800">Password *</label>
-        <input v-model="form.password" type="password" required placeholder="Enter temporary password" class="border border-gray-300 p-3 rounded focus:outline-none focus:border-[#5c001f]" />
+        <div class="relative flex items-center">
+          <input 
+            v-model="form.password" 
+            :type="showPassword ? 'text' : 'password'" 
+            required 
+            placeholder="Enter temporary password" 
+            class="border border-gray-300 p-3 rounded focus:outline-none focus:border-[#5c001f] w-full pr-12" 
+          />
+          <button 
+            type="button" 
+            @click="showPassword = !showPassword" 
+            class="absolute right-3 text-gray-400 hover:text-gray-600 focus:outline-none border-none bg-transparent cursor-pointer p-1"
+          >
+            <Eye v-if="!showPassword" class="h-5 w-5" />
+            <EyeOff v-else class="h-5 w-5" />
+          </button>
+        </div>
       </div>
 
       <!-- Phone Number -->

@@ -4,6 +4,7 @@ const router = express.Router();
 
 const jwt = require('jsonwebtoken');
 const mysql = require("mysql2");
+const bcrypt = require("bcrypt");
 
 const db = mysql.createConnection({
     host: process.env.DB_HOST,
@@ -126,15 +127,18 @@ router.post('/api/assistant/execute-user-creation', async (req, res) => {
         const token = authHeader.split(' ')[1];
         const decoded = jwt.verify(token, JWT_SECRET);
 
-        db.query("SELECT 1 FROM coordinator c JOIN users u ON c.user_id = u.user_id WHERE c.user_id = ? LIMIT 1", [decoded.user_id], (err, results) => {
+        db.query("SELECT 1 FROM coordinator c JOIN users u ON c.user_id = u.user_id WHERE c.user_id = ? LIMIT 1", [decoded.user_id], async (err, results) => {
             if (err || results.length === 0) {
                 return res.status(403).json({ error: "Access Denied: Not a coordinator." });
             }
 
             const { email, password, fullName, phoneNumber, coOrgName, expertise, affiliation } = req.body;
 
+            const pepper = process.env.SECRET_PEPPER || "";
+            const hashedPassword = await bcrypt.hash(password + pepper, 10);
+
             db.query("CALL sp_signup_normal_user(?, ?, ?, ?, ?, ?, ?)",
-                [email, password, fullName, phoneNumber, coOrgName, expertise, affiliation],
+                [email, hashedPassword, fullName, phoneNumber || null, coOrgName, expertise, affiliation],
                 (err, spResults) => {
                     if (err) return res.status(500).json({ error: err.message });
                     res.json({ success: true, message: "User created successfully!" });
