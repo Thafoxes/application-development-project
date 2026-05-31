@@ -1,9 +1,11 @@
 <script setup>
 import AppHeader from "@/components/AppHeader.vue";
 import AppFooter from "@/components/AppFooter.vue";
+import { useRouter } from 'vue-router'
 import { useCalendarStore } from "@/stores/calendarStore";
 
 const calendarStore = useCalendarStore();
+const router = useRouter()
 </script>
 
 <template>
@@ -49,6 +51,7 @@ const calendarStore = useCalendarStore();
           <button
             type="submit"
             class="bg-utm-maroon hover:bg-[#4a0019] text-white rounded-3xl font-medium transition-colors mt-2 px-8 py-3"
+            @click="router.push('/create-fyp')"
           >
             Create FYP
           </button>

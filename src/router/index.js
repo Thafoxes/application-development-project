@@ -53,6 +53,12 @@ const router = createRouter({
       name: 'stud-dashboard',
       component: () => import('../views/student/StudDashboardView.vue'),
       meta: { requiresAuth: true }
+    },
+    {
+      path: '/create-fyp',
+      name: 'create-fyp',
+      component: () => import('../views/student/CreateFypView.vue'),
+      meta: { requiresAuth: true }
     }
   ],
 })
