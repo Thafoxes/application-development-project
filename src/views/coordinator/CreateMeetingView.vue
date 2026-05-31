@@ -299,6 +299,17 @@ const generateSchedule = async () => {
   }
 }
 
+const allowedDays = ref([1, 2, 3, 4, 5])
+const toggleAllowedDay = (val) => {
+  if (allowedDays.value.includes(val)) {
+    if (allowedDays.value.length > 1) {
+      allowedDays.value = allowedDays.value.filter((d) => d !== val)
+    }
+  } else {
+    allowedDays.value.push(val)
+  }
+}
+
 const isAutoScheduling = ref(false)
 
 const autoScheduleAll = async () => {
@@ -310,6 +321,7 @@ const autoScheduleAll = async () => {
       startDate: startingDate.value,
       endDate: endingDate.value,
       duration: meetingDuration.value,
+      allowedDays: allowedDays.value,
       avoidWeekend: avoidWeekend.value,
       avoidOffWorkingHour: avoidOffWorkingHour.value,
       workingHourStart: workingHourStart.value,
@@ -739,6 +751,33 @@ const autoScheduleAll = async () => {
                     v-model="endingDate"
                     class="rounded-lg px-2 py-1.5 text-center bg-white border border-gray-200 shadow-inner text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#5C001F]/50 w-full transition-all"
                   />
+                </div>
+              </div>
+
+              <!-- Allowed Weekdays Selector Row -->
+              <div class="flex flex-col gap-1.5 mt-1">
+                <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wide text-center">Allowed Days</label>
+                <div class="flex justify-between gap-1 px-1">
+                  <button 
+                    v-for="day in [
+                      { label: 'M', value: 1 },
+                      { label: 'T', value: 2 },
+                      { label: 'W', value: 3 },
+                      { label: 'T', value: 4 },
+                      { label: 'F', value: 5 },
+                      { label: 'S', value: 6 },
+                      { label: 'S', value: 7 }
+                    ]" 
+                    :key="day.value"
+                    type="button"
+                    @click="toggleAllowedDay(day.value)"
+                    class="w-7 h-7 rounded-full text-xs font-bold transition-all flex items-center justify-center cursor-pointer border"
+                    :class="allowedDays.includes(day.value) 
+                      ? 'bg-[#5C001F] text-[#FFFFAB] border-[#5C001F] shadow-sm' 
+                      : 'bg-white text-gray-400 border-gray-200 hover:border-[#5C001F]/30'"
+                  >
+                    {{ day.label }}
+                  </button>
                 </div>
               </div>
 

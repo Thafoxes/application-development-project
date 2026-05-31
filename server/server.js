@@ -532,6 +532,7 @@ app.post("/api/timetable/auto-assign", async (req, res) => {
     startDate,
     endDate,
     duration,
+    allowedDays,
     avoidWeekend,
     avoidOffWorkingHour,
     workingHourStart,
@@ -722,9 +723,17 @@ app.post("/api/timetable/auto-assign", async (req, res) => {
     for (const dateStr of dates) {
       if (scheduled) break;
 
+      const [y, m, dayNum] = dateStr.split('-').map(Number);
+      const dayOfWeek = new Date(Date.UTC(y, m - 1, dayNum)).getUTCDay();
+      const jsDayOfWeek = dayOfWeek === 0 ? 7 : dayOfWeek;
+
+      if (allowedDays && Array.isArray(allowedDays) && allowedDays.length > 0) {
+        if (!allowedDays.includes(jsDayOfWeek)) {
+          continue;
+        }
+      }
+
       if (avoidWeekend) {
-        const [y, m, dayNum] = dateStr.split('-').map(Number);
-        const dayOfWeek = new Date(Date.UTC(y, m - 1, dayNum)).getUTCDay();
         if (dayOfWeek === 0 || dayOfWeek === 6) {
           continue;
         }

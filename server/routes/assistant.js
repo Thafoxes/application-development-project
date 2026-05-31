@@ -25,10 +25,10 @@ The JSON must be exactly in this format:
 \`\`\`
 If you do not know a field, leave it as an empty string. You must provide a temporary password (e.g. "Temp1234!") if one is not specified.
 
-IMPORTANT AGENT TOOL FOR SCHEDULING: If the user explicitly asks you to schedule, auto-assign, or arrange meetings, you must extract the date range and duration, and output a JSON block at the very end of your message.
+IMPORTANT AGENT TOOL FOR SCHEDULING: If the user explicitly asks you to schedule, auto-assign, or arrange meetings, you must extract the date range, duration, and day-of-week constraints, and output a JSON block at the very end of your message.
 The JSON must be exactly in this format:
 \`\`\`json
-{"action": "AUTO_SCHEDULE_MEETINGS", "startDate": "<YYYY-MM-DD>", "endDate": "<YYYY-MM-DD>", "duration": <Duration>}
+{"action": "AUTO_SCHEDULE_MEETINGS", "startDate": "<YYYY-MM-DD>", "endDate": "<YYYY-MM-DD>", "duration": <Duration>, "allowedDays": [<Array of numbers 1-7, where 1 is Monday and 7 is Sunday. E.g. [2] for Tuesdays only. Default is [1,2,3,4,5] if not specified or restricted>]}
 \`\`\`
 If dates are not specified or are unclear, provide sensible defaults (e.g., startDate: "2026-06-28", endDate: "2026-06-30", duration: 10). Keep your responses concise.`;
 

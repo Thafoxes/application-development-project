@@ -173,6 +173,32 @@
                   />
                 </label>
 
+                <div class="flex flex-col gap-1.5 mt-1">
+                  <span class="text-xs font-bold text-gray-500 uppercase">Allowed Days:</span>
+                  <div class="flex gap-1.5 mt-1">
+                    <button
+                      v-for="day in [
+                        { label: 'M', value: 1 },
+                        { label: 'T', value: 2 },
+                        { label: 'W', value: 3 },
+                        { label: 'T', value: 4 },
+                        { label: 'F', value: 5 },
+                        { label: 'S', value: 6 },
+                        { label: 'S', value: 7 }
+                      ]"
+                      :key="day.value"
+                      type="button"
+                      @click="toggleWidgetAllowedDay(msg, day.value)"
+                      class="w-7 h-7 rounded-full text-xs font-bold transition-all flex items-center justify-center cursor-pointer border"
+                      :class="msg.payload.allowedDays?.includes(day.value)
+                        ? 'bg-[#5C001F] text-[#f8be17] border-[#5C001F] shadow-sm'
+                        : 'bg-white text-gray-400 border-gray-200'"
+                    >
+                      {{ day.label }}
+                    </button>
+                  </div>
+                </div>
+
                 <div class="flex justify-end gap-2 mt-2">
                   <button
                     @click="cancelAction(msg)"
@@ -449,6 +475,7 @@ const executeAutoSchedule = async (msg) => {
         startDate: msg.payload.startDate,
         endDate: msg.payload.endDate,
         duration: msg.payload.duration || 10,
+        allowedDays: msg.payload.allowedDays || [1, 2, 3, 4, 5],
         avoidWeekend: true,
         avoidOffWorkingHour: true,
         workingHourStart: '08:00',
@@ -490,6 +517,19 @@ const executeAutoSchedule = async (msg) => {
   } finally {
     msg.isExecuting = false
     scrollToBottom()
+  }
+}
+
+const toggleWidgetAllowedDay = (msg, val) => {
+  if (!msg.payload.allowedDays) {
+    msg.payload.allowedDays = [1, 2, 3, 4, 5]
+  }
+  if (msg.payload.allowedDays.includes(val)) {
+    if (msg.payload.allowedDays.length > 1) {
+      msg.payload.allowedDays = msg.payload.allowedDays.filter(d => d !== val)
+    }
+  } else {
+    msg.payload.allowedDays.push(val)
   }
 }
 </script>
