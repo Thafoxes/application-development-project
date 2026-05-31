@@ -639,8 +639,8 @@ app.post("/api/timetable/auto-assign", async (req, res) => {
 
     // B. Weekly recurring
     if (schedule.weekly_recurring && Array.isArray(schedule.weekly_recurring)) {
-      const d = new Date(dateStr);
-      const jsDay = d.getDay();
+      const [y, m, dayNum] = dateStr.split('-').map(Number);
+      const jsDay = new Date(Date.UTC(y, m - 1, dayNum)).getUTCDay();
       const jsonDayOfWeek = jsDay === 0 ? 7 : jsDay; // 0 (Sun) -> 7 (Sun)
       
       const recurringDay = schedule.weekly_recurring.find(r => r.day_of_week === jsonDayOfWeek);
@@ -656,15 +656,17 @@ app.post("/api/timetable/auto-assign", async (req, res) => {
     return false;
   };
 
-  // Generate date list
+  // Generate date list (timezone-independent)
   const getDatesInRange = (startStr, endStr) => {
     const dates = [];
-    const start = new Date(startStr);
-    const end = new Date(endStr);
-    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-      let month = '' + (d.getMonth() + 1);
-      let day = '' + d.getDate();
-      const year = d.getFullYear();
+    const [sYear, sMonth, sDay] = startStr.split('-').map(Number);
+    const [eYear, eMonth, eDay] = endStr.split('-').map(Number);
+    const start = new Date(Date.UTC(sYear, sMonth - 1, sDay));
+    const end = new Date(Date.UTC(eYear, eMonth - 1, eDay));
+    for (let d = new Date(start); d <= end; d.setUTCDate(d.getUTCDate() + 1)) {
+      let month = '' + (d.getUTCMonth() + 1);
+      let day = '' + d.getUTCDate();
+      const year = d.getUTCFullYear();
       if (month.length < 2) month = '0' + month;
       if (day.length < 2) day = '0' + day;
       dates.push([year, month, day].join('-'));
@@ -721,7 +723,8 @@ app.post("/api/timetable/auto-assign", async (req, res) => {
       if (scheduled) break;
 
       if (avoidWeekend) {
-        const dayOfWeek = new Date(dateStr).getDay();
+        const [y, m, dayNum] = dateStr.split('-').map(Number);
+        const dayOfWeek = new Date(Date.UTC(y, m - 1, dayNum)).getUTCDay();
         if (dayOfWeek === 0 || dayOfWeek === 6) {
           continue;
         }
