@@ -2,12 +2,12 @@
 defineProps({
   currentStep: {
     type: Number,
-    required: true
+    required: true,
   },
   steps: {
     type: Array,
-    required: true
-  }
+    required: true,
+  },
 })
 defineEmits(['step-click'])
 </script>
@@ -36,7 +36,7 @@ defineEmits(['step-click'])
           currentStep >= index + 1
             ? 'bg-[#5c001f] text-white border-[#5c001f]'
             : 'bg-white text-[#5c001f] border-[#5c001f]',
-          'rounded-[20px] size-[40px] flex items-center justify-center shrink-0 border-2 transition-colors duration-300'
+          'rounded-[20px] size-[40px] flex items-center justify-center shrink-0 border-2 transition-colors duration-300',
         ]"
       >
         <span class="font-medium text-[16px]">{{ String(index + 1).padStart(2, '0') }}</span>

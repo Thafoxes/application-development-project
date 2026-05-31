@@ -200,15 +200,15 @@ const setActiveSession = async (id) => {
 
               <!-- Status Column -->
               <div class="flex-1 flex justify-center items-center">
-                <span 
-                  v-if="session.is_active == 1" 
+                <span
+                  v-if="session.is_active == 1"
                   class="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full uppercase tracking-wide border border-green-200"
                 >
                   Active
                 </span>
-                <button 
+                <button
                   v-else
-                  @click="setActiveSession(session.fyp_session_id)" 
+                  @click="setActiveSession(session.fyp_session_id)"
                   class="px-3 py-1 bg-gray-100 text-gray-500 text-xs font-bold rounded-full uppercase tracking-wide border border-gray-300 hover:bg-[#5c001f] hover:text-white hover:border-[#5c001f] transition-colors"
                 >
                   Inactive
@@ -251,20 +251,18 @@ const setActiveSession = async (id) => {
             <div v-if="sessions.length === 0" class="p-8 text-center text-gray-500 bg-white">
               No sessions found. Go to the Dashboard to create one!
             </div>
+          </div>
         </div>
-      </div>
-        
-     
       </main>
     </div>
     <!-- Footer -->
     <AppFooter class="mt-auto -mb-[30px]" />
 
     <!-- Create Session Modal -->
-    <CreateSessionModal 
-      v-if="isModalOpen" 
-      @close="isModalOpen = false" 
-      @create="handleSessionCreated" 
+    <CreateSessionModal
+      v-if="isModalOpen"
+      @close="isModalOpen = false"
+      @create="handleSessionCreated"
     />
   </div>
 </template>

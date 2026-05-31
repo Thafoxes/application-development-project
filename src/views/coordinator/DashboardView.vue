@@ -53,7 +53,13 @@ onMounted(() => {
         <!-- Session Heading & Action -->
         <div class="flex items-center justify-between w-full">
           <h1 class="font-['Inter'] font-bold text-[40px] text-black uppercase">
-            {{ calendarStore.isLoading ? 'Loading session...' : (calendarStore.activeSessionId ? 'Session ' + calendarStore.activeSessionId : 'No active session') }}
+            {{
+              calendarStore.isLoading
+                ? 'Loading session...'
+                : calendarStore.activeSessionId
+                  ? 'Session ' + calendarStore.activeSessionId
+                  : 'No active session'
+            }}
           </h1>
           <button
             @click="isModalOpen = true"
@@ -151,8 +157,6 @@ onMounted(() => {
             </div>
           </div>
         </div>
-
-       
       </main>
     </div>
     <!-- Footer -->

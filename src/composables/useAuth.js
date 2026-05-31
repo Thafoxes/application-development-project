@@ -23,6 +23,6 @@ export function useAuth() {
     user,
     token,
     login,
-    logout
+    logout,
   }
 }

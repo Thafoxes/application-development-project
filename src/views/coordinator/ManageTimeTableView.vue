@@ -22,12 +22,12 @@ const manualForm = ref({
   startWeekday: 1,
   startTime: '',
   endTime: '',
-  isRecurring: true
+  isRecurring: true,
 })
 
 const calendarData = ref({
   weekly_recurring_occupancy: [],
-  specific_calendar_events: []
+  specific_calendar_events: [],
 })
 
 const isUploading = ref(false)
@@ -36,9 +36,9 @@ const uploadError = ref('')
 const handleFileUpload = async (event) => {
   const file = event.target.files[0]
   if (!file) return
-  
+
   uploadError.value = ''
-  
+
   // Basic error handling for file types
   if (!['image/png', 'image/jpeg', 'image/jpg'].includes(file.type)) {
     uploadError.value = 'Invalid file type. Please upload a PNG or JPEG.'
@@ -46,7 +46,7 @@ const handleFileUpload = async (event) => {
   }
 
   isUploading.value = true
-  
+
   try {
     const formData = new FormData()
     formData.append('image', file)
@@ -54,14 +54,14 @@ const handleFileUpload = async (event) => {
     // Call our Node.js AI backend to process the image with Gemma 4
     const response = await fetch('http://localhost:3000/api/assistant/analyze-timetable', {
       method: 'POST',
-      body: formData
+      body: formData,
     })
 
     const result = await response.json()
 
     if (response.ok && result.success) {
-      if (result.data.target_type) targetType.value = result.data.target_type;
-      if (result.data.target_name) targetName.value = result.data.target_name;
+      if (result.data.target_type) targetType.value = result.data.target_type
+      if (result.data.target_name) targetName.value = result.data.target_name
 
       // Update calendarData. Map backend's expected JSON schema keys to the frontend state names.
       // We append so we don't destroy manually added entries, or we can replace it.
@@ -70,14 +70,14 @@ const handleFileUpload = async (event) => {
       const newSpecific = result.data.specific_events || []
 
       // Give them slot_ids since backend might not generate it
-      newRecurring.forEach(day => {
+      newRecurring.forEach((day) => {
         if (day.slots) {
-          day.slots.forEach(slot => {
+          day.slots.forEach((slot) => {
             slot.slot_id = Date.now().toString() + '_' + Math.random().toString(36).substring(7)
           })
         }
       })
-      newSpecific.forEach(event => {
+      newSpecific.forEach((event) => {
         event.event_id = Date.now().toString() + '_' + Math.random().toString(36).substring(7)
       })
 
@@ -87,7 +87,7 @@ const handleFileUpload = async (event) => {
       uploadError.value = result.error || 'Failed to process image'
     }
   } catch (error) {
-    console.error("Upload error:", error)
+    console.error('Upload error:', error)
     uploadError.value = 'An error occurred while uploading. Please ensure the backend is running.'
   } finally {
     isUploading.value = false
@@ -96,7 +96,7 @@ const handleFileUpload = async (event) => {
   }
 }
 
-const jsDayToJsonDay = (jsDay) => jsDay === 0 ? 7 : jsDay
+const jsDayToJsonDay = (jsDay) => (jsDay === 0 ? 7 : jsDay)
 
 const isCreating = ref(false)
 
@@ -104,13 +104,15 @@ const searchResults = ref([])
 const showDropdown = ref(false)
 const selectedTargetId = ref(null)
 
-
 let searchTimeout = null
 watch(targetName, (newVal) => {
-  if (selectedTargetId.value && newVal !== searchResults.value.find(r => r.id === selectedTargetId.value)?.value) {
+  if (
+    selectedTargetId.value &&
+    newVal !== searchResults.value.find((r) => r.id === selectedTargetId.value)?.value
+  ) {
     selectedTargetId.value = null // reset if user starts typing something else
   }
-  
+
   if (newVal.length >= 3 && !selectedTargetId.value) {
     clearTimeout(searchTimeout)
     searchTimeout = setTimeout(async () => {
@@ -118,10 +120,18 @@ watch(targetName, (newVal) => {
         const sessionId = calendarStore.activeSessionId
         if (targetType.value === 'Lecturer') {
           const results = await apiService.searchUsers(newVal, sessionId)
-          searchResults.value = results.map(u => ({ id: u.user_id, label: `${u.full_name} (${u.email})`, value: u.email }))
+          searchResults.value = results.map((u) => ({
+            id: u.user_id,
+            label: `${u.full_name} (${u.email})`,
+            value: u.email,
+          }))
         } else {
           const results = await apiService.searchClasses(newVal, sessionId)
-          searchResults.value = results.map(c => ({ id: c.class_id, label: c.section_name, value: c.section_name }))
+          searchResults.value = results.map((c) => ({
+            id: c.class_id,
+            label: c.section_name,
+            value: c.section_name,
+          }))
         }
         showDropdown.value = true
       } catch (e) {
@@ -141,37 +151,37 @@ const selectSearchResult = (result) => {
 
 const createTimeTable = async () => {
   if (!selectedTargetId.value) {
-    alert("Please search and select a valid identifier from the dropdown.")
+    alert('Please search and select a valid identifier from the dropdown.')
     return
   }
-  
+
   // Ensure calendarStore is ready
   if (!calendarStore.activeSessionId) {
     await calendarStore.fetchActiveSession()
   }
   const fypSessionId = calendarStore.activeSessionId
   if (!fypSessionId) {
-    alert("No active session found. Please set an active session first.")
+    alert('No active session found. Please set an active session first.')
     return
   }
 
-  const targetId = selectedTargetId.value;
-  const userId = targetType.value === 'Lecturer' ? targetId : null;
-  const classId = targetType.value === 'Section Class' ? targetId : null;
-  
+  const targetId = selectedTargetId.value
+  const userId = targetType.value === 'Lecturer' ? targetId : null
+  const classId = targetType.value === 'Section Class' ? targetId : null
+
   const scheduleJson = {
     weekly_recurring: calendarData.value.weekly_recurring_occupancy,
-    specific_events: calendarData.value.specific_calendar_events
+    specific_events: calendarData.value.specific_calendar_events,
   }
 
   isCreating.value = true
   try {
     await apiService.createCalendarSchedule(fypSessionId, userId, classId, scheduleJson)
-    alert("Time table created successfully!")
+    alert('Time table created successfully!')
     router.push('/calendar')
   } catch (error) {
-    console.error("Failed to create time table:", error)
-    alert("Failed to create time table. Please try again.")
+    console.error('Failed to create time table:', error)
+    alert('Failed to create time table. Please try again.')
   } finally {
     isCreating.value = false
   }
@@ -192,17 +202,27 @@ const addManualEntry = () => {
       start_time: manualForm.value.startTime,
       end_time: manualForm.value.endTime,
       label: manualForm.value.label,
-      location: ''
+      location: '',
     }
-    const existingDay = calendarData.value.weekly_recurring_occupancy.find(d => d.day_of_week === manualForm.value.startWeekday)
+    const existingDay = calendarData.value.weekly_recurring_occupancy.find(
+      (d) => d.day_of_week === manualForm.value.startWeekday,
+    )
     if (existingDay) {
       existingDay.slots.push(newSlot)
     } else {
-      const dayNames = {1: 'Monday', 2: 'Tuesday', 3: 'Wednesday', 4: 'Thursday', 5: 'Friday', 6: 'Saturday', 7: 'Sunday'}
+      const dayNames = {
+        1: 'Monday',
+        2: 'Tuesday',
+        3: 'Wednesday',
+        4: 'Thursday',
+        5: 'Friday',
+        6: 'Saturday',
+        7: 'Sunday',
+      }
       calendarData.value.weekly_recurring_occupancy.push({
         day_of_week: manualForm.value.startWeekday,
         day_name: dayNames[manualForm.value.startWeekday],
-        slots: [newSlot]
+        slots: [newSlot],
       })
     }
   } else {
@@ -224,7 +244,7 @@ const addManualEntry = () => {
         target_date: targetDate,
         title: manualForm.value.label,
         start_time: manualForm.value.startTime,
-        end_time: manualForm.value.endTime
+        end_time: manualForm.value.endTime,
       })
     }
   }
@@ -235,36 +255,39 @@ const addManualEntry = () => {
 }
 
 const removeRecurringSlot = (dayOfWeek, slotId) => {
-  const day = calendarData.value.weekly_recurring_occupancy.find(d => d.day_of_week === dayOfWeek)
+  const day = calendarData.value.weekly_recurring_occupancy.find((d) => d.day_of_week === dayOfWeek)
   if (day) {
-    day.slots = day.slots.filter(s => s.slot_id !== slotId)
+    day.slots = day.slots.filter((s) => s.slot_id !== slotId)
     if (day.slots.length === 0) {
-      calendarData.value.weekly_recurring_occupancy = calendarData.value.weekly_recurring_occupancy.filter(d => d.day_of_week !== dayOfWeek)
+      calendarData.value.weekly_recurring_occupancy =
+        calendarData.value.weekly_recurring_occupancy.filter((d) => d.day_of_week !== dayOfWeek)
     }
   }
 }
 
 const removeSpecificEvent = (eventId) => {
-  calendarData.value.specific_calendar_events = calendarData.value.specific_calendar_events.filter(e => e.event_id !== eventId)
+  calendarData.value.specific_calendar_events = calendarData.value.specific_calendar_events.filter(
+    (e) => e.event_id !== eventId,
+  )
 }
 
 const editModal = ref({
   isOpen: false,
-  type: '', 
-  dayOfWeek: null, 
-  slotId: null,    
-  eventId: null,   
+  type: '',
+  dayOfWeek: null,
+  slotId: null,
+  eventId: null,
   form: {
-    title: '', 
+    title: '',
     startTime: '',
-    endTime: ''
-  }
+    endTime: '',
+  },
 })
 
 const openEditModal = (type, item, dayOfWeek = null) => {
   editModal.value.type = type
   editModal.value.isOpen = true
-  
+
   if (type === 'recurring') {
     editModal.value.dayOfWeek = dayOfWeek
     editModal.value.slotId = item.slot_id
@@ -286,9 +309,11 @@ const handleModalSave = (updatedData) => {
 
 const saveEditModal = () => {
   if (editModal.value.type === 'recurring') {
-    const day = calendarData.value.weekly_recurring_occupancy.find(d => d.day_of_week === editModal.value.dayOfWeek)
+    const day = calendarData.value.weekly_recurring_occupancy.find(
+      (d) => d.day_of_week === editModal.value.dayOfWeek,
+    )
     if (day) {
-      const slot = day.slots.find(s => s.slot_id === editModal.value.slotId)
+      const slot = day.slots.find((s) => s.slot_id === editModal.value.slotId)
       if (slot) {
         slot.label = editModal.value.form.title
         slot.start_time = editModal.value.form.startTime
@@ -296,7 +321,9 @@ const saveEditModal = () => {
       }
     }
   } else {
-    const event = calendarData.value.specific_calendar_events.find(e => e.event_id === editModal.value.eventId)
+    const event = calendarData.value.specific_calendar_events.find(
+      (e) => e.event_id === editModal.value.eventId,
+    )
     if (event) {
       event.title = editModal.value.form.title
       event.start_time = editModal.value.form.startTime
@@ -311,35 +338,60 @@ const closeEditModal = () => {
 }
 
 const editRecurringSlot = (dayOfWeek, slotId) => {
-  const day = calendarData.value.weekly_recurring_occupancy.find(d => d.day_of_week === dayOfWeek)
+  const day = calendarData.value.weekly_recurring_occupancy.find((d) => d.day_of_week === dayOfWeek)
   if (!day) return
-  const slot = day.slots.find(s => s.slot_id === slotId)
+  const slot = day.slots.find((s) => s.slot_id === slotId)
   if (!slot) return
   openEditModal('recurring', slot, dayOfWeek)
 }
 
 const editSpecificEvent = (eventId) => {
-  const event = calendarData.value.specific_calendar_events.find(e => e.event_id === eventId)
+  const event = calendarData.value.specific_calendar_events.find((e) => e.event_id === eventId)
   if (!event) return
   openEditModal('specific', event)
 }
 
 // Calendar Month logic
-const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+const monthNames = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+]
 const dayHeaders = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
 const activeMonthLabel = computed(() => `${monthNames[currentMonth.value]} ${currentYear.value}`)
-const prevMonthLabel = computed(() => currentMonth.value === 0 ? monthNames[11] : monthNames[currentMonth.value - 1])
-const nextMonthLabel = computed(() => currentMonth.value === 11 ? monthNames[0] : monthNames[currentMonth.value + 1])
+const prevMonthLabel = computed(() =>
+  currentMonth.value === 0 ? monthNames[11] : monthNames[currentMonth.value - 1],
+)
+const nextMonthLabel = computed(() =>
+  currentMonth.value === 11 ? monthNames[0] : monthNames[currentMonth.value + 1],
+)
 
 const goToPrevMonth = () => {
-  if (currentMonth.value === 0) { currentMonth.value = 11; currentYear.value--; }
-  else { currentMonth.value--; }
+  if (currentMonth.value === 0) {
+    currentMonth.value = 11
+    currentYear.value--
+  } else {
+    currentMonth.value--
+  }
 }
 
 const goToNextMonth = () => {
-  if (currentMonth.value === 11) { currentMonth.value = 0; currentYear.value++; }
-  else { currentMonth.value++; }
+  if (currentMonth.value === 11) {
+    currentMonth.value = 0
+    currentYear.value++
+  } else {
+    currentMonth.value++
+  }
 }
 
 const calendarWeeks = computed(() => {
@@ -362,12 +414,12 @@ const calendarWeeks = computed(() => {
     const dateObj = new Date(year, month, d)
     const jsonDayOfWeek = jsDayToJsonDay(dateObj.getDay())
 
-    const dayEvents = (data.specific_calendar_events || []).filter(e => e.target_date === dateStr)
+    const dayEvents = (data.specific_calendar_events || []).filter((e) => e.target_date === dateStr)
     const recurringSlots = []
-    
-    for (const entry of (data.weekly_recurring_occupancy || [])) {
+
+    for (const entry of data.weekly_recurring_occupancy || []) {
       if (entry.day_of_week === jsonDayOfWeek) {
-        for (const slot of (entry.slots || [])) {
+        for (const slot of entry.slots || []) {
           recurringSlots.push({ ...slot, dayOfWeek: entry.day_of_week })
         }
       }
@@ -393,16 +445,20 @@ const calendarWeeks = computed(() => {
 
 // Sandbox
 const jsonTextarea = ref(JSON.stringify(calendarData.value, null, 2))
-watch(calendarData, (val) => {
-  jsonTextarea.value = JSON.stringify(val, null, 2)
-}, { deep: true })
+watch(
+  calendarData,
+  (val) => {
+    jsonTextarea.value = JSON.stringify(val, null, 2)
+  },
+  { deep: true },
+)
 const updateFromJson = () => {
   try {
     const parsed = JSON.parse(jsonTextarea.value)
     if (parsed.weekly_recurring_occupancy && parsed.specific_calendar_events) {
       calendarData.value = parsed
     }
-  } catch(e) {
+  } catch (e) {
     // Ignore invalid json during typing
   }
 }
@@ -417,28 +473,38 @@ const updateFromJson = () => {
       <main class="flex-1 flex flex-col px-[50px] py-[30px] overflow-y-auto">
         <!-- Breadcrumbs -->
         <div class="text-[#5c001f] text-sm mb-4">
-          <span class="hover:underline cursor-pointer" @click="router.push('/calendar')">Time table</span> &gt; 
+          <span class="hover:underline cursor-pointer" @click="router.push('/calendar')"
+            >Time table</span
+          >
+          &gt;
           <span class="font-bold underline">Add New Time Table</span>
         </div>
 
         <div class="flex flex-col lg:flex-row gap-8 mt-2 h-full">
-          
           <!-- LEFT PANEL -->
           <div class="flex-1 flex flex-col gap-6 lg:pr-8 lg:border-r-2 border-black/20">
             <h1 class="text-3xl font-bold text-black mb-2">Add New Time table</h1>
-            
+
             <!-- Mode Toggles -->
             <div class="flex flex-col xl:flex-row gap-4">
-              <button 
+              <button
                 @click="entryMode = 'manual'"
-                :class="entryMode === 'manual' ? 'bg-[#5c001f] text-white' : 'bg-gray-200 text-black hover:bg-gray-300'"
+                :class="
+                  entryMode === 'manual'
+                    ? 'bg-[#5c001f] text-white'
+                    : 'bg-gray-200 text-black hover:bg-gray-300'
+                "
                 class="px-6 py-3 rounded-full font-bold transition-colors text-sm shadow-md"
               >
                 Add in manually
               </button>
-              <button 
+              <button
                 @click="entryMode = 'upload'"
-                :class="entryMode === 'upload' ? 'bg-[#5c001f] text-white' : 'bg-gray-200 text-black hover:bg-gray-300'"
+                :class="
+                  entryMode === 'upload'
+                    ? 'bg-[#5c001f] text-white'
+                    : 'bg-gray-200 text-black hover:bg-gray-300'
+                "
                 class="px-6 py-3 rounded-full font-bold transition-colors text-sm shadow-md"
               >
                 Upload & AI Analyse
@@ -446,31 +512,56 @@ const updateFromJson = () => {
             </div>
 
             <!-- Upload Mode -->
-            <div v-if="entryMode === 'upload'" class="flex-1 flex flex-col items-center justify-center border-4 border-black rounded-3xl p-8 bg-[#e7ded3] relative shadow-inner min-h-[300px] max-h-[500px]">
+            <div
+              v-if="entryMode === 'upload'"
+              class="flex-1 flex flex-col items-center justify-center border-4 border-black rounded-3xl p-8 bg-[#e7ded3] relative shadow-inner min-h-[300px] max-h-[500px]"
+            >
               <p class="text-xl text-center font-bold mb-6">
-                Upload the time table<br>and<br>let AI analyse for you!
+                Upload the time table<br />and<br />let AI analyse for you!
               </p>
-              
-              <div class="relative w-24 h-24 mb-6 group cursor-pointer hover:scale-110 transition-transform">
-                <svg class="w-full h-full text-black group-hover:text-[#5c001f] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+
+              <div
+                class="relative w-24 h-24 mb-6 group cursor-pointer hover:scale-110 transition-transform"
+              >
+                <svg
+                  class="w-full h-full text-black group-hover:text-[#5c001f] transition-colors"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+                  />
                 </svg>
-                <input 
-                  type="file" 
-                  accept="image/png, image/jpeg, image/jpg" 
+                <input
+                  type="file"
+                  accept="image/png, image/jpeg, image/jpg"
                   class="absolute inset-0 opacity-0 cursor-pointer"
-                  @change="handleFileUpload" 
+                  @change="handleFileUpload"
                   :disabled="isUploading"
                 />
               </div>
 
-              <div v-if="uploadError" class="mt-4 text-red-600 font-bold bg-red-100 px-4 py-2 rounded-lg">
+              <div
+                v-if="uploadError"
+                class="mt-4 text-red-600 font-bold bg-red-100 px-4 py-2 rounded-lg"
+              >
                 {{ uploadError }}
               </div>
 
-              <div v-if="isUploading" class="absolute inset-0 bg-white/80 rounded-3xl flex flex-col items-center justify-center backdrop-blur-sm z-10">
-                <div class="w-16 h-16 border-4 border-gray-300 border-t-[#5c001f] rounded-full animate-spin"></div>
-                <p class="mt-4 font-bold text-[#5c001f] text-lg">Processing image with Gemma 4...</p>
+              <div
+                v-if="isUploading"
+                class="absolute inset-0 bg-white/80 rounded-3xl flex flex-col items-center justify-center backdrop-blur-sm z-10"
+              >
+                <div
+                  class="w-16 h-16 border-4 border-gray-300 border-t-[#5c001f] rounded-full animate-spin"
+                ></div>
+                <p class="mt-4 font-bold text-[#5c001f] text-lg">
+                  Processing image with Gemma 4...
+                </p>
               </div>
             </div>
 
@@ -480,11 +571,19 @@ const updateFromJson = () => {
               <div class="grid grid-cols-2 gap-4">
                 <div class="flex flex-col col-span-2">
                   <label class="font-medium text-sm mb-1">Label</label>
-                  <input v-model="manualForm.label" type="text" class="border border-gray-400 p-2 outline-none focus:border-[#5c001f] focus:ring-1 focus:ring-[#5c001f] rounded" placeholder="e.g. Advanced AI System" />
+                  <input
+                    v-model="manualForm.label"
+                    type="text"
+                    class="border border-gray-400 p-2 outline-none focus:border-[#5c001f] focus:ring-1 focus:ring-[#5c001f] rounded"
+                    placeholder="e.g. Advanced AI System"
+                  />
                 </div>
                 <div class="flex flex-col col-span-2">
                   <label class="font-medium text-sm mb-1">Start weekday</label>
-                  <select v-model="manualForm.startWeekday" class="border border-gray-400 p-2 outline-none focus:border-[#5c001f] focus:ring-1 focus:ring-[#5c001f] rounded">
+                  <select
+                    v-model="manualForm.startWeekday"
+                    class="border border-gray-400 p-2 outline-none focus:border-[#5c001f] focus:ring-1 focus:ring-[#5c001f] rounded"
+                  >
                     <option :value="1">Monday</option>
                     <option :value="2">Tuesday</option>
                     <option :value="3">Wednesday</option>
@@ -496,18 +595,36 @@ const updateFromJson = () => {
                 </div>
                 <div class="flex flex-col">
                   <label class="font-medium text-sm mb-1">Start time</label>
-                  <input v-model="manualForm.startTime" type="time" class="border border-gray-400 p-2 outline-none focus:border-[#5c001f] focus:ring-1 focus:ring-[#5c001f] rounded" />
+                  <input
+                    v-model="manualForm.startTime"
+                    type="time"
+                    class="border border-gray-400 p-2 outline-none focus:border-[#5c001f] focus:ring-1 focus:ring-[#5c001f] rounded"
+                  />
                 </div>
                 <div class="flex flex-col">
                   <label class="font-medium text-sm mb-1">End time</label>
-                  <input v-model="manualForm.endTime" type="time" class="border border-gray-400 p-2 outline-none focus:border-[#5c001f] focus:ring-1 focus:ring-[#5c001f] rounded" />
+                  <input
+                    v-model="manualForm.endTime"
+                    type="time"
+                    class="border border-gray-400 p-2 outline-none focus:border-[#5c001f] focus:ring-1 focus:ring-[#5c001f] rounded"
+                  />
                 </div>
                 <div class="flex items-center gap-2 mt-2 col-span-2">
-                  <input v-model="manualForm.isRecurring" type="checkbox" id="recurring" class="w-4 h-4 accent-[#5c001f] cursor-pointer" />
-                  <label for="recurring" class="font-medium text-sm cursor-pointer select-none">is Recurring</label>
+                  <input
+                    v-model="manualForm.isRecurring"
+                    type="checkbox"
+                    id="recurring"
+                    class="w-4 h-4 accent-[#5c001f] cursor-pointer"
+                  />
+                  <label for="recurring" class="font-medium text-sm cursor-pointer select-none"
+                    >is Recurring</label
+                  >
                 </div>
                 <div class="col-span-2 flex justify-end mt-4">
-                  <button @click="addManualEntry" class="bg-[#5c001f] text-white px-6 py-2 rounded-full font-bold hover:bg-[#4a0019] transition-colors shadow-md">
+                  <button
+                    @click="addManualEntry"
+                    class="bg-[#5c001f] text-white px-6 py-2 rounded-full font-bold hover:bg-[#4a0019] transition-colors shadow-md"
+                  >
                     Add new period
                   </button>
                 </div>
@@ -517,53 +634,99 @@ const updateFromJson = () => {
               <div class="mt-6 bg-white rounded-3xl p-6 flex flex-col gap-4 flex-1 shadow-md">
                 <h3 class="text-2xl font-bold">Time table</h3>
                 <div class="flex flex-col gap-3 max-h-[300px] overflow-y-auto pr-2">
-                  <template v-for="day in calendarData.weekly_recurring_occupancy" :key="day.day_of_week">
-                    <div v-for="slot in day.slots" :key="slot.slot_id" class="bg-[#5c001f] text-white p-3 rounded-lg flex flex-col relative group shadow-sm transition-transform hover:-translate-y-0.5">
-                      <button @click="removeRecurringSlot(day.day_of_week, slot.slot_id)" class="absolute top-2 right-2 text-white/70 hover:text-white font-bold hidden group-hover:block transition-colors">
+                  <template
+                    v-for="day in calendarData.weekly_recurring_occupancy"
+                    :key="day.day_of_week"
+                  >
+                    <div
+                      v-for="slot in day.slots"
+                      :key="slot.slot_id"
+                      class="bg-[#5c001f] text-white p-3 rounded-lg flex flex-col relative group shadow-sm transition-transform hover:-translate-y-0.5"
+                    >
+                      <button
+                        @click="removeRecurringSlot(day.day_of_week, slot.slot_id)"
+                        class="absolute top-2 right-2 text-white/70 hover:text-white font-bold hidden group-hover:block transition-colors"
+                      >
                         ✕
                       </button>
-                      <span class="font-bold text-sm">{{ slot.start_time }} - {{ slot.end_time }}</span>
+                      <span class="font-bold text-sm"
+                        >{{ slot.start_time }} - {{ slot.end_time }}</span
+                      >
                       <span class="text-sm font-medium mt-1">{{ slot.label }}</span>
-                      <span class="text-xs text-white/70 mt-1 uppercase tracking-wider">{{ day.day_name }}</span>
+                      <span class="text-xs text-white/70 mt-1 uppercase tracking-wider">{{
+                        day.day_name
+                      }}</span>
                     </div>
                   </template>
-                  <div v-for="event in calendarData.specific_calendar_events" :key="event.event_id" class="bg-[#e85d04] text-white p-3 rounded-lg flex flex-col relative group shadow-sm transition-transform hover:-translate-y-0.5">
-                    <button @click="removeSpecificEvent(event.event_id)" class="absolute top-2 right-2 text-white/70 hover:text-white font-bold hidden group-hover:block transition-colors">
+                  <div
+                    v-for="event in calendarData.specific_calendar_events"
+                    :key="event.event_id"
+                    class="bg-[#e85d04] text-white p-3 rounded-lg flex flex-col relative group shadow-sm transition-transform hover:-translate-y-0.5"
+                  >
+                    <button
+                      @click="removeSpecificEvent(event.event_id)"
+                      class="absolute top-2 right-2 text-white/70 hover:text-white font-bold hidden group-hover:block transition-colors"
+                    >
                       ✕
                     </button>
-                    <span class="font-bold text-sm">{{ event.start_time }} - {{ event.end_time }}</span>
+                    <span class="font-bold text-sm"
+                      >{{ event.start_time }} - {{ event.end_time }}</span
+                    >
                     <span class="text-sm font-medium mt-1">{{ event.title }}</span>
-                    <span class="text-xs text-white/70 mt-1 uppercase tracking-wider">{{ event.target_date }}</span>
+                    <span class="text-xs text-white/70 mt-1 uppercase tracking-wider">{{
+                      event.target_date
+                    }}</span>
                   </div>
                 </div>
-                <p v-if="calendarData.weekly_recurring_occupancy.length === 0 && calendarData.specific_calendar_events.length === 0" class="text-gray-500 text-center mt-4">No periods added yet.</p>
+                <p
+                  v-if="
+                    calendarData.weekly_recurring_occupancy.length === 0 &&
+                    calendarData.specific_calendar_events.length === 0
+                  "
+                  class="text-gray-500 text-center mt-4"
+                >
+                  No periods added yet.
+                </p>
               </div>
             </div>
-
           </div>
 
           <!-- RIGHT PANEL -->
           <div class="flex-[1.5] flex flex-col gap-4">
             <div class="flex justify-between items-start mb-2">
               <div class="flex flex-col gap-2">
-                <label class="text-sm font-medium text-gray-700">Time table for</label> <caption>This will only show non student time table that does not exist any time table in the system</caption>
-                <select v-model="targetType" class="border border-gray-400 p-2 w-64 outline-none focus:border-[#5c001f] rounded shadow-sm">
+                <label class="text-sm font-medium text-gray-700">Time table for</label>
+                <caption>
+                  This will only show non student time table that does not exist any time table in
+                  the system
+                </caption>
+                <select
+                  v-model="targetType"
+                  class="border border-gray-400 p-2 w-64 outline-none focus:border-[#5c001f] rounded shadow-sm"
+                >
                   <option value="Lecturer">Lecturer</option>
                   <option value="Section Class">Section Class</option>
                 </select>
-                <label class="text-sm font-medium mt-2 text-gray-700">{{ targetType === 'Lecturer' ? 'Search Lecturer or Staff name/email (min 3 chars)' : 'Search Section number (min 3 chars)' }}</label>
+                <label class="text-sm font-medium mt-2 text-gray-700">{{
+                  targetType === 'Lecturer'
+                    ? 'Search Lecturer or Staff name/email (min 3 chars)'
+                    : 'Search Section number (min 3 chars)'
+                }}</label>
                 <div class="relative">
-                  <input 
-                    v-model="targetName" 
-                    type="text" 
+                  <input
+                    v-model="targetName"
+                    type="text"
                     @focus="targetName.length >= 3 && !selectedTargetId && (showDropdown = true)"
-                    class="border border-gray-400 p-2 w-64 outline-none focus:border-[#5c001f] rounded shadow-sm" 
+                    class="border border-gray-400 p-2 w-64 outline-none focus:border-[#5c001f] rounded shadow-sm"
                     :placeholder="targetType === 'Lecturer' ? 'e.g. john@utm.my' : 'e.g. 01'"
                   />
-                  <div v-if="showDropdown" class="absolute z-50 w-64 mt-1 bg-white border border-gray-300 rounded shadow-lg max-h-48 overflow-y-auto">
-                    <div 
-                      v-for="res in searchResults" 
-                      :key="res.id" 
+                  <div
+                    v-if="showDropdown"
+                    class="absolute z-50 w-64 mt-1 bg-white border border-gray-300 rounded shadow-lg max-h-48 overflow-y-auto"
+                  >
+                    <div
+                      v-for="res in searchResults"
+                      :key="res.id"
                       @click="selectSearchResult(res)"
                       class="px-3 py-2 cursor-pointer hover:bg-gray-100 text-sm"
                     >
@@ -571,12 +734,17 @@ const updateFromJson = () => {
                     </div>
                     <div v-if="searchResults.length === 0" class="px-3 py-2 text-sm text-gray-500">
                       Not found.
-                      <router-link v-if="targetType === 'Lecturer'" to="/manage-user" class="text-[#5c001f] font-bold underline block mt-1">Create new user in Manage User</router-link>
+                      <router-link
+                        v-if="targetType === 'Lecturer'"
+                        to="/manage-user"
+                        class="text-[#5c001f] font-bold underline block mt-1"
+                        >Create new user in Manage User</router-link
+                      >
                     </div>
                   </div>
                 </div>
               </div>
-              <button 
+              <button
                 @click="createTimeTable"
                 :disabled="isCreating"
                 class="bg-[#5c001f] text-white px-8 py-3 rounded-full font-bold hover:bg-[#4a0019] transition-colors shadow-lg"
@@ -589,11 +757,17 @@ const updateFromJson = () => {
             <!-- Calendar Container -->
             <div class="bg-[#e7ded3] rounded-lg overflow-hidden shadow-lg border border-gray-300">
               <div class="flex items-center justify-between p-4 bg-white/50">
-                <button @click="goToPrevMonth" class="text-black font-bold hover:text-[#5c001f] transition-colors flex items-center gap-2">
+                <button
+                  @click="goToPrevMonth"
+                  class="text-black font-bold hover:text-[#5c001f] transition-colors flex items-center gap-2"
+                >
                   <span>&lt;</span> {{ prevMonthLabel }}
                 </button>
                 <h2 class="text-2xl font-bold text-[#5c001f]">{{ activeMonthLabel }}</h2>
-                <button @click="goToNextMonth" class="text-black font-bold hover:text-[#5c001f] transition-colors flex items-center gap-2">
+                <button
+                  @click="goToNextMonth"
+                  class="text-black font-bold hover:text-[#5c001f] transition-colors flex items-center gap-2"
+                >
                   {{ nextMonthLabel }} <span>&gt;</span>
                 </button>
               </div>
@@ -601,27 +775,66 @@ const updateFromJson = () => {
               <!-- Calendar Grid -->
               <div class="w-full bg-[#5c001f] text-white">
                 <div class="grid grid-cols-7">
-                  <div v-for="header in dayHeaders" :key="header" class="p-3 text-center font-bold text-sm border-r border-white/20 last:border-r-0">
+                  <div
+                    v-for="header in dayHeaders"
+                    :key="header"
+                    class="p-3 text-center font-bold text-sm border-r border-white/20 last:border-r-0"
+                  >
                     {{ header }}
                   </div>
                 </div>
               </div>
 
               <div class="bg-[#f0ece9]">
-                <div v-for="(week, wIdx) in calendarWeeks" :key="wIdx" class="grid grid-cols-7 border-b border-gray-300 last:border-b-0">
-                  <div v-for="(cell, dIdx) in week" :key="dIdx" class="min-h-[120px] border-r border-gray-300 last:border-r-0 p-1 flex flex-col gap-1 relative" :class="!cell.day ? 'bg-gray-200/50' : 'bg-white hover:bg-gray-50 transition-colors'">
-                    <span v-if="cell.day" class="text-sm font-medium pl-1 mt-1 text-gray-700">{{ cell.day }}</span>
-                    
+                <div
+                  v-for="(week, wIdx) in calendarWeeks"
+                  :key="wIdx"
+                  class="grid grid-cols-7 border-b border-gray-300 last:border-b-0"
+                >
+                  <div
+                    v-for="(cell, dIdx) in week"
+                    :key="dIdx"
+                    class="min-h-[120px] border-r border-gray-300 last:border-r-0 p-1 flex flex-col gap-1 relative"
+                    :class="
+                      !cell.day ? 'bg-gray-200/50' : 'bg-white hover:bg-gray-50 transition-colors'
+                    "
+                  >
+                    <span v-if="cell.day" class="text-sm font-medium pl-1 mt-1 text-gray-700">{{
+                      cell.day
+                    }}</span>
+
                     <!-- Render recurring slots -->
                     <template v-if="cell.day">
-                      <div v-for="slot in cell.recurringSlots" :key="slot.slot_id" @click="editRecurringSlot(slot.dayOfWeek, slot.slot_id)" class="bg-[#5c001f] text-white rounded p-1.5 text-[10px] leading-tight flex flex-col cursor-pointer hover:opacity-90 relative group shadow-sm">
-                        <button @click.stop="removeRecurringSlot(slot.dayOfWeek, slot.slot_id)" class="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center font-bold hidden group-hover:flex z-10 text-[8px] shadow">✕</button>
+                      <div
+                        v-for="slot in cell.recurringSlots"
+                        :key="slot.slot_id"
+                        @click="editRecurringSlot(slot.dayOfWeek, slot.slot_id)"
+                        class="bg-[#5c001f] text-white rounded p-1.5 text-[10px] leading-tight flex flex-col cursor-pointer hover:opacity-90 relative group shadow-sm"
+                      >
+                        <button
+                          @click.stop="removeRecurringSlot(slot.dayOfWeek, slot.slot_id)"
+                          class="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center font-bold hidden group-hover:flex z-10 text-[8px] shadow"
+                        >
+                          ✕
+                        </button>
                         <span class="font-bold">{{ slot.start_time }} - {{ slot.end_time }}</span>
                         <span class="truncate mt-0.5">{{ slot.label }}</span>
                       </div>
-                      <div v-for="event in cell.events" :key="event.event_id" @click="editSpecificEvent(event.event_id)" class="bg-[#e85d04] text-white rounded p-1.5 text-[10px] leading-tight flex flex-col cursor-pointer hover:opacity-90 relative group shadow-sm">
-                        <button @click.stop="removeSpecificEvent(event.event_id)" class="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center font-bold hidden group-hover:flex z-10 text-[8px] shadow">✕</button>
-                        <span class="font-bold" v-if="event.start_time">{{ event.start_time }} - {{ event.end_time }}</span>
+                      <div
+                        v-for="event in cell.events"
+                        :key="event.event_id"
+                        @click="editSpecificEvent(event.event_id)"
+                        class="bg-[#e85d04] text-white rounded p-1.5 text-[10px] leading-tight flex flex-col cursor-pointer hover:opacity-90 relative group shadow-sm"
+                      >
+                        <button
+                          @click.stop="removeSpecificEvent(event.event_id)"
+                          class="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center font-bold hidden group-hover:flex z-10 text-[8px] shadow"
+                        >
+                          ✕
+                        </button>
+                        <span class="font-bold" v-if="event.start_time"
+                          >{{ event.start_time }} - {{ event.end_time }}</span
+                        >
                         <span class="truncate mt-0.5">{{ event.title }}</span>
                       </div>
                     </template>
@@ -631,34 +844,36 @@ const updateFromJson = () => {
             </div>
 
             <!-- Developer Sandbox -->
-            <div class="mt-4 bg-gray-900 rounded-lg overflow-hidden shadow-lg border border-gray-700">
-              <div class="bg-gray-800 px-4 py-2 flex justify-between items-center border-b border-gray-700">
+            <div
+              class="mt-4 bg-gray-900 rounded-lg overflow-hidden shadow-lg border border-gray-700"
+            >
+              <div
+                class="bg-gray-800 px-4 py-2 flex justify-between items-center border-b border-gray-700"
+              >
                 <h3 class="font-bold text-gray-200 text-sm flex items-center gap-2">
                   <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
                   Developer Sandbox (Live JSON State)
                 </h3>
               </div>
-              <textarea 
-                v-model="jsonTextarea" 
+              <textarea
+                v-model="jsonTextarea"
                 class="w-full h-48 bg-gray-900 text-green-400 font-mono p-4 text-xs outline-none resize-y leading-relaxed"
                 @input="updateFromJson"
                 spellcheck="false"
               ></textarea>
             </div>
-            
           </div>
         </div>
-
       </main>
     </div>
     <AppFooter class="mt-auto -mb-[30px]" />
 
     <!-- Edit Modal Component -->
-    <EditSlotModal 
-      :isOpen="editModal.isOpen" 
-      :initialData="editModal.form" 
-      @save="handleModalSave" 
-      @close="closeEditModal" 
+    <EditSlotModal
+      :isOpen="editModal.isOpen"
+      :initialData="editModal.form"
+      @save="handleModalSave"
+      @close="closeEditModal"
     />
   </div>
 </template>

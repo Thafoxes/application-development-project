@@ -17,7 +17,7 @@ export const useCalendarStore = defineStore('calendar', () => {
     '#8b5cf6', // Purple
     '#ec4899', // Pink
     '#14b8a6', // Teal
-    '#f43f5e'  // Rose
+    '#f43f5e', // Rose
   ]
 
   // Dynamic mapping of schedule owners to color codes
@@ -37,14 +37,16 @@ export const useCalendarStore = defineStore('calendar', () => {
     }
     const classes = []
     const lecturers = []
-    sessionData.value.timetables.forEach(tb => {
-      const isClass = tb.class_id != null;
-      const label = isClass ? tb.section_name : (tb.staff_name || tb.staff_email || `User ${tb.user_id}`);
+    sessionData.value.timetables.forEach((tb) => {
+      const isClass = tb.class_id != null
+      const label = isClass
+        ? tb.section_name
+        : tb.staff_name || tb.staff_email || `User ${tb.user_id}`
       const item = {
         id: tb.time_table_id,
         label: label,
         is_class: isClass,
-        color: colorMap.value[tb.time_table_id]
+        color: colorMap.value[tb.time_table_id],
       }
       if (isClass) {
         classes.push(item)
@@ -63,7 +65,7 @@ export const useCalendarStore = defineStore('calendar', () => {
       const data = await apiService.getFYPSessionData(sessionId)
       sessionData.value = data
       // Select all schedule filters by default
-      selectedSchedules.value = data.timetables.map(t => t.time_table_id)
+      selectedSchedules.value = data.timetables.map((t) => t.time_table_id)
     } catch (err) {
       console.error('Error fetching calendar session data:', err)
       error.value = err.message || 'Failed to load session data'
@@ -89,10 +91,10 @@ export const useCalendarStore = defineStore('calendar', () => {
     try {
       const activeSession = await apiService.getActiveSession()
       activeSessionId.value = activeSession.fyp_session_id
-      
+
       // Save it to localStorage for future visits
       localStorage.setItem('activeSessionId', activeSessionId.value)
-      
+
       // Now fetch the data for this active session
       await fetchSessionData(activeSessionId.value)
     } catch (err) {
@@ -121,14 +123,16 @@ export const useCalendarStore = defineStore('calendar', () => {
     const events = []
     let idCounter = 1
 
-    sessionData.value.timetables.forEach(tb => {
-      const isClass = tb.class_id != null;
-      const ownerLabel = isClass ? tb.section_name : (tb.staff_name || tb.staff_email || `User ${tb.user_id}`);
+    sessionData.value.timetables.forEach((tb) => {
+      const isClass = tb.class_id != null
+      const ownerLabel = isClass
+        ? tb.section_name
+        : tb.staff_name || tb.staff_email || `User ${tb.user_id}`
       const schedule = tb.schedule || {}
 
       // 1. Specific calendar events
       if (schedule.specific_events && Array.isArray(schedule.specific_events)) {
-        schedule.specific_events.forEach(e => {
+        schedule.specific_events.forEach((e) => {
           events.push({
             id: `db-specific-${idCounter++}`,
             title: e.label || e.title,
@@ -138,7 +142,7 @@ export const useCalendarStore = defineStore('calendar', () => {
             owner: ownerLabel,
             owner_id: tb.time_table_id,
             is_class: isClass,
-            color: colorMap.value[tb.time_table_id]
+            color: colorMap.value[tb.time_table_id],
           })
         })
       }
@@ -153,9 +157,11 @@ export const useCalendarStore = defineStore('calendar', () => {
           const jsonDayOfWeek = jsDay === 0 ? 7 : jsDay // Convert: 0 (Sun) -> 7 (Sun)
           const dateStr = formatDate(d)
 
-          const recurringDay = schedule.weekly_recurring.find(r => r.day_of_week === jsonDayOfWeek)
+          const recurringDay = schedule.weekly_recurring.find(
+            (r) => r.day_of_week === jsonDayOfWeek,
+          )
           if (recurringDay && recurringDay.slots) {
-            recurringDay.slots.forEach(slot => {
+            recurringDay.slots.forEach((slot) => {
               events.push({
                 id: `db-recurring-${idCounter++}`,
                 title: slot.label,
@@ -165,7 +171,7 @@ export const useCalendarStore = defineStore('calendar', () => {
                 owner: ownerLabel,
                 owner_id: tb.time_table_id,
                 is_class: isClass,
-                color: colorMap.value[tb.time_table_id]
+                color: colorMap.value[tb.time_table_id],
               })
             })
           }
@@ -178,7 +184,7 @@ export const useCalendarStore = defineStore('calendar', () => {
 
   // Derived state: events that are active/checked in the filter checkboxes
   const visibleEvents = computed(() => {
-    return flatEvents.value.filter(event => selectedSchedules.value.includes(event.owner_id))
+    return flatEvents.value.filter((event) => selectedSchedules.value.includes(event.owner_id))
   })
 
   return {
@@ -192,6 +198,6 @@ export const useCalendarStore = defineStore('calendar', () => {
     flatEvents,
     visibleEvents,
     fetchSessionData,
-    fetchActiveSession
+    fetchActiveSession,
   }
 })

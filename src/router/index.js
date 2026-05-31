@@ -5,55 +5,55 @@ const router = createRouter({
     {
       path: '/',
       name: 'login',
-      component: () => import('../views/auth/LoginView.vue')
+      component: () => import('../views/auth/LoginView.vue'),
     },
     {
       path: '/signup',
       name: 'signup',
-      component: () => import('../views/auth/SignupView.vue')
+      component: () => import('../views/auth/SignupView.vue'),
     },
     {
       path: '/dashboard',
       name: 'dashboard',
       component: () => import('../views/coordinator/DashboardView.vue'),
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true },
     },
     {
       path: '/manage-session',
       name: 'manage-session',
       component: () => import('../views/coordinator/ManageSessionView.vue'),
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true },
     },
     {
       path: '/calendar',
       name: 'calendar',
       component: () => import('../views/coordinator/CalendarView.vue'),
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true },
     },
     {
       path: '/add-time-table',
       name: 'add-time-table',
       component: () => import('../views/coordinator/ManageTimeTableView.vue'),
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true },
     },
     {
       path: '/create-meeting',
       name: 'create-meeting',
       component: () => import('../views/coordinator/CreateMeetingView.vue'),
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true },
     },
     {
       path: '/edit-time-table',
       name: 'edit-time-table',
       component: () => import('../views/coordinator/EditTimeTableView.vue'),
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true },
     },
     {
       path: '/manage-user',
       name: 'manage-user',
       component: () => import('../views/coordinator/ManageUserView.vue'),
-      meta: { requiresAuth: true }
-    }
+      meta: { requiresAuth: true },
+    },
   ],
 })
 
