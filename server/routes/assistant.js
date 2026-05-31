@@ -18,12 +18,19 @@ const JWT_SECRET = process.env.JWT_SECRET || "ifamous-super-secret-key-2026";
 // The secret persona instruction that stays hidden on your server
 const SYSTEM_PROMPT = `You are the I-FAMOUS AI Assistant, an intelligent system embedded within the Universiti Teknologi Malaysia (UTM) Final Year Project (FYP) management dashboard. Your role is to help students, coordinators, and examiners navigate schedules and understand FYP submission phases. Keep your answers concise, academic, and helpful. Do not hallucinate database records.
 
-IMPORTANT AGENT TOOL: If the user explicitly asks you to create a new user (or lecturer/staff/student), you must extract the details and output a JSON block at the very end of your message. 
+IMPORTANT AGENT TOOL FOR USER CREATION: If the user explicitly asks you to create a new user (or lecturer/staff/student), you must extract the details and output a JSON block at the very end of your message. 
 The JSON must be exactly in this format: 
 \`\`\`json
 {"action": "CREATE_USER", "fullName": "<Name>", "email": "<Email>", "password": "<temp pass>", "phoneNumber": "<temp phone number>" , "affiliation": "<title>", "coOrgName": "<org>", "expertise": "<expertise>"}
 \`\`\`
-If you do not know a field, leave it as an empty string. You must provide a temporary password (e.g. "Temp1234!") if one is not specified.`;
+If you do not know a field, leave it as an empty string. You must provide a temporary password (e.g. "Temp1234!") if one is not specified.
+
+IMPORTANT AGENT TOOL FOR SCHEDULING: If the user explicitly asks you to schedule, auto-assign, or arrange meetings, you must extract the date range and duration, and output a JSON block at the very end of your message.
+The JSON must be exactly in this format:
+\`\`\`json
+{"action": "AUTO_SCHEDULE_MEETINGS", "startDate": "<YYYY-MM-DD>", "endDate": "<YYYY-MM-DD>", "duration": <Duration>}
+\`\`\`
+If dates are not specified or are unclear, provide sensible defaults (e.g., startDate: "2026-06-28", endDate: "2026-06-30", duration: 10). Keep your responses concise.`;
 
 router.post('/api/assistant/chat', async (req, res) => {
     try {
@@ -94,6 +101,46 @@ router.post('/api/assistant/chat', async (req, res) => {
                                 role: 'assistant',
                                 content: "I've extracted the user details. Please review and confirm below before I create the account.",
                                 action: 'CONFIRM_CREATE_USER',
+                                payload: parsedAction
+                            }
+                        });
+                    } else {
+                        res.status(200).json({ success: true, reply: { role: 'assistant', content: replyContent } });
+                    }
+                });
+                return; // Wait for async DB query
+            } catch (jwtErr) {
+                return res.status(200).json({ success: true, reply: { role: 'assistant', content: "Security Error: Invalid or expired authentication token." } });
+            }
+        } else if (replyContent.includes('"action": "AUTO_SCHEDULE_MEETINGS"')) {
+            // VERIFY JWT FIRST
+            const authHeader = req.headers['authorization'];
+            if (!authHeader) {
+                return res.status(200).json({ success: true, reply: { role: 'assistant', content: "Security Error: You are not logged in. Missing authentication token." } });
+            }
+
+            const token = authHeader.split(' ')[1];
+            try {
+                const decoded = jwt.verify(token, JWT_SECRET);
+
+                // Security check in DB
+                db.query("SELECT 1 FROM coordinator c JOIN users u ON c.user_id = u.user_id WHERE c.user_id = ? LIMIT 1", [decoded.user_id], (err, results) => {
+                    if (err || results.length === 0) {
+                        return res.status(200).json({ success: true, reply: { role: 'assistant', content: "Access Denied: You do not have coordinator privileges to auto-schedule." } });
+                    }
+
+                    // Extract JSON from LLM response
+                    const jsonMatch = replyContent.match(/```json\s*(\{[\s\S]*?\})\s*```/);
+                    if (jsonMatch) {
+                        const parsedAction = JSON.parse(jsonMatch[1]);
+
+                        // Return a confirmation request to the frontend
+                        return res.status(200).json({
+                            success: true,
+                            reply: {
+                                role: 'assistant',
+                                content: "I can help you auto-schedule all meetings. Please review and confirm the settings below.",
+                                action: 'CONFIRM_AUTO_SCHEDULE',
                                 payload: parsedAction
                             }
                         });

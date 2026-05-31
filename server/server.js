@@ -525,6 +525,311 @@ app.delete("/api/timetable/temp", (req, res) => {
   }
 });
 
+// POST: AI Auto-scheduling for all FYP projects
+app.post("/api/timetable/auto-assign", async (req, res) => {
+  let {
+    fyp_session_id,
+    startDate,
+    endDate,
+    duration,
+    avoidWeekend,
+    avoidOffWorkingHour,
+    workingHourStart,
+    workingHourEnd,
+    avoidLunchHour,
+    lunchHourStart,
+    lunchHourEnd
+  } = req.body;
+
+  // 1. Resolve fyp_session_id if not provided
+  if (!fyp_session_id) {
+    try {
+      const sessionResult = await new Promise((resolve, reject) => {
+        db.query("CALL sp_get_all_session()", (err, results) => {
+          if (err) reject(err);
+          else resolve(results[0] || []);
+        });
+      });
+      const activeSession = sessionResult.find(s => s.is_active === 1 || s.is_active === true || s.is_active === Buffer.from([1]));
+      if (activeSession) {
+        fyp_session_id = activeSession.session_id;
+      } else {
+        return res.status(400).json({ success: false, error: "No active session found and fyp_session_id not specified." });
+      }
+    } catch (e) {
+      console.error("Failed to fetch active session for auto-assign:", e);
+      return res.status(500).json({ success: false, error: "Database error resolving active session" });
+    }
+  }
+
+  if (!startDate || !endDate) {
+    return res.status(400).json({ success: false, error: "startDate and endDate are required" });
+  }
+
+  // 2. Load all projects from fyp_mock_structure.json
+  const projectsFilePath = path.join(__dirname, '..', 'localData', 'fyp_mock_structure.json');
+  let projects = [];
+  try {
+    if (fs.existsSync(projectsFilePath)) {
+      projects = JSON.parse(fs.readFileSync(projectsFilePath, 'utf8'));
+    }
+  } catch (err) {
+    console.error("Failed to read fyp_mock_structure.json:", err);
+    return res.status(500).json({ success: false, error: "Server failed to load project mock structure" });
+  }
+
+  // 3. Fetch all timetables for this session
+  let timetables = [];
+  try {
+    timetables = await new Promise((resolve, reject) => {
+      db.query(
+        "SELECT user_id, class_id, schedule_json FROM time_table WHERE fyp_session_id = ?",
+        [fyp_session_id],
+        (err, results) => {
+          if (err) reject(err);
+          else resolve(results || []);
+        }
+      );
+    });
+  } catch (err) {
+    console.error("Failed to query time tables for auto-assign:", err);
+    return res.status(500).json({ success: false, error: "Database query failed for timetables" });
+  }
+
+  // Parse timetables into maps
+  const userSchedules = {};
+  const classSchedules = {};
+
+  timetables.forEach(row => {
+    let schedule = {};
+    if (row.schedule_json) {
+      try {
+        schedule = typeof row.schedule_json === 'string'
+          ? JSON.parse(row.schedule_json)
+          : row.schedule_json;
+      } catch (parseErr) {
+        console.error(`Failed to parse schedule_json for timetable row:`, parseErr);
+      }
+    }
+    if (row.user_id != null) {
+      userSchedules[row.user_id] = schedule;
+    }
+    if (row.class_id != null) {
+      classSchedules[row.class_id] = schedule;
+    }
+  });
+
+  // Helper function to check if a specific person/class has conflict with a slot
+  const isOccupied = (schedule, dateStr, slotStart, slotEnd) => {
+    if (!schedule) return false;
+
+    // A. Specific events
+    if (schedule.specific_events && Array.isArray(schedule.specific_events)) {
+      for (const e of schedule.specific_events) {
+        const eDate = e.date || e.target_date;
+        if (eDate === dateStr) {
+          const eStart = e.start_time || '08:00';
+          const eEnd = e.end_time || '09:00';
+          if (slotStart < eEnd && slotEnd > eStart) {
+            return true;
+          }
+        }
+      }
+    }
+
+    // B. Weekly recurring
+    if (schedule.weekly_recurring && Array.isArray(schedule.weekly_recurring)) {
+      const d = new Date(dateStr);
+      const jsDay = d.getDay();
+      const jsonDayOfWeek = jsDay === 0 ? 7 : jsDay; // 0 (Sun) -> 7 (Sun)
+      
+      const recurringDay = schedule.weekly_recurring.find(r => r.day_of_week === jsonDayOfWeek);
+      if (recurringDay && recurringDay.slots) {
+        for (const slot of recurringDay.slots) {
+          if (slotStart < slot.end_time && slotEnd > slot.start_time) {
+            return true;
+          }
+        }
+      }
+    }
+
+    return false;
+  };
+
+  // Generate date list
+  const getDatesInRange = (startStr, endStr) => {
+    const dates = [];
+    const start = new Date(startStr);
+    const end = new Date(endStr);
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      let month = '' + (d.getMonth() + 1);
+      let day = '' + d.getDate();
+      const year = d.getFullYear();
+      if (month.length < 2) month = '0' + month;
+      if (day.length < 2) day = '0' + day;
+      dates.push([year, month, day].join('-'));
+    }
+    return dates;
+  };
+
+  const dates = getDatesInRange(startDate, endDate);
+  const dur = parseInt(duration) || 10;
+  const meetings = [];
+  const unscheduledProjects = [];
+
+  // Helper to add minutes
+  const addMinutes = (timeStr, mins) => {
+    const [h, m] = timeStr.split(':').map(Number);
+    const totalMins = h * 60 + m + mins;
+    const newH = Math.floor(totalMins / 60).toString().padStart(2, '0');
+    const newM = (totalMins % 60).toString().padStart(2, '0');
+    return `${newH}:${newM}`;
+  };
+
+  // We keep a local list of dynamically scheduled meetings to check conflicts in real-time
+  const localAssignedSlots = [];
+
+  // Check if a person is double booked with our newly scheduled meetings
+  const isScheduledInRun = (userId, classId, dateStr, slotStart, slotEnd) => {
+    for (const mt of localAssignedSlots) {
+      if (mt.date === dateStr) {
+        const isStudentMatch = classId && mt.student?.class_id === classId;
+        const isUserMatch = (userId === mt.student?.user_id || 
+                             userId === mt.supervisor?.user_id || 
+                             mt.examiners?.some(ex => ex.user_id === userId));
+        
+        if (isStudentMatch || isUserMatch) {
+          if (slotStart < mt.end_time && slotEnd > mt.start_time) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  };
+
+  // 4. Run scheduling algorithm
+  for (const project of projects) {
+    let scheduled = false;
+
+    const studentUserId = project.student?.user_id;
+    const studentClassId = project.student?.class_id;
+    const supervisorUserId = project.supervisor?.user_id;
+    const examinerUserIds = (project.examiners || []).map(ex => ex.user_id);
+
+    for (const dateStr of dates) {
+      if (scheduled) break;
+
+      if (avoidWeekend) {
+        const dayOfWeek = new Date(dateStr).getDay();
+        if (dayOfWeek === 0 || dayOfWeek === 6) {
+          continue;
+        }
+      }
+
+      let dayStart = '08:00';
+      let dayEnd = '17:00';
+      if (avoidOffWorkingHour) {
+        dayStart = workingHourStart || '08:00';
+        dayEnd = workingHourEnd || '17:00';
+      }
+
+      let currentSlotStart = dayStart;
+      while (currentSlotStart < dayEnd) {
+        const currentSlotEnd = addMinutes(currentSlotStart, dur);
+        if (currentSlotEnd > dayEnd) break;
+
+        if (avoidLunchHour && lunchHourStart && lunchHourEnd) {
+          if (currentSlotStart < lunchHourEnd && currentSlotEnd > lunchHourStart) {
+            currentSlotStart = addMinutes(currentSlotStart, 5);
+            continue;
+          }
+        }
+
+        let hasConflict = false;
+
+        if (studentClassId && isOccupied(classSchedules[studentClassId], dateStr, currentSlotStart, currentSlotEnd)) {
+          hasConflict = true;
+        }
+        if (!hasConflict && studentUserId && isOccupied(userSchedules[studentUserId], dateStr, currentSlotStart, currentSlotEnd)) {
+          hasConflict = true;
+        }
+
+        if (!hasConflict && supervisorUserId && isOccupied(userSchedules[supervisorUserId], dateStr, currentSlotStart, currentSlotEnd)) {
+          hasConflict = true;
+        }
+
+        if (!hasConflict) {
+          for (const exId of examinerUserIds) {
+            if (isOccupied(userSchedules[exId], dateStr, currentSlotStart, currentSlotEnd)) {
+              hasConflict = true;
+              break;
+            }
+          }
+        }
+
+        if (!hasConflict) {
+          if (isScheduledInRun(studentUserId, studentClassId, dateStr, currentSlotStart, currentSlotEnd)) {
+            hasConflict = true;
+          }
+          if (!hasConflict && isScheduledInRun(supervisorUserId, null, dateStr, currentSlotStart, currentSlotEnd)) {
+            hasConflict = true;
+          }
+          if (!hasConflict) {
+            for (const exId of examinerUserIds) {
+              if (isScheduledInRun(exId, null, dateStr, currentSlotStart, currentSlotEnd)) {
+                hasConflict = true;
+                break;
+              }
+            }
+          }
+        }
+
+        if (!hasConflict) {
+          const payload = {
+            id: (Date.now() + Math.floor(Math.random() * 100000)).toString(),
+            project_id: project.project_id,
+            project_title: project.fyp_title,
+            student: project.student,
+            supervisor: project.supervisor,
+            examiners: project.examiners || [],
+            date: dateStr,
+            start_time: currentSlotStart,
+            end_time: currentSlotEnd,
+            duration: dur,
+            generated_at: new Date().toISOString()
+          };
+
+          meetings.push(payload);
+          localAssignedSlots.push(payload);
+          scheduled = true;
+          break;
+        }
+
+        currentSlotStart = currentSlotEnd;
+      }
+    }
+
+    if (!scheduled) {
+      unscheduledProjects.push(project);
+    }
+  }
+
+  try {
+    fs.writeFileSync(tempFilePath, JSON.stringify(meetings, null, 4));
+    res.json({
+      success: true,
+      message: "AI scheduling complete",
+      data: meetings,
+      totalProjects: projects.length,
+      unscheduledProjects
+    });
+  } catch (err) {
+    console.error("Failed to save auto-assigned meetings:", err);
+    res.status(500).json({ success: false, error: "Failed to write temp meeting file" });
+  }
+});
+
 // Simple API Endpoint
 app.get("/api/users", (req, res) => {
   db.query("SELECT * FROM users", (err, results) => {
