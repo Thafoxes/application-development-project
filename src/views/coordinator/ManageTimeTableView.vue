@@ -63,9 +63,10 @@ const handleFileUpload = async (event) => {
       if (result.data.target_type) targetType.value = result.data.target_type
       if (result.data.target_name) targetName.value = result.data.target_name
 
-      // Update calendarData. Map backend's expected JSON schema keys to the frontend state names.
-      // We append so we don't destroy manually added entries, or we can replace it.
-      // Let's just push to existing.
+      // Clear the old ones when a new image is uploaded
+      calendarData.value.weekly_recurring_occupancy = []
+      calendarData.value.specific_calendar_events = []
+
       const newRecurring = result.data.weekly_recurring || []
       const newSpecific = result.data.specific_events || []
 
@@ -81,7 +82,20 @@ const handleFileUpload = async (event) => {
         event.event_id = Date.now().toString() + '_' + Math.random().toString(36).substring(7)
       })
 
-      calendarData.value.weekly_recurring_occupancy.push(...newRecurring)
+      // Merge into weekly_recurring_occupancy (unique by day_of_week)
+      newRecurring.forEach((newDay) => {
+        const existingDay = calendarData.value.weekly_recurring_occupancy.find(
+          (d) => d.day_of_week === newDay.day_of_week
+        )
+        if (existingDay) {
+          if (newDay.slots) {
+            existingDay.slots.push(...newDay.slots)
+          }
+        } else {
+          calendarData.value.weekly_recurring_occupancy.push(newDay)
+        }
+      })
+
       calendarData.value.specific_calendar_events.push(...newSpecific)
     } else {
       uploadError.value = result.error || 'Failed to process image'
@@ -255,14 +269,13 @@ const addManualEntry = () => {
 }
 
 const removeRecurringSlot = (dayOfWeek, slotId) => {
-  const day = calendarData.value.weekly_recurring_occupancy.find((d) => d.day_of_week === dayOfWeek)
-  if (day) {
-    day.slots = day.slots.filter((s) => s.slot_id !== slotId)
-    if (day.slots.length === 0) {
-      calendarData.value.weekly_recurring_occupancy =
-        calendarData.value.weekly_recurring_occupancy.filter((d) => d.day_of_week !== dayOfWeek)
+  calendarData.value.weekly_recurring_occupancy.forEach((day) => {
+    if (day.day_of_week === dayOfWeek) {
+      day.slots = day.slots.filter((s) => s.slot_id !== slotId)
     }
-  }
+  })
+  calendarData.value.weekly_recurring_occupancy =
+    calendarData.value.weekly_recurring_occupancy.filter((d) => d.slots && d.slots.length > 0)
 }
 
 const removeSpecificEvent = (eventId) => {
@@ -309,15 +322,13 @@ const handleModalSave = (updatedData) => {
 
 const saveEditModal = () => {
   if (editModal.value.type === 'recurring') {
-    const day = calendarData.value.weekly_recurring_occupancy.find(
-      (d) => d.day_of_week === editModal.value.dayOfWeek,
-    )
-    if (day) {
+    for (const day of calendarData.value.weekly_recurring_occupancy) {
       const slot = day.slots.find((s) => s.slot_id === editModal.value.slotId)
       if (slot) {
         slot.label = editModal.value.form.title
         slot.start_time = editModal.value.form.startTime
         slot.end_time = editModal.value.form.endTime
+        break
       }
     }
   } else {
@@ -338,11 +349,13 @@ const closeEditModal = () => {
 }
 
 const editRecurringSlot = (dayOfWeek, slotId) => {
-  const day = calendarData.value.weekly_recurring_occupancy.find((d) => d.day_of_week === dayOfWeek)
-  if (!day) return
-  const slot = day.slots.find((s) => s.slot_id === slotId)
-  if (!slot) return
-  openEditModal('recurring', slot, dayOfWeek)
+  for (const day of calendarData.value.weekly_recurring_occupancy) {
+    const slot = day.slots.find((s) => s.slot_id === slotId)
+    if (slot) {
+      openEditModal('recurring', slot, day.day_of_week)
+      return
+    }
+  }
 }
 
 const editSpecificEvent = (eventId) => {

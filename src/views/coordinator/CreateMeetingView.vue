@@ -257,6 +257,36 @@ const generateSchedule = async () => {
     return
   }
 
+  // Check for weekend conflict
+  if (avoidWeekend.value) {
+    const [y, m, d] = startingDate.value.split('-').map(Number)
+    const day = new Date(y, m - 1, d).getDay() // 0 = Sunday, 6 = Saturday
+    if (day === 0 || day === 6) {
+      alert('Conflict Detected: The selected date falls on a weekend.')
+      return
+    }
+  }
+
+  // Check for off working hours conflict
+  if (avoidOffWorkingHour.value) {
+    const reqStart = startingTime.value
+    const reqEnd = endingTime.value
+    if (reqStart < workingHourStart.value || reqEnd > workingHourEnd.value) {
+      alert('Conflict Detected: The selected time falls outside of working hours.')
+      return
+    }
+  }
+
+  // Check for lunch hour conflict
+  if (avoidLunchHour.value) {
+    const reqStart = startingTime.value
+    const reqEnd = endingTime.value
+    if (reqStart < lunchHourEnd.value && reqEnd > lunchHourStart.value) {
+      alert('Conflict Detected: The selected time overlaps with the lunch hour.')
+      return
+    }
+  }
+
   // 1. Check for conflicts
   const hasConflict = displayedEvents.value.some((event) => {
     // Only check if it's the exact same date
