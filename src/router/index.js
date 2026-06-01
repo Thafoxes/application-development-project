@@ -59,7 +59,13 @@ const router = createRouter({
       name: 'create-fyp',
       component: () => import('../views/student/CreateFypView.vue'),
       meta: { requiresAuth: true }
-    }
+    },
+    {
+      path: '/stud-dashboard-filled',
+      name: 'stud-dashboard-filled',
+      component: () => import('../views/student/StudDashboardFilledView.vue'),
+      meta: { requiresAuth: true }
+    },
   ],
 })
 

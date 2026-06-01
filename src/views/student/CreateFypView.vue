@@ -4,8 +4,10 @@ import AppFooter from "@/components/AppFooter.vue";
 import InputField from "@/components/create_fyp_components/InputField.vue";
 import InputTextArea from "@/components/create_fyp_components/InputTextArea.vue";
 import { useCalendarStore } from "@/stores/calendarStore";
+import { useRouter } from "vue-router";
 
 const calendarStore = useCalendarStore();
+const router = useRouter();
 </script>
 
 <template>
@@ -39,7 +41,10 @@ const calendarStore = useCalendarStore();
 
         <br />
 
-        <form class="bg-white flex flex-col px-6 py-8 rounded-2xl gap-8">
+        <form
+          class="bg-white flex flex-col px-6 py-8 rounded-2xl gap-8"
+          @submit.prevent
+        >
           <!-- Basic Info -->
           <div class="flex flex-col gap-4">
             <p class="font-roboto text-xl font-semibold">
@@ -172,6 +177,7 @@ const calendarStore = useCalendarStore();
                 Save information
               </button>
               <button
+                @click="router.push('/stud-dashboard-filled')"
                 class="border-2 border-utm-maroon bg-utm-maroon text-white rounded-lg p-2"
               >
                 Register
