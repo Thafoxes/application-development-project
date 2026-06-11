@@ -49,114 +49,134 @@ onMounted(() => {
       <AppSidebar />
 
       <!-- Main Dashboard Content -->
-      <main class="flex-1 flex flex-col px-[50px] py-[30px] gap-8 overflow-y-auto">
+      <main class="flex-1 flex flex-col px-10 py-8 gap-6 overflow-y-auto">
+        
         <!-- Session Heading & Action -->
-        <div class="flex items-center justify-between w-full">
-          <h1 class="font-['Inter'] font-bold text-[40px] text-black uppercase">
-            {{
-              calendarStore.isLoading
-                ? 'Loading session...'
-                : calendarStore.activeSessionId
-                  ? 'Session ' + calendarStore.activeSessionId
-                  : 'No active session'
-            }}
-          </h1>
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full bg-white/40 p-6 rounded-2xl border border-white/20 backdrop-blur-sm shadow-sm">
+          <div>
+            <h1 class="font-['Inter'] font-extrabold text-3xl tracking-tight text-gray-900">
+              {{
+                calendarStore.isLoading
+                  ? 'Loading Active Session...'
+                  : calendarStore.activeSessionId
+                    ? 'Active Academic Session: ' + calendarStore.activeSessionId
+                    : 'No Active Academic Session'
+              }}
+            </h1>
+            <p class="text-sm text-gray-600 mt-1">Manage institutional deadlines, user records, and program milestones.</p>
+          </div>
           <button
             @click="isModalOpen = true"
-            class="bg-[#5c001f] text-white px-[24px] py-[16px] rounded-[8px] font-medium text-[16px] hover:bg-[#4a0019] transition-colors shadow-lg border-none"
+            class="bg-[#5c001f] text-white px-5 py-3 rounded-lg font-bold text-sm hover:bg-[#4a0019] active:scale-[0.98] transition-all duration-200 shadow-md hover:shadow-lg border-none flex items-center justify-center space-x-2 self-start sm:self-auto"
           >
-            Create New Session
+            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+            </svg>
+            <span>Create New Session</span>
           </button>
         </div>
 
         <!-- Divider -->
-        <hr class="border-[#2f2f2f] w-full" />
+        <hr class="border-gray-300 w-full opacity-60" />
 
-        <!-- Quick Stats Cards (Color coded) -->
-        <div
-          class="bg-white rounded-[15px] p-[20px] flex flex-col gap-4 shadow-lg w-full border-none"
-        >
-          <h2 class="font-['Inter'] font-bold text-[32px] text-black">Quick Stats</h2>
-          <div class="flex gap-[20px] w-full">
+        <!-- Quick Stats Cards (Sleek Color coded design) -->
+        <div class="bg-white rounded-2xl p-6 flex flex-col gap-4 shadow-sm border border-gray-100 w-full">
+          <h2 class="font-['Inter'] font-bold text-lg text-gray-900 tracking-tight">Active Indicators</h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-5 w-full">
+            
             <!-- Total Projects -->
-            <div
-              class="bg-[#00b424] rounded-[15px] p-[15px] flex items-start justify-between flex-1 shadow-md"
-            >
-              <div>
-                <p class="font-bold text-[14px] text-white">Total Projects</p>
-                <p class="font-bold text-[24px] text-white mt-4">0</p>
+            <div class="bg-emerald-50 border border-emerald-200/60 rounded-xl p-5 flex items-center justify-between shadow-sm hover:shadow transition-all duration-200">
+              <div class="space-y-1">
+                <p class="text-xs font-bold text-emerald-800 uppercase tracking-wider">Total Projects</p>
+                <p class="text-3xl font-extrabold text-emerald-950">0</p>
+              </div>
+              <div class="p-3 bg-emerald-100 rounded-lg text-emerald-800 shadow-inner">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
               </div>
             </div>
+
             <!-- Needing Supervisor -->
-            <div
-              class="bg-[#ffe100] rounded-[15px] p-[15px] flex items-start justify-between flex-1 shadow-md"
-            >
-              <div>
-                <p class="font-bold text-[14px] text-black">Needing Supervisor</p>
-                <p class="font-bold text-[24px] text-black mt-4">0</p>
+            <div class="bg-amber-50 border border-amber-200/60 rounded-xl p-5 flex items-center justify-between shadow-sm hover:shadow transition-all duration-200">
+              <div class="space-y-1">
+                <p class="text-xs font-bold text-amber-800 uppercase tracking-wider">Needing Supervisor</p>
+                <p class="text-3xl font-extrabold text-amber-950">0</p>
+              </div>
+              <div class="p-3 bg-amber-100 rounded-lg text-amber-850 shadow-inner">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
               </div>
             </div>
+
             <!-- Missed Deadline -->
-            <div
-              class="bg-[#ff3737] rounded-[15px] p-[15px] flex items-start justify-between flex-1 shadow-md"
-            >
-              <div>
-                <p class="font-bold text-[14px] text-white">Missed deadline</p>
-                <p class="font-bold text-[24px] text-white mt-4">0</p>
+            <div class="bg-rose-50 border border-rose-200/60 rounded-xl p-5 flex items-center justify-between shadow-sm hover:shadow transition-all duration-200">
+              <div class="space-y-1">
+                <p class="text-xs font-bold text-rose-800 uppercase tracking-wider">Missed Deadlines</p>
+                <p class="text-3xl font-extrabold text-rose-950">0</p>
+              </div>
+              <div class="p-3 bg-rose-100 rounded-lg text-rose-800 shadow-inner">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
               </div>
             </div>
+
           </div>
         </div>
 
         <!-- Users & Data Manager -->
-        <div class="bg-white rounded-[25px] p-[30px] flex flex-col gap-[20px] shadow-lg w-full">
+        <div class="bg-white rounded-2xl p-6 flex flex-col gap-4 shadow-sm border border-gray-100 w-full">
           <div>
-            <h2 class="font-['Inter'] font-bold text-[32px] text-black">Users & Data Manager</h2>
-            <p class="text-[20px] text-gray-700 mt-2">Current users in this system:</p>
+            <h2 class="font-['Inter'] font-bold text-lg text-gray-900 tracking-tight">User Administration & Data Directory</h2>
+            <p class="text-sm text-gray-500 mt-1">Review registered participants across administrative categories and manage data import pipelines.</p>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-[20px] w-full">
-            <StatsCard amount="12" label="User" />
-            <StatsCard amount="1" label="Student" />
+          <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 w-full">
+            <StatsCard amount="12" label="Users" />
+            <StatsCard amount="1" label="Students" />
             <StatsCard amount="3" label="Staff" />
-            <StatsCard amount="4" label="Examiner" />
+            <StatsCard amount="4" label="Examiners" />
           </div>
 
           <button
-            class="bg-[#5c001f] text-white px-[24px] py-[12px] rounded-full font-medium text-[16px] hover:bg-[#4a0019] transition-colors self-start mt-4 shadow-md"
+            @click="router.push('/import-users')"
+            class="bg-[#5c001f] text-white px-5 py-2.5 rounded-lg font-bold text-sm hover:bg-[#4a0019] transition-all self-start mt-2 shadow-sm hover:shadow active:scale-[0.99] duration-150 flex items-center space-x-2 border-none"
           >
-            Manage Users & Data Import
+            <span>Access Bulk Data Ingestion Hub</span>
+            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+            </svg>
           </button>
         </div>
 
-        <!-- Alerts Table -->
-        <div
-          class="bg-white rounded-[25px] p-[30px] flex flex-col gap-[15px] shadow-lg w-full mb-10"
-        >
-          <h2 class="font-['Inter'] font-bold text-[32px] text-black">Alerts</h2>
+        <!-- System Alerts Table -->
+        <div class="bg-white rounded-2xl p-6 flex flex-col gap-4 shadow-sm border border-gray-100 w-full mb-10">
+          <h2 class="font-['Inter'] font-bold text-lg text-gray-900 tracking-tight">System Alerts & Activity Logs</h2>
 
-          <div class="border-2 border-black rounded-[5px] overflow-hidden">
-            <!-- Table Header -->
-            <div class="bg-white flex justify-between p-[16px] border-b-2 border-black">
-              <div class="flex-1 font-bold text-[14px] text-center">Alert Type</div>
-              <div class="flex-1 font-bold text-[14px] text-center">Affected User</div>
-              <div class="flex-1 font-bold text-[14px] text-center">Status</div>
-            </div>
-
-            <!-- Table Row -->
-            <div class="bg-[#f7f6fe] flex justify-between items-center p-[16px]">
-              <div class="flex-1 text-[14px] font-medium text-center text-black">
-                Proposal Submitted
-              </div>
-              <div class="flex-1 text-[14px] font-medium text-center text-black">
-                Matt Dickerson
-              </div>
-              <div class="flex-1 flex justify-center">
-                <StatusBadge status="Proposal Submitted" />
-              </div>
-            </div>
+          <div class="overflow-hidden border border-gray-100 rounded-xl bg-white shadow-inner">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-gray-50 border-b border-gray-150 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                  <th class="px-6 py-4">Alert Classification</th>
+                  <th class="px-6 py-4">Affected User</th>
+                  <th class="px-6 py-4 text-center">Current Status</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-50">
+                <tr class="hover:bg-gray-50/50 transition-colors">
+                  <td class="px-6 py-4 text-sm font-semibold text-gray-900">Proposal Submitted</td>
+                  <td class="px-6 py-4 text-sm text-gray-600">Matt Dickerson</td>
+                  <td class="px-6 py-4 text-center flex justify-center items-center">
+                    <StatusBadge status="Proposal Submitted" />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
+
       </main>
     </div>
     <!-- Footer -->
