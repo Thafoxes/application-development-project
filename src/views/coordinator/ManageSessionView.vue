@@ -142,10 +142,14 @@ const setActiveSession = async (id) => {
       <AppSidebar />
 
       <!-- Main Dashboard Content -->
-      <main class="flex-1 flex flex-col px-[50px] py-[30px] gap-8 overflow-y-auto">
+      <main class="flex-1 flex flex-col px-10 py-8 gap-6 overflow-y-auto">
+        
         <!-- Heading -->
-        <div class="flex items-center justify-between w-full">
-          <h1 class="font-['Inter'] font-bold text-[40px] text-black uppercase">Manage Sessions</h1>
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full bg-white/40 p-6 rounded-2xl border border-white/20 backdrop-blur-sm shadow-sm">
+          <div>
+            <h1 class="font-['Inter'] font-extrabold text-3xl tracking-tight text-gray-900">Manage Academic Sessions</h1>
+            <p class="text-sm text-gray-600 mt-1">Configure active semesters, create new semester, and manage active semester.</p>
+          </div>
           <button
             @click="isModalOpen = true"
             class="bg-[#5c001f] text-white px-[24px] py-[16px] rounded-[8px] font-medium text-[16px] hover:bg-[#4a0019] transition-colors shadow-lg border-none"
