@@ -55,6 +55,12 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/manage-user/:id',
+      name: 'view-user',
+      component: () => import('../views/coordinator/ViewUserView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/import-users',
       name: 'import-users',
       component: () => import('../views/coordinator/UserBulkDataImportView.vue'),

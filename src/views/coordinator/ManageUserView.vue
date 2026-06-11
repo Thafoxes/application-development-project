@@ -150,6 +150,12 @@ const onUserUpdatedOrCreated = () => {
                         <td class="p-3 text-gray-500">{{ l.email }}</td>
                         <td class="p-3">
                           <button
+                            @click="router.push(`/manage-user/${l.user_id}`)"
+                            class="text-[#5c001f] font-semibold hover:underline mr-3"
+                          >
+                            View
+                          </button>
+                          <button
                             @click="openEditModal(l)"
                             class="text-blue-600 font-semibold hover:underline"
                           >
@@ -221,6 +227,12 @@ const onUserUpdatedOrCreated = () => {
                         <td class="p-3">{{ s.full_name }}</td>
                         <td class="p-3 text-gray-500">{{ s.metric_number }}</td>
                         <td class="p-3">
+                          <button
+                            @click="router.push(`/manage-user/${s.user_id}`)"
+                            class="text-[#5c001f] font-semibold hover:underline mr-3"
+                          >
+                            View
+                          </button>
                           <button
                             @click="openEditModal(s)"
                             class="text-blue-600 font-semibold hover:underline"
@@ -296,6 +308,12 @@ const onUserUpdatedOrCreated = () => {
                           <span class="text-xs text-gray-400">{{ o.co_org_name }}</span>
                         </td>
                         <td class="p-3">
+                          <button
+                            @click="router.push(`/manage-user/${o.user_id}`)"
+                            class="text-[#5c001f] font-semibold hover:underline mr-3"
+                          >
+                            View
+                          </button>
                           <button
                             @click="openEditModal(o)"
                             class="text-blue-600 font-semibold hover:underline"
