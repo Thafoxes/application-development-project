@@ -152,84 +152,98 @@ const setActiveSession = async (id) => {
           </div>
           <button
             @click="isModalOpen = true"
-            class="bg-[#5c001f] text-white px-[24px] py-[16px] rounded-[8px] font-medium text-[16px] hover:bg-[#4a0019] transition-colors shadow-lg border-none"
+            class="bg-[#5c001f] text-white px-5 py-3 rounded-lg font-bold text-sm hover:bg-[#4a0019] active:scale-[0.98] transition-all duration-200 shadow-md hover:shadow-lg border-none flex items-center justify-center space-x-2 self-start sm:self-auto"
           >
-            Create New Session
+            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+            </svg>
+            <span>Create New Session</span>
           </button>
         </div>
 
         <!-- Divider -->
-        <hr class="border-[#2f2f2f] w-full" />
+        <hr class="border-gray-300 w-full opacity-60" />
 
         <!-- Data Table Container -->
-        <div
-          class="bg-white rounded-[25px] p-[30px] flex flex-col gap-[15px] shadow-lg w-full mb-10"
-        >
-          <h2 class="font-['Inter'] font-bold text-[32px] text-black">All Sessions</h2>
+        <div class="bg-white rounded-2xl p-6 flex flex-col gap-4 shadow-sm border border-gray-100 w-full mb-10">
+          <h2 class="font-['Inter'] font-bold text-lg text-gray-900 tracking-tight">All Semesters</h2>
 
-          <div v-if="isLoading" class="text-gray-500 py-4 font-medium">Loading sessions...</div>
-          <div v-else-if="error" class="text-red-500 py-4 font-medium">{{ error }}</div>
+          <div v-if="isLoading" class="text-gray-500 py-4 font-semibold text-sm flex items-center space-x-2">
+            <svg class="animate-spin h-5 w-5 text-[#5c001f]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span>Loading database sessions...</span>
+          </div>
+          
+          <div v-else-if="error" class="bg-red-50 text-red-800 border border-red-200 p-3 rounded-lg text-sm font-semibold">
+            {{ error }}
+          </div>
 
-          <div v-else class="border-2 border-black rounded-[5px] overflow-hidden mt-4">
+          <div v-else class="overflow-hidden border border-gray-100 rounded-xl bg-white shadow-inner mt-2">
             <!-- Table Header -->
-            <div class="bg-white flex justify-between p-[16px] border-b-2 border-black">
-              <div class="flex-[2] font-bold text-[14px] text-black pl-4">Session Number</div>
-              <div class="flex-1 font-bold text-[14px] text-black text-center">Status</div>
-              <div class="flex-1 font-bold text-[14px] text-black text-center">Actions</div>
+            <div class="bg-gray-50 flex justify-between px-6 py-4 border-b border-gray-150 text-xs font-bold text-gray-500 uppercase tracking-wider">
+              <div class="flex-[2] pl-2">Session Description</div>
+              <div class="flex-1 text-center">Semester Status</div>
+              <div class="flex-1 text-center">Administrative Actions</div>
             </div>
 
             <!-- Table Rows -->
             <div
               v-for="(session, index) in sessions"
               :key="session.fyp_session_id"
-              class="flex justify-between items-center p-[16px]"
-              :class="index % 2 === 0 ? 'bg-[#f7f6fe]' : 'bg-white'"
+              class="flex justify-between items-center px-6 py-4 border-b border-gray-100 last:border-b-0 transition-colors"
+              :class="index % 2 === 0 ? 'bg-[#f7f6fe]/30' : 'bg-white'"
             >
-              <div class="flex-[2] text-[16px] font-medium text-black pl-4">
+              <div class="flex-[2] text-sm font-semibold text-gray-900 pl-2">
                 <template v-if="editingId === session.fyp_session_id">
                   <div class="flex items-center gap-2">
-                    <span class="text-gray-500">SESSION</span>
+                    <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">SESSION</span>
                     <input
                       v-model="editValue"
                       type="number"
-                      class="border border-gray-400 rounded px-2 py-1 w-[150px] outline-none focus:border-[#5c001f] focus:ring-1 focus:ring-[#5c001f]"
+                      class="border border-gray-300 rounded-lg px-3 py-1.5 w-[150px] outline-none focus:ring-2 focus:ring-[#5c001f] focus:border-transparent text-sm transition-all shadow-sm font-semibold"
                       @keyup.enter="saveEdit(session.fyp_session_id)"
                       @keyup.esc="cancelEdit"
                       autoFocus
                     />
                   </div>
                 </template>
-                <template v-else> SESSION {{ session.fyp_session_id }} </template>
+                <template v-else> 
+                  <span class="font-mono text-xs uppercase tracking-wider bg-gray-100 text-gray-600 px-2.5 py-1 rounded border border-gray-200 mr-2">Session ID: {{ session.fyp_session_id }}</span>
+                  <span class="text-gray-700">Academic Semester Term</span>
+                </template>
               </div>
 
               <!-- Status Column -->
               <div class="flex-1 flex justify-center items-center">
                 <span
                   v-if="session.is_active == 1"
-                  class="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full uppercase tracking-wide border border-green-200"
+                  class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-800 border border-green-200 uppercase tracking-wider"
                 >
-                  Active
+                  Active Session
                 </span>
                 <button
                   v-else
                   @click="setActiveSession(session.fyp_session_id)"
-                  class="px-3 py-1 bg-gray-100 text-gray-500 text-xs font-bold rounded-full uppercase tracking-wide border border-gray-300 hover:bg-[#5c001f] hover:text-white hover:border-[#5c001f] transition-colors"
+                  class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-gray-50 text-gray-500 border border-gray-300 hover:bg-[#5c001f] hover:text-white hover:border-[#5c001f] transition-all duration-200 cursor-pointer uppercase tracking-wider"
                 >
-                  Inactive
+                  Set As Active
                 </button>
               </div>
 
-              <div class="flex-1 flex justify-center gap-6">
+              <div class="flex-1 flex justify-center gap-4 text-sm font-semibold">
                 <template v-if="editingId === session.fyp_session_id">
                   <button
                     @click="saveEdit(session.fyp_session_id)"
-                    class="text-green-600 font-bold hover:underline transition-colors"
+                    class="text-green-600 hover:text-green-800 transition-colors"
                   >
-                    Save
+                    Save Changes
                   </button>
+                  <span class="text-gray-300">|</span>
                   <button
                     @click="cancelEdit"
-                    class="text-gray-500 font-bold hover:underline transition-colors"
+                    class="text-gray-500 hover:text-gray-700 transition-colors"
                   >
                     Cancel
                   </button>
@@ -237,23 +251,29 @@ const setActiveSession = async (id) => {
                 <template v-else>
                   <button
                     @click="startEdit(session)"
-                    class="text-blue-600 font-bold hover:underline transition-colors"
+                    class="text-blue-600 hover:text-blue-805 transition-colors"
                   >
-                    Edit
+                    Rename
                   </button>
+                  <span class="text-gray-300">|</span>
                   <button
                     @click="deleteSession(session.fyp_session_id)"
-                    class="text-red-600 font-bold hover:underline transition-colors"
+                    class="text-red-655 hover:text-red-800 transition-colors"
                   >
-                    Delete
+                    Archive
                   </button>
                 </template>
               </div>
             </div>
 
             <!-- Empty State -->
-            <div v-if="sessions.length === 0" class="p-8 text-center text-gray-500 bg-white">
-              No sessions found. Go to the Dashboard to create one!
+            <div v-if="sessions.length === 0" class="p-12 text-center text-gray-500 bg-white">
+              <div class="flex flex-col items-center justify-center space-y-3">
+                <svg class="w-10 h-10 text-gray-300 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                </svg>
+                <p class="font-medium text-sm">No academic sessions found in directory.</p>
+              </div>
             </div>
           </div>
         </div>
