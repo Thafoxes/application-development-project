@@ -1,14 +1,15 @@
 <template>
-  <div class="flex flex-col lg:flex-row gap-6 h-full min-h-[800px] w-full font-sans">
+  <div class="flex flex-col lg:flex-row gap-4 h-full min-h-[800px] w-full font-sans">
     <!-- 1. LEFT SIDEBAR (FILTERS) -->
     <aside
-      class="w-full lg:w-80 flex flex-col bg-[#FFFFAB] border border-gray-200 rounded-xl overflow-hidden shrink-0 relative shadow-sm"
+      class="w-full lg:w-80 flex flex-col bg-white border border-gray-200 rounded-xl overflow-hidden shrink-0 relative shadow-md"
     >
       <!-- Sidebar Header -->
-      <div class="p-6 pb-2">
-        <h2 class="text-xl font-bold text-[#5C001E] leading-tight">
-          Lecturer/section<br />schedule
+      <div class="p-5 pb-3.5 border-b border-gray-150 bg-gray-50/50">
+        <h2 class="text-lg font-bold text-[#5C001F] tracking-tight leading-tight">
+          Lecturer/Section Schedule
         </h2>
+        <p class="text-xs text-gray-500 mt-1 font-medium">Filter calendar events</p>
       </div>
 
       <!-- Accordion Area (Scrollable) -->
@@ -47,13 +48,13 @@
             <label
               v-for="schedule in calendarStore.availableSchedules.lecturers"
               :key="schedule.id"
-              class="flex items-start gap-3 cursor-pointer group"
+              class="flex items-start gap-3 cursor-pointer group p-1.5 rounded-lg hover:bg-gray-50 transition-all duration-200"
             >
               <input
                 type="checkbox"
                 v-model="calendarStore.selectedSchedules"
                 :value="schedule.id"
-                class="mt-1 w-4 h-4 text-[#5C001E] rounded border-gray-300 focus:ring-[#5C001E] cursor-pointer"
+                class="mt-1 w-4 h-4 text-[#5C001F] rounded border-gray-300 focus:ring-[#5C001F] cursor-pointer"
               />
               <div class="flex items-center gap-2">
                 <!-- Color Indicator -->
@@ -119,13 +120,13 @@
             <label
               v-for="schedule in calendarStore.availableSchedules.classes"
               :key="schedule.id"
-              class="flex items-center gap-3 cursor-pointer group"
+              class="flex items-center gap-3 cursor-pointer group p-1.5 rounded-lg hover:bg-gray-50 transition-all duration-200"
             >
               <input
                 type="checkbox"
                 v-model="calendarStore.selectedSchedules"
                 :value="schedule.id"
-                class="w-4 h-4 text-[#5C001E] rounded border-gray-300 focus:ring-[#5C001E] cursor-pointer"
+                class="w-4 h-4 text-[#5C001F] rounded border-gray-300 focus:ring-[#5C001F] cursor-pointer"
               />
               <div class="flex items-center gap-2 text-gray-700 min-w-0">
                 <!-- Color Indicator -->
@@ -151,25 +152,24 @@
       </div>
 
       <!-- Action Buttons -->
-
-      <div class="p-4 flex flex-col gap-2 mt-auto border-t border-[#d6d68b]">
+      <div class="p-4 flex flex-col gap-2 mt-auto border-t border-gray-150 bg-gray-50/30">
         <router-link
           to="/add-time-table"
-          class="w-full bg-[#5C001E] hover:bg-[#4a0018] text-white font-bold py-3 rounded-md shadow text-xs transition-colors flex justify-center items-center gap-2"
+          class="w-full bg-[#5C001F] hover:bg-[#4a0019] text-white font-bold py-2.5 rounded-lg shadow-sm text-xs transition-all duration-200 active:scale-[0.98] flex justify-center items-center gap-2"
         >
-          <span>+</span> Add new time table
+          <span class="text-sm font-semibold">+</span> Add New Timetable
         </router-link>
         <router-link
           to="/edit-time-table"
-          class="w-full bg-[#5C001E] hover:bg-[#4a0018] text-white font-bold py-3 rounded-md shadow text-xs transition-colors flex justify-center items-center gap-2"
+          class="w-full bg-white hover:bg-gray-50 text-gray-700 font-bold py-2.5 rounded-lg border border-gray-300 shadow-sm text-xs transition-all duration-200 active:scale-[0.98] flex justify-center items-center gap-2"
         >
           <span>
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
+              width="14"
+              height="14"
               fill="currentColor"
-              class="bi bi-pencil-fill"
+              class="bi bi-pencil-fill text-gray-500"
               viewBox="0 0 16 16"
             >
               <path
@@ -177,7 +177,7 @@
               />
             </svg>
           </span>
-          Edit time table
+          Edit Timetable
         </router-link>
       </div>
     </aside>

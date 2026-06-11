@@ -25,14 +25,21 @@ onMounted(() => {
       <AppSidebar />
 
       <!-- Main Dashboard Content -->
-      <main class="flex-1 flex flex-col px-[50px] py-[30px] gap-8 overflow-y-auto">
+      <main class="flex-1 flex flex-col px-10 py-8 gap-6 overflow-y-auto">
         <!-- Heading -->
         <div class="flex items-center justify-between w-full">
-          <h1 class="font-['Inter'] font-bold text-[40px] text-black uppercase">CALENDAR</h1>
+          <div>
+            <h1 class="font-['Inter'] font-extrabold text-3xl tracking-tight text-gray-900">
+              FYP Presentation Calendar
+            </h1>
+            <p class="text-sm text-gray-600 mt-1">
+              Review presentation sessions, examiner allocations, and timetable listings.
+            </p>
+          </div>
         </div>
 
         <!-- Divider -->
-        <hr class="border-[#2f2f2f] w-full" />
+        <hr class="border-gray-300 w-full opacity-60" />
 
         <!-- ═══════════════════════════════════════════════════════════════ -->
         <!-- CALENDAR COMPONENT                                             -->

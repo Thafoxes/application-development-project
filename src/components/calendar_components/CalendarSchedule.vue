@@ -1,7 +1,5 @@
 <template>
-  <div
-    class="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden w-full max-w-6xl mx-auto"
-  >
+  <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden w-full">
     <!-- Header Area -->
     <div
       class="bg-[#5C001F] text-white px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-4"
@@ -113,7 +111,7 @@
         <div
           v-for="day in daysOfWeek"
           :key="day"
-          class="bg-gray-100 py-3 text-center text-sm font-semibold text-gray-700"
+          class="bg-gray-50 py-2.5 text-center text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200"
         >
           {{ day }}
         </div>
@@ -122,12 +120,12 @@
         <div
           v-for="(dateInfo, index) in monthDays"
           :key="index"
-          class="min-h-[100px] p-2 hover:bg-[#FFFFAB]/20 transition-colors duration-300 relative"
+          class="min-h-[120px] p-2 hover:bg-[#5C001F]/5 transition-colors duration-300 relative"
           :class="[
-            !dateInfo.isCurrentMonth ? 'opacity-50' : '',
+            !dateInfo.isCurrentMonth ? 'opacity-40 bg-gray-50/50' : '',
             props.constraints.avoidWeekend &&
             (dateInfo.date.getDay() === 0 || dateInfo.date.getDay() === 6)
-              ? 'bg-[url(\'data:image/svg+xml;utf8,%3Csvg width=%2212%22 height=%2212%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cpath d=%22M-2,2 l4,-4 M0,12 l12,-12 M10,14 l4,-4%22 stroke=%22%2394a3b8%22 stroke-width=%222%22/%3E%3C/svg%3E\')] bg-gray-200/80 shadow-inner'
+              ? 'bg-[url(\'data:image/svg+xml;utf8,%3Csvg width=%2212%22 height=%2212%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cpath d=%22M-2,2 l4,-4 M0,12 l12,-12 M10,14 l4,-4%22 stroke=%22%23e2e8f0%22 stroke-width=%221.5%22/%3E%3C/svg%3E\')] bg-gray-50 shadow-inner'
               : 'bg-white',
           ]"
         >
@@ -177,8 +175,8 @@
           <div
             v-for="(dateInfo, index) in weekDays"
             :key="index"
-            class="py-3 text-center border-r border-gray-200 last:border-r-0 flex flex-col items-center justify-center"
-            :class="{ 'bg-[#FFFFAB]/30': dateInfo.isToday }"
+            class="py-3 text-center border-r border-gray-200 last:border-r-0 flex flex-col items-center justify-center transition-colors duration-200"
+            :class="{ 'bg-[#5C001F]/5': dateInfo.isToday }"
           >
             <span class="text-xs text-gray-500 uppercase font-semibold">{{
               daysOfWeekShort[index]
@@ -219,7 +217,7 @@
               :key="'cell-' + dayIndex + '-' + hour"
               class="h-[60px] border-b border-gray-100 transition-colors duration-300"
               :class="{
-                'bg-[url(\'data:image/svg+xml;utf8,%3Csvg width=%2212%22 height=%2212%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cpath d=%22M-2,2 l4,-4 M0,12 l12,-12 M10,14 l4,-4%22 stroke=%22%2394a3b8%22 stroke-width=%222%22/%3E%3C/svg%3E\')] bg-gray-200/80 shadow-inner':
+                'bg-[url(\'data:image/svg+xml;utf8,%3Csvg width=%2212%22 height=%2212%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cpath d=%22M-2,2 l4,-4 M0,12 l12,-12 M10,14 l4,-4%22 stroke=%22%23e2e8f0%22 stroke-width=%221.5%22/%3E%3C/svg%3E\')] bg-gray-50/50 shadow-inner':
                   isHourBlockedByConstraints(hour, dayIndex),
               }"
             ></div>
