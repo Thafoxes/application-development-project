@@ -83,6 +83,10 @@ The project implements a clean **3-Tier Architecture** to separate user interact
   - **ViewModel:** `<script setup>` contexts utilizing Vue's reactivity system to bind the template to active stores.
   - **Model:** State models powered by **Pinia** (e.g., `useCalendarStore`) and local schemas.
 - **Aesthetics:** Modern, responsive dashboard design utilizing dynamic overlays and clean custom CSS.
+- **Centralized Navigation Configuration:** 
+  - The single source of truth for the site menus is defined in [navigation.js](file:///d:/Github/application-development-project/src/config/navigation.js). It maps roles (`coordinator`, `student`, `supervisor`, `examiner`) to their respective array of navigation entries, paths, and icons.
+  - **Sidebar App Integration:** [AppSidebar.vue](file:///d:/Github/application-development-project/src/components/common_components/AppSidebar.vue) imports this configuration file to generate the main desktop left-hand drawer links dynamically based on the current user's authenticated role.
+  - **Header Mobile App Integration:** [AppHeader.vue](file:///d:/Github/application-development-project/src/components/common_components/AppHeader.vue) imports this same configuration file to drive the responsive mobile-viewport navigation dropdown overlay, ensuring that both views remain fully synchronized without duplicated lists.
 
 ### 2. Logic Tier (Backend / Application Server)
 - **Technologies:** Node.js + Express.js.
