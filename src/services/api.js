@@ -126,6 +126,11 @@ export const apiService = {
     return response.data
   },
 
+  getUserDetail: async (userId) => {
+    const response = await axios.get(`${API_BASE_URL}/api/users/${userId}`)
+    return response.data
+  },
+
   searchUsers: async (query, sessionId) => {
     const response = await axios.get(`${API_BASE_URL}/api/users/search`, {
       params: { q: query, session_id: sessionId },
