@@ -184,15 +184,17 @@
                         { label: 'T', value: 4 },
                         { label: 'F', value: 5 },
                         { label: 'S', value: 6 },
-                        { label: 'S', value: 7 }
+                        { label: 'S', value: 7 },
                       ]"
                       :key="day.value"
                       type="button"
                       @click="toggleWidgetAllowedDay(msg, day.value)"
                       class="w-7 h-7 rounded-full text-xs font-bold transition-all flex items-center justify-center cursor-pointer border"
-                      :class="msg.payload.allowedDays?.includes(day.value)
-                        ? 'bg-[#5C001F] text-[#f8be17] border-[#5C001F] shadow-sm'
-                        : 'bg-white text-gray-400 border-gray-200'"
+                      :class="
+                        msg.payload.allowedDays?.includes(day.value)
+                          ? 'bg-[#5C001F] text-[#f8be17] border-[#5C001F] shadow-sm'
+                          : 'bg-white text-gray-400 border-gray-200'
+                      "
                     >
                       {{ day.label }}
                     </button>
@@ -526,7 +528,7 @@ const toggleWidgetAllowedDay = (msg, val) => {
   }
   if (msg.payload.allowedDays.includes(val)) {
     if (msg.payload.allowedDays.length > 1) {
-      msg.payload.allowedDays = msg.payload.allowedDays.filter(d => d !== val)
+      msg.payload.allowedDays = msg.payload.allowedDays.filter((d) => d !== val)
     }
   } else {
     msg.payload.allowedDays.push(val)
