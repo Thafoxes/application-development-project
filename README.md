@@ -33,8 +33,8 @@
     <td></td>
     <td></td>
     <td> 
-      <a href="Schema/new_sql_schema-v5.sql">Schema setup v1-5: </a> <br> 
-      <a href="Schema/export_backup/backup v5.sql">Schema backup complete v1-5: </a> <br> 
+      <a href="Schema/new_sql_schema-v5.sql">Schema setup v1-5 </a> <br> 
+      <a href="Schema/export_backup/backup v5.sql">Schema backup complete v1-5</a> <br> 
     </td>
     <td></td>
   </tr>
