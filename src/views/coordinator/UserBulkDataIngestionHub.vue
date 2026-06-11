@@ -85,7 +85,7 @@ const handleConfirm = () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 p-6 flex flex-col justify-between">
+  <div class="min-h-screen bg-gray-50 flex flex-col justify-between">
     
     <!-- 1. Absolute Top Header -->
     <AppHeader />
