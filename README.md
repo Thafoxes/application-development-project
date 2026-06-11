@@ -26,13 +26,17 @@
   <tr>
     <td><strong>Jason Doe</strong></td>
      <td>
-     <a href="src/views/auth/LoginView.vue">login view</a>
-     <a href="src/views/auth/SignupView.vue">signup view</a>
-     <a href="src/views/coordinator">Coordinator module </a>
+     <a href="src/views/auth/LoginView.vue">Login view</a> <br>
+     <a href="src/views/auth/SignupView.vue">Signup view</a> <br>
+     <a href="src/views/coordinator">Coordinator module </a> <br>
      </td>
     <td></td>
     <td></td>
-    <td></td>
+    <td> 
+      <a href="Schema/new_sql_schema-v5.sql">Schema setup v1-5: </a> <br> 
+      <a href="Schema/export_backup/backup v5.sql">Schema backup complete v1-5: </a> <br> 
+
+    </td>
     <td></td>
   </tr>
   <tr>
