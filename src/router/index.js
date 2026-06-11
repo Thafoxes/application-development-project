@@ -57,7 +57,7 @@ const router = createRouter({
     {
       path: '/import-users',
       name: 'import-users',
-      component: () => import('../views/coordinator/UserBulkDataIngestionHub.vue'),
+      component: () => import('../views/coordinator/UserBulkDataImportView.vue/index.js'),
       meta: { requiresAuth: true },
     },
   ],

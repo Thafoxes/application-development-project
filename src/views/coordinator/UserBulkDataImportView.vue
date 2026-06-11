@@ -2,6 +2,9 @@
 import { ref, computed } from 'vue'
 import AppHeader from '../../components/common_components/AppHeader.vue'
 import AppFooter from '../../components/common_components/AppFooter.vue'
+import AppSidebar from '../../components/common_components/AppSidebar.vue'
+
+const isSidebarVisible = ref(true)
 
 // --- Reactive State ---
 const rawImportedRows = ref([])
@@ -90,20 +93,39 @@ const handleConfirm = () => {
     <!-- 1. Absolute Top Header -->
     <AppHeader />
 
-    <!-- Main Workspace Container -->
-    <main class="flex-grow flex flex-col max-w-7xl mx-auto w-full space-y-6 mt-6 mb-10">
+    <!-- Split View Layout for Sidebar -->
+    <div class="flex flex-1 w-full relative">
       
-      <!-- 2. Breadcrumbs & Interface Headings -->
-      <div class="space-y-2">
-        <nav class="text-sm text-gray-400 font-medium tracking-wide flex items-center space-x-1">
-          <router-link to="/dashboard" class="hover:text-gray-600 transition-colors">Dashboard</router-link>
-          <span>&gt;</span>
-          <span class="text-gray-700">Bulk Import Users</span>
-        </nav>
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <h1 class="text-3xl font-bold text-gray-900 tracking-tight">User Data Ingestion Hub</h1>
-        </div>
-      </div>
+      <!-- Reusable Dynamic Sidebar with toggle state -->
+      <AppSidebar v-if="isSidebarVisible" />
+
+      <!-- Main Content Container with Toggle button -->
+      <div class="flex-grow flex flex-col overflow-y-auto">
+        <main class="flex-grow flex flex-col max-w-7xl mx-auto w-full px-8 py-6 space-y-6 mb-4">
+          
+          <!-- 2. Breadcrumbs & Interface Headings -->
+          <div class="flex items-center justify-between w-full">
+            <nav class="text-sm font-semibold tracking-wide flex items-center space-x-1">
+              <router-link to="/dashboard" class="text-[#5C001F] hover:text-[#4A0019] transition-colors">Dashboard</router-link>
+              <span class="text-gray-400 font-normal">&gt;</span>
+              <span class="text-[#5C001F]/70">Bulk Import Users</span>
+            </nav>
+
+            <!-- Sidebar Toggle Button -->
+            <button 
+              @click="isSidebarVisible = !isSidebarVisible"
+              class="hidden lg:flex items-center space-x-2 px-3 py-1.5 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors shadow-sm text-xs font-semibold text-gray-700 focus:outline-none"
+            >
+              <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+              </svg>
+              <span>{{ isSidebarVisible ? 'Hide Sidebar' : 'Show Sidebar' }}</span>
+            </button>
+          </div>
+
+          <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <h1 class="text-3xl font-bold text-gray-900 tracking-tight">User Data Ingestion Hub</h1>
+          </div>
 
       <!-- 3. Notice Bar -->
       <div class="bg-amber-50 text-amber-900 border border-amber-200 p-3 rounded-lg text-sm flex items-center space-x-3 shadow-sm">
@@ -240,7 +262,7 @@ const handleConfirm = () => {
     </main>
 
     <!-- 7. Floating Action Container Bar (within the fluid layout base) -->
-    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-md max-w-7xl mx-auto w-full mb-4 flex items-center justify-between">
+    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-md max-w-7xl mx-auto w-full mb-6 flex items-center justify-between">
       <div class="flex items-center space-x-3 text-sm text-gray-600 font-medium">
         <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -259,6 +281,9 @@ const handleConfirm = () => {
         </button>
       </div>
     </div>
+    
+    </div> <!-- Close split-view flex-grow container -->
+    </div> <!-- Close split-view outer division -->
 
     <!-- 1. Absolute Bottom Footer -->
     <AppFooter />
