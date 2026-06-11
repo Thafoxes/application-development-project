@@ -6,13 +6,64 @@
 
 ---
 
-## 🌟 Introduction
+## Introduction
 
 **I-famous** is an intelligent Final Year Project (FYP) management and scheduling dashboard designed for Universiti Teknologi Malaysia (UTM). It solves the complex administrative problem of coordinating and scheduling presentation slots for students, supervisors, and examiners by leveraging asynchronous calendar cross-checking, automated conflict checking, and AI-driven slot allocation.
 
 ---
 
-## 🏗️ System Architecture
+## Team Members & Responsibilities
+
+<table>
+  <tr>
+    <th>Team Members</th>
+    <th>Frontend</th>
+    <th>API</th>
+    <th>Backend</th>
+    <th>Database</th>
+    <th>ML/AL</th>
+  </tr>
+  <tr>
+    <td><strong>Jason Doe</strong></td>
+     <td>
+     <a href="src/views/auth/LoginView.vue">login view</a>
+     <a href="src/views/auth/SignupView.vue">signup view</a>
+     <a href="src/views/coordinator">Coordinator module </a>
+     </td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+  </tr>
+  <tr>
+    <td><strong>Julkar Nahin</strong></td>
+     <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+  </tr>
+  <tr>
+    <td><strong>Hee Wah Hin</strong></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+  </tr>
+  <tr>
+    <td><strong>Daniel Rahman</strong></td>
+   <td></td>
+    <td></td>
+    <td> </td>
+    <td></td>
+    <td></td>
+  </tr>
+</table>
+
+---
+
+## System Architecture
 
 The project implements a clean **3-Tier Architecture** to separate user interaction, business logic, and transactional database states.
 
@@ -37,7 +88,7 @@ The project implements a clean **3-Tier Architecture** to separate user interact
 
 ---
 
-## 🗓️ Greedy Interval Scheduling & Auto-Assign
+## Greedy Interval Scheduling & Auto-Assign
 
 The core engine utilizes **Interval Arithmetic** and a **Constraint Satisfaction Problem (CSP)** solver to schedule conflict-free meetings automatically.
 
@@ -57,7 +108,7 @@ Because scheduling multi-agent appointments is NP-Hard, the AI solver applies a 
 
 ---
 
-## 🛠️ Project Setup
+## Project Setup
 
 ### Recommended IDE Setup
 [VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
