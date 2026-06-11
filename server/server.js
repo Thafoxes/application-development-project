@@ -643,7 +643,7 @@ app.post("/api/timetable/auto-assign", async (req, res) => {
       const [y, m, dayNum] = dateStr.split('-').map(Number);
       const jsDay = new Date(Date.UTC(y, m - 1, dayNum)).getUTCDay();
       const jsonDayOfWeek = jsDay === 0 ? 7 : jsDay; // 0 (Sun) -> 7 (Sun)
-      
+
       const recurringDay = schedule.weekly_recurring.find(r => r.day_of_week === jsonDayOfWeek);
       if (recurringDay && recurringDay.slots) {
         for (const slot of recurringDay.slots) {
@@ -697,10 +697,10 @@ app.post("/api/timetable/auto-assign", async (req, res) => {
     for (const mt of localAssignedSlots) {
       if (mt.date === dateStr) {
         const isStudentMatch = classId && mt.student?.class_id === classId;
-        const isUserMatch = (userId === mt.student?.user_id || 
-                             userId === mt.supervisor?.user_id || 
-                             mt.examiners?.some(ex => ex.user_id === userId));
-        
+        const isUserMatch = (userId === mt.student?.user_id ||
+          userId === mt.supervisor?.user_id ||
+          mt.examiners?.some(ex => ex.user_id === userId));
+
         if (isStudentMatch || isUserMatch) {
           if (slotStart < mt.end_time && slotEnd > mt.start_time) {
             return true;
@@ -861,6 +861,7 @@ app.get("/api/users/recent", (req, res) => {
   });
 });
 
+//use for manage user view and triggers the limit and offset ID
 app.get("/api/users/paginated", (req, res) => {
   const category = req.query.category;
   const page = parseInt(req.query.page) || 1;
@@ -899,6 +900,58 @@ app.get("/api/users/paginated", (req, res) => {
   });
 });
 
+app.get("/api/users/:id", (req, res) => {
+  const userId = req.params.id;
+
+  // Check if user is a student
+  const checkStudentSql = "SELECT EXISTS(SELECT 1 FROM students WHERE student_id = ?) AS is_student";
+
+  db.query(checkStudentSql, [userId], (err, results) => {
+    if (err) {
+      console.error("Error checking user role:", err);
+      return res.status(500).json({ error: "Failed to retrieve user details" });
+    }
+
+    const isStudent = results && results[0] && Number(results[0].is_student) === 1;
+
+    if (isStudent) {
+      db.query("CALL sp_GetStudentFYPDetail(?)", [userId], (spErr, spResults) => {
+        if (spErr) {
+          console.error("Error running sp_GetStudentFYPDetail:", spErr);
+          return res.status(500).json({ error: "Failed to retrieve student details" });
+        }
+
+        const studentData = spResults && spResults[0] && spResults[0][0];
+        if (!studentData) {
+          return res.status(404).json({ error: "User not found" });
+        }
+
+        res.json({
+          role: "student",
+          data: studentData
+        });
+      });
+    } else {
+      db.query("CALL sp_GetNonStudentUserDetail(?)", [userId], (spErr, spResults) => {
+        if (spErr) {
+          console.error("Error running sp_GetNonStudentUserDetail:", spErr);
+          return res.status(500).json({ error: "Failed to retrieve user details" });
+        }
+
+        const userData = spResults && spResults[0] && spResults[0][0];
+        if (!userData) {
+          return res.status(404).json({ error: "User not found" });
+        }
+
+        res.json({
+          role: userData.is_utm_staff === 1 ? "lecturer" : "outsider",
+          data: userData
+        });
+      });
+    }
+  });
+});
+
 app.delete("/api/users/:id", (req, res) => {
   db.query("DELETE FROM users WHERE user_id = ?", [req.params.id], (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
@@ -921,6 +974,7 @@ app.post("/api/users", (req, res) => {
     });
 });
 
+// update user
 app.put("/api/users/:id", (req, res) => {
   const { full_name, email, phone_number, expertise, affiliation } = req.body;
   const userId = req.params.id;
@@ -931,7 +985,7 @@ app.put("/api/users/:id", (req, res) => {
 
   db.query(
     "CALL sp_UpdateUserProfile(?,?,?,?,?,?);",
-    [full_name, email, phone_number || null, expertise || null, affiliation || null, userId],
+    [userId, full_name, email, phone_number || null, expertise || null, affiliation || null],
     (err, results) => {
       if (err) return res.status(500).json({ error: err.message });
       res.json({ message: "User updated successfully" });
