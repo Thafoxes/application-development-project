@@ -24,7 +24,7 @@
     <th>ML/AL</th>
   </tr>
   <tr>
-    <td><strong>Jason Doe</strong></td>
+    <td><strong>Jason Doe </strong> <br> (mainly focusing on coordinator module)</td>
      <td>
      <a href="src/views/auth/LoginView.vue">Login view</a> <br>
      <a href="src/views/auth/SignupView.vue">Signup view</a> <br>

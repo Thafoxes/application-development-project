@@ -41,6 +41,10 @@ const isActive = (path) => {
     />
     <NavigationButton linkName="Manage FYP" />
     <NavigationButton linkName="Export" />
-    <NavigationButton linkName="Import" />
+    <NavigationButton
+      linkName="Import"
+      :active="isActive('/import-users')"
+      @click="router.push('/import-users')"
+    />
   </aside>
 </template>

@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue'
-import AppHeader from '../components/AppHeader.vue'
-import AppFooter from '../components/AppFooter.vue'
+import AppHeader from '../../components/AppHeader.vue'
+import AppFooter from '../../components/AppFooter.vue'
 
 // --- Reactive State ---
 const rawImportedRows = ref([])
@@ -95,8 +95,10 @@ const handleConfirm = () => {
       
       <!-- 2. Breadcrumbs & Interface Headings -->
       <div class="space-y-2">
-        <nav class="text-sm text-gray-400 font-medium tracking-wide">
-          Dashboard > Coordinator > User Management > <span class="text-gray-700">Bulk Import Users</span>
+        <nav class="text-sm text-gray-400 font-medium tracking-wide flex items-center space-x-1">
+          <router-link to="/dashboard" class="hover:text-gray-600 transition-colors">Dashboard</router-link>
+          <span>&gt;</span>
+          <span class="text-gray-700">Bulk Import Users</span>
         </nav>
         <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
           <h1 class="text-3xl font-bold text-gray-900 tracking-tight">User Data Ingestion Hub</h1>
