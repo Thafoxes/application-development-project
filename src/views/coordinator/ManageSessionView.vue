@@ -228,7 +228,7 @@ const setActiveSession = async (id) => {
                   @click="setActiveSession(session.fyp_session_id)"
                   class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-gray-50 text-gray-500 border border-gray-300 hover:bg-[#5c001f] hover:text-white hover:border-[#5c001f] transition-all duration-200 cursor-pointer uppercase tracking-wider"
                 >
-                  Set As Active
+                  Archived
                 </button>
               </div>
 
