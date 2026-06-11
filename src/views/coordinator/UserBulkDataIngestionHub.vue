@@ -5,7 +5,7 @@ import AppFooter from '../../components/AppFooter.vue'
 
 // --- Reactive State ---
 const rawImportedRows = ref([])
-const searchQuery = ref('dasddadada')
+const searchQuery = ref('')
 const activeTab = ref('students')
 
 // --- Mock Data Generator (15 records) ---
