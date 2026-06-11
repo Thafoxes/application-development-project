@@ -2,11 +2,11 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
-import AppHeader from '@/components/AppHeader.vue'
+import AppHeader from '@/components/common_components/AppHeader.vue'
 import NavigationButton from '@/components/NavigationButton.vue'
 import CreateSessionModal from '@/components/CreateSessionModal.vue'
-import AppSidebar from '@/components/AppSidebar.vue'
-import AppFooter from '@/components/AppFooter.vue'
+import AppSidebar from '@/components/common_components/AppSidebar.vue'
+import AppFooter from '@/components/common_components/AppFooter.vue'
 
 const { user } = useAuth()
 const router = useRouter()

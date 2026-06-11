@@ -3,8 +3,8 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 import { useCalendarStore } from '@/stores/calendarStore'
-import AppHeader from '@/components/AppHeader.vue'
-import AppFooter from '@/components/AppFooter.vue'
+import AppHeader from '@/components/common_components/AppHeader.vue'
+import AppFooter from '@/components/common_components/AppFooter.vue'
 
 const router = useRouter()
 const { login } = useAuth()

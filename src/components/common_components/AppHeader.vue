@@ -147,10 +147,10 @@ const menuItems = computed(() => {
     >
       <div class="px-4 py-2 border-b border-gray-150 mb-2 flex items-center space-x-3">
         <div class="w-8 h-8 rounded-full bg-[#5c001f] flex items-center justify-center text-white font-bold text-xs uppercase shadow-sm">
-          {{ activeRole[0] }}
+          {{ user.full_name ? user.full_name.charAt(0).toUpperCase() : 'U' }}
         </div>
         <div>
-          <p class="text-xs font-bold text-gray-900 capitalize">{{ activeRole }} Portal Navigation</p>
+          <p class="text-xs font-bold text-gray-900 capitalize">{{ user.full_name || 'Username' }}</p>
           <p class="text-[10px] text-gray-400 font-semibold">{{ user.email }}</p>
         </div>
       </div>

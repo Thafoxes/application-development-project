@@ -2,8 +2,8 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 
-import AppHeader from '@/components/AppHeader.vue'
-import AppFooter from '@/components/AppFooter.vue'
+import AppHeader from '@/components/common_components/AppHeader.vue'
+import AppFooter from '@/components/common_components/AppFooter.vue'
 import FormStepper from '@/components/FormStepper.vue'
 import imgLine2 from '@/assets/f25212dbf403cb5eaf6315aeac6fdb23a11d908c.svg'
 

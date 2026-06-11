@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue'
-import AppHeader from '../../components/AppHeader.vue'
-import AppFooter from '../../components/AppFooter.vue'
+import AppHeader from '../../components/common_components/AppHeader.vue'
+import AppFooter from '../../components/common_components/AppFooter.vue'
 
 // --- Reactive State ---
 const rawImportedRows = ref([])

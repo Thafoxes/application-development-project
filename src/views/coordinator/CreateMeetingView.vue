@@ -4,9 +4,9 @@ import axios from 'axios'
 import { useCalendarStore } from '@/stores/calendarStore'
 import fypMockData from '../../../localData/fyp_mock_structure.json'
 import CalendarSchedule from '@/components/calendar_components/CalendarSchedule.vue'
-import AppHeader from '@/components/AppHeader.vue'
-import AppSidebar from '@/components/AppSidebar.vue'
-import AppFooter from '@/components/AppFooter.vue'
+import AppHeader from '@/components/common_components/AppHeader.vue'
+import AppSidebar from '@/components/common_components/AppSidebar.vue'
+import AppFooter from '@/components/common_components/AppFooter.vue'
 
 const calendarStore = useCalendarStore()
 

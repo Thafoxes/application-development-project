@@ -3,9 +3,9 @@ import { onMounted } from 'vue'
 import { useCalendarStore } from '@/stores/calendarStore'
 
 import ViewCalendarComponent from '@/components/calendar_components/ViewCalendarComponent.vue'
-import AppHeader from '@/components/AppHeader.vue'
-import AppSidebar from '@/components/AppSidebar.vue'
-import AppFooter from '@/components/AppFooter.vue'
+import AppHeader from '@/components/common_components/AppHeader.vue'
+import AppSidebar from '@/components/common_components/AppSidebar.vue'
+import AppFooter from '@/components/common_components/AppFooter.vue'
 
 const calendarStore = useCalendarStore()
 
