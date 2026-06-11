@@ -46,7 +46,7 @@ const menuItems = computed(() => {
 
 <template>
   <div
-    class="bg-utm-dark-maroon w-full h-[100px] lg:h-[70px] px-[20px] py-[8px] flex items-center justify-between shrink-0 shadow-sm relative z-50 animate-fade-in"
+    class="bg-utm-dark-maroon w-full h-[70px] px-[20px] py-[8px] flex items-center justify-between shrink-0 shadow-sm relative z-50 animate-fade-in"
   >
     <!-- Left side -->
     <div class="flex items-center gap-[10px] shrink-0">
@@ -79,7 +79,7 @@ const menuItems = computed(() => {
         class="flex items-center hover:opacity-90 transition-opacity no-underline"
       >
         <div
-          class="h-[71.186px] lg:h-[45px] overflow-clip relative shrink-0 w-[210px] lg:w-[133px] flex items-center"
+          class="h-[32px] lg:h-[45px] overflow-clip relative shrink-0 w-[95px] lg:w-[133px] flex items-center"
         >
           <img
             :src="imgLogoUtmReversePutih1"
@@ -88,9 +88,9 @@ const menuItems = computed(() => {
           />
         </div>
         <!-- Vertical Line Separator -->
-        <div class="h-[70px] lg:h-[40px] w-px bg-white/40 shrink-0 mx-2"></div>
+        <div class="h-[30px] lg:h-[40px] w-px bg-white/40 shrink-0 mx-2"></div>
         <p
-          class="capitalize font-bold text-[48px] lg:text-[28px] text-white whitespace-nowrap tracking-wide leading-none pt-0.5 font-['Inter']"
+          class="capitalize font-bold text-[20px] lg:text-[28px] text-white whitespace-nowrap tracking-wide leading-none pt-0.5 font-['Inter']"
         >
           I-FAMOUS
         </p>
@@ -167,7 +167,7 @@ const menuItems = computed(() => {
     >
       <div
         v-if="showMobileMenu && user"
-        class="absolute top-[100px] left-0 right-0 bg-white border-b border-gray-200 shadow-xl z-50 p-4 flex flex-col space-y-1 lg:hidden"
+        class="absolute top-[70px] left-0 right-0 bg-white border-b border-gray-200 shadow-xl z-50 p-4 flex flex-col space-y-1 lg:hidden"
       >
         <div class="px-4 py-2 border-b border-gray-150 mb-2 flex items-center space-x-3">
           <div
