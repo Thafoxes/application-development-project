@@ -29,6 +29,10 @@
      <a href="src/views/auth/LoginView.vue">Login view</a> <br>
      <a href="src/views/auth/SignupView.vue">Signup view</a> <br>
      <a href="src/views/coordinator">Coordinator module </a> <br>
+     <a href="src/views/coordinator/CalendarView.vue">Calendar module </a> <br>
+     <a href="src/views/coordinator/EditTimeTableView.vue">Edit Time table  </a> <br>
+     <a href="src/views/coordinator/ManageUserView.vue">Manage user view </a> <br>
+     <a href="src/views/coordinator">Coordinator module </a> <br>
      </td>
     <td></td>
     <td></td>
