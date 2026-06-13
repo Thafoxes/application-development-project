@@ -13,7 +13,8 @@
       "student_id": 4001,
       "full_name": "Shaikh Amir Husaini Bin Sh.Mohd Saifuddeen",
       "metric_number": "A24MJ5068",
-      "email": "amir.husaini@graduate.utm.my"
+      "email": "amir.husaini@graduate.utm.my",
+      "cgpa": 3.85
     },
     "supervisor": {
       "supervisor_id": 4020,
@@ -61,7 +62,8 @@
       "student_id": 4002,
       "full_name": "Ahmad Faiz Bin Roslan",
       "metric_number": "A24MJ5111",
-      "email": "ahmad.faiz@graduate.utm.my"
+      "email": "ahmad.faiz@graduate.utm.my",
+      "cgpa": 3.45
     },
     "supervisor": null,
     "abstract": "Water management in agriculture is crucial. This project designs a precision smart greenhouse watering system utilizing IoT sensor arrays to check soil humidity levels and trigger drip irrigation.",
@@ -105,7 +107,8 @@
       "student_id": 4003,
       "full_name": "Siti Nurhaliza Binti Osman",
       "metric_number": "A24MJ5222",
-      "email": "siti.nurhaliza@graduate.utm.my"
+      "email": "siti.nurhaliza@graduate.utm.my",
+      "cgpa": 3.92
     },
     "supervisor": {
       "supervisor_id": 4016,

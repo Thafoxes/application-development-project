@@ -455,6 +455,8 @@ const mapProposalToFrontend = (p) => {
     fyp_session_id: p.fyp_session_id,
     studentName: p.student?.full_name || p.studentName || '',
     matricNo: p.student?.metric_number || p.matricNo || '',
+    studentEmail: p.student?.email || p.studentEmail || '',
+    cgpa: p.student?.cgpa || p.cgpa || null,
     projectTitle: p.title || p.projectTitle || '',
     projectType: p.projectType || 'System Development',
     status: p.status || 'submitted',
