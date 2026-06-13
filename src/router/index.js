@@ -69,13 +69,13 @@ const router = createRouter({
     {
       path: '/manage-fyp',
       name: 'manage-fyp',
-      component: () => import('../views/coordinator/ManageFYPView.vue'),
+      component: () => import('../views/coordinator/fyp_module/ManageFYPProposalsView.vue'),
       meta: { requiresAuth: true },
     },
     {
       path: '/manage-fyp/:id',
       name: 'view-fyp-proposal',
-      component: () => import('../views/coordinator/ViewFYPProposalView.vue'),
+      component: () => import('../views/coordinator/fyp_module/ViewFYPProposalView.vue'),
       meta: { requiresAuth: true },
     },
   ],

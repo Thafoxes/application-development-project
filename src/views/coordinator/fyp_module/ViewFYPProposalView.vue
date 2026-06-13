@@ -204,6 +204,17 @@ const fetchProposalDetails = async () => {
 
 const handleStatusUpdate = async (status) => {
   if (isActioning.value) return
+
+  let feedback = null
+  if (status === 'rejected') {
+    feedback = prompt('Please provide feedback on why this proposal is rejected:')
+    if (feedback === null) return // user canceled
+    if (!feedback.trim()) {
+      alert('Feedback is required to reject a proposal.')
+      return
+    }
+  }
+
   isActioning.value = true
   try {
     const response = await fetch(`${API_BASE_URL}/api/coordinator/fyp-status/${proposalId}`, {
@@ -211,7 +222,7 @@ const handleStatusUpdate = async (status) => {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ status }),
+      body: JSON.stringify({ status, feedback }),
     })
     const data = await response.json()
     if (response.ok && data.success) {
@@ -404,6 +415,9 @@ onMounted(() => {
                   }"
                 >
                   {{ proposal.status }}
+                </span>
+                <span v-if="proposal.status?.toLowerCase() === 'rejected' && proposal.feedback" class="block text-xs text-red-600 mt-2 max-w-[200px]">
+                  <strong>Reason:</strong> {{ proposal.feedback }}
                 </span>
               </div>
               <div class="mt-1">

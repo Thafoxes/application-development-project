@@ -117,13 +117,23 @@ const setActiveTab = async (tabName) => {
 }
 
 const updateStatus = async (projectId, status) => {
+  let feedback = null
+  if (status === 'rejected') {
+    feedback = prompt('Please provide feedback on why this proposal is rejected:')
+    if (feedback === null) return // user canceled
+    if (!feedback.trim()) {
+      alert('Feedback is required to reject a proposal.')
+      return
+    }
+  }
+
   try {
     const response = await fetch(`${API_BASE_URL}/api/coordinator/fyp-status/${projectId}`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ status }),
+      body: JSON.stringify({ status, feedback }),
     })
     const data = await response.json()
     if (response.ok && data.success) {
@@ -395,19 +405,24 @@ onMounted(async () => {
                     </td>
 
                     <td class="px-5 py-4">
-                      <span
-                        class="px-3 py-1 rounded-full font-bold text-xs uppercase"
-                        :class="{
-                          'bg-yellow-100 text-yellow-800':
-                            project.status?.toLowerCase() === 'submitted' ||
-                            project.status?.toLowerCase() === 'pending',
-                          'bg-green-100 text-green-800':
-                            project.status?.toLowerCase() === 'approved',
-                          'bg-red-100 text-red-800': project.status?.toLowerCase() === 'rejected',
-                        }"
-                      >
-                        {{ project.status }}
-                      </span>
+                      <div class="flex flex-col gap-1">
+                        <span
+                          class="px-3 py-1 rounded-full font-bold text-xs uppercase w-fit"
+                          :class="{
+                            'bg-yellow-100 text-yellow-800':
+                              project.status?.toLowerCase() === 'submitted' ||
+                              project.status?.toLowerCase() === 'pending',
+                            'bg-green-100 text-green-800':
+                              project.status?.toLowerCase() === 'approved',
+                            'bg-red-100 text-red-800': project.status?.toLowerCase() === 'rejected',
+                          }"
+                        >
+                          {{ project.status }}
+                        </span>
+                        <span v-if="project.status?.toLowerCase() === 'rejected' && project.feedback" class="text-xs text-red-600 max-w-[200px]">
+                          <strong>Reason:</strong> {{ project.feedback }}
+                        </span>
+                      </div>
                     </td>
 
                     <td class="px-5 py-4 font-medium text-gray-700">
@@ -564,19 +579,24 @@ onMounted(async () => {
                     </td>
 
                     <td class="px-5 py-4">
-                      <span
-                        class="px-3 py-1 rounded-full text-xs font-bold font-bold text-xs uppercase"
-                        :class="{
-                          'bg-yellow-100 text-yellow-800':
-                            project.status?.toLowerCase() === 'submitted' ||
-                            project.status?.toLowerCase() === 'pending',
-                          'bg-green-100 text-green-800':
-                            project.status?.toLowerCase() === 'approved',
-                          'bg-red-100 text-red-800': project.status?.toLowerCase() === 'rejected',
-                        }"
-                      >
-                        {{ project.status }}
-                      </span>
+                      <div class="flex flex-col gap-1">
+                        <span
+                          class="px-3 py-1 rounded-full text-xs font-bold uppercase w-fit"
+                          :class="{
+                            'bg-yellow-100 text-yellow-800':
+                              project.status?.toLowerCase() === 'submitted' ||
+                              project.status?.toLowerCase() === 'pending',
+                            'bg-green-100 text-green-800':
+                              project.status?.toLowerCase() === 'approved',
+                            'bg-red-100 text-red-800': project.status?.toLowerCase() === 'rejected',
+                          }"
+                        >
+                          {{ project.status }}
+                        </span>
+                        <span v-if="project.status?.toLowerCase() === 'rejected' && project.feedback" class="text-xs text-red-600 max-w-[150px]">
+                          <strong>Reason:</strong> {{ project.feedback }}
+                        </span>
+                      </div>
                     </td>
                   </tr>
                 </tbody>
