@@ -30,7 +30,9 @@ const db = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
-  ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: true } : undefined
+  ssl: process.env.DB_SSL === 'true' ? {
+    rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false'
+  } : undefined
 });
 
 console.log("Connected to database.");
@@ -669,7 +671,7 @@ app.post("/api/supervisor-matching/assign", (req, res) => {
         if (fs.existsSync(userDataFilePath)) {
           const usersRaw = fs.readFileSync(userDataFilePath, 'utf8');
           const users = JSON.parse(usersRaw);
-          
+
           let updated = false;
           users.forEach(u => {
             // Decrement old supervisor
@@ -686,7 +688,7 @@ app.post("/api/supervisor-matching/assign", (req, res) => {
 
           if (updated) {
             fs.writeFileSync(userDataFilePath, JSON.stringify(users, null, 4));
-            
+
             // Also write to src/mock/user_data.json if it exists
             const mockUserPath = path.join(__dirname, '..', 'src', 'mock', 'user_data.json');
             if (fs.existsSync(mockUserPath)) {
