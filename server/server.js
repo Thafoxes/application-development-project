@@ -462,6 +462,8 @@ const mapProposalToFrontend = (p) => {
     supervisorName: p.supervisor?.full_name || p.supervisorName || null,
     supervisorEmail: p.supervisor?.email || p.supervisorEmail || null,
     matchScore: p.matchScore || null,
+    github_link: p.github_link || null,
+    drive_link: p.drive_link || null,
     abstract: p.abstract || '',
     keywords: p.keywords || '',
     fileName: p.fileName || 'Proposal document',
