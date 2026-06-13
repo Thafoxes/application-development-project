@@ -21,10 +21,9 @@
             "cgpa": 3.85
         },
         "supervisor": {
-            "supervisor_id": 4020,
+            "supervisor_id": 2,
             "full_name": "Dr. Sarah",
-            "email": "dr.sarah@utm.my",
-            "status": "approved"
+            "email": "dr.sarah@utm.my"
         },
         "abstract": "Managing academic progression is a significant challenge for students who must navigate complex course structures while tracking failed or missed subjects. Traditional methods of checking graduation eligibility are manual and prone to human error, often leading to delayed graduations due to missing credit hours. The system addresses this by implementing a Vue.js-based Credit Audit Dashboard that identifies failed or missed subjects and calculates remaining credit hours in real time.",
         "keywords": "Vue.js, Academic Advisor, Credit Audit Dashboard, Reactive State Management, Pinia, Academic Progression, Graduation Eligibility",
@@ -73,11 +72,7 @@
             "email": "ahmad.faiz@graduate.utm.my",
             "cgpa": 3.45
         },
-        "supervisor": {
-            "supervisor_id": 1,
-            "full_name": "Ts. Dr. Tan",
-            "email": "tan@utm.my"
-        },
+        "supervisor": null,
         "examiners": [
             {
                 "user_id": 4,
@@ -131,12 +126,7 @@
             "email": "siti.nurhaliza@graduate.utm.my",
             "cgpa": 3.92
         },
-        "supervisor": {
-            "supervisor_id": 4016,
-            "full_name": "Dr. Sarah",
-            "email": "dr.sarah@utm.my",
-            "status": "pending"
-        },
+        "supervisor": null,
         "abstract": "Cyberbullying is an increasing issue on university campus forums. This research uses machine learning classification algorithms to detect patterns of offensive comments and toxic language on student-facing public forums.",
         "keywords": "Cyberbullying, Machine Learning, Natural Language Processing, BERT Model, Sentiment Analysis",
         "details": {
@@ -207,11 +197,7 @@
             "email": "sharmila.devi@graduate.utm.my",
             "cgpa": 3.71
         },
-        "supervisor": {
-            "supervisor_id": 4022,
-            "full_name": "Prof. John Smith",
-            "status": "approved"
-        },
+        "supervisor": null,
         "abstract": "Educational credentials fraud remains a critical issue globally. This project designs a secure web dashboard using smart contracts on the Ethereum blockchain to allow recruiters to instantly verify graduation details without central authorities.",
         "keywords": "Blockchain, Ethereum, Smart Contracts, Solidity, Credential Verification",
         "details": {
@@ -243,11 +229,7 @@
             "email": "lim.kahseng@graduate.utm.my",
             "cgpa": 3.58
         },
-        "supervisor": {
-            "supervisor_id": 4023,
-            "email": "dr.neo@utm.my",
-            "status": "rejected"
-        },
+        "supervisor": null,
         "abstract": "Student burnout and stress often go unnoticed until academic performance is severely affected. This study explores the feasibility of predicting academic risk by building an unsupervised model trained on Virtual Learning Environment (VLE) engagement indicators.",
         "keywords": "Predictive Analytics, Academic Burnout, Anomaly Detection, Machine Learning, VLE logs",
         "details": {
