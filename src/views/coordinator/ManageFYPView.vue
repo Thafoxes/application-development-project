@@ -101,6 +101,13 @@ const filteredProposals = computed(() => {
   })
 })
 
+const submittedCount = computed(() => submittedProposals.value.length)
+const pendingReviewCount = computed(() => {
+  return submittedProposals.value.filter(
+    (p) => p.status?.toLowerCase() === 'submitted' || p.status?.toLowerCase() === 'pending',
+  ).length
+})
+
 const setActiveTab = async (tabName) => {
   activeTab.value = tabName
 
@@ -275,12 +282,12 @@ onMounted(async () => {
             <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-7">
               <div class="rounded-lg bg-gray-50 border border-gray-300 p-6">
                 <p class="text-sm text-gray-500 font-bold">Submitted Proposals</p>
-                <p class="text-[34px] font-bold text-[#5c001f] mt-1">12</p>
+                <p class="text-[34px] font-bold text-[#5c001f] mt-1">{{ submittedCount }}</p>
                 <p class="text-xs text-gray-500 mt-1">Waiting in coordinator queue</p>
               </div>
               <div class="rounded-lg bg-gray-50 border border-gray-300 p-6">
                 <p class="text-sm text-gray-500 font-bold">Pending Review</p>
-                <p class="text-[34px] font-bold text-[#5c001f] mt-1">8</p>
+                <p class="text-[34px] font-bold text-[#5c001f] mt-1">{{ pendingReviewCount }}</p>
                 <p class="text-xs text-gray-500 mt-1">Ready for status check</p>
               </div>
               <div class="rounded-lg bg-gray-50 border border-gray-300 p-6">
