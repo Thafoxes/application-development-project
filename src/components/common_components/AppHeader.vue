@@ -148,6 +148,13 @@ const menuItems = computed(() => {
           <div class="px-4 py-2 text-sm text-gray-500 border-b border-gray-100 font-medium">
             {{ user.email }}
           </div>
+          <router-link
+            to="/profile"
+            class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 font-bold no-underline"
+            @click="showDropdown = false"
+          >
+            My Profile
+          </router-link>
           <button
             @click="handleLogout"
             class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 font-bold"
@@ -312,6 +319,19 @@ const menuItems = computed(() => {
             </svg>
           </span>
           <span>{{ item.name }}</span>
+        </button>
+
+        <!-- My Profile Mobile Button -->
+        <button
+          @click="handleMobileNavigate('/profile')"
+          class="w-full flex items-center px-4 py-3 rounded-lg text-sm font-semibold tracking-wide transition-all duration-200 outline-none border-none text-left text-gray-600 hover:bg-gray-100 hover:text-gray-900 bg-transparent mt-2"
+        >
+          <span class="mr-3.5 flex-shrink-0 text-gray-500">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+            </svg>
+          </span>
+          <span>My Profile</span>
         </button>
 
         <!-- Logout Action Button in Mobile Menu Overlay -->

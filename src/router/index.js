@@ -13,6 +13,12 @@ const router = createRouter({
       component: () => import('../views/auth/SignupView.vue'),
     },
     {
+      path: '/profile',
+      name: 'profile',
+      component: () => import('../views/ProfileView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/dashboard',
       name: 'dashboard',
       component: () => import('../views/coordinator/DashboardView.vue'),
