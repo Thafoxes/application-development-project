@@ -465,6 +465,7 @@ const mapProposalToFrontend = (p) => {
     supervisorName: p.supervisor?.full_name || p.supervisorName || null,
     supervisorEmail: p.supervisor?.email || p.supervisorEmail || null,
     supervisorStatus: p.supervisor?.status || (p.supervisor ? 'pending' : null),
+    supervisor: p.supervisor || null,
     use_case_diagrams: p.use_case_diagrams || [],
     matchScore: p.matchScore || null,
     github_link: p.github_link || null,
@@ -586,7 +587,9 @@ app.get("/api/coordinator/supervisor-candidates", (req, res) => {
           co_org_name: u.co_org_name || null,
           expertise: u.expertise || [],
           max_capacity,
-          current_capacity
+          current_capacity,
+          sv_capacity: u.sv_capacity !== undefined ? u.sv_capacity : u.sv_vapacity,
+          sv_vapacity: u.sv_vapacity !== undefined ? u.sv_vapacity : u.sv_capacity
         };
       });
       res.json({ success: true, candidates: enriched });
@@ -665,7 +668,7 @@ app.post("/api/supervisor-matching/assign", (req, res) => {
           full_name: supervisor.name || supervisor.full_name,
           email: supervisor.email
         };
-        proposals[idx].status = "approved"; // Automatically approve upon supervisor assignment
+
         fs.writeFileSync(proposalsFilePath, JSON.stringify(proposals, null, 4));
         return res.json({ success: true, assignment: mapProposalToFrontend(proposals[idx]) });
       }
