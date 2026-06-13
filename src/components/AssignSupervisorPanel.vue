@@ -56,15 +56,57 @@ const triggerDrawerAISuggest = async () => {
   drawerAIRecommendations.value = []
   
   try {
-    const candidatesList = filteredLecturers.value
-    
+    // 1. Get all eligible supervisor candidates (UTM staff and Industry/UTM affiliation)
+    const eligibleCandidates = candidates.value.filter(
+      u => u.is_utm_staff === true || u.affiliation === 'UTM' || u.affiliation === 'Industry'
+    )
+
+    // 2. Filter out disqualified examiners
+    const nonDisqualified = eligibleCandidates.filter(
+      c => !isExaminerConflict(props.project, c)
+    )
+
+    // 3. Score candidates based on expertise tag matches in project title, abstract, and keywords
+    const pTitle = (props.project.projectTitle || props.project.title || '').toLowerCase()
+    const pAbstract = (props.project.abstract || '').toLowerCase()
+    const pKeywords = (props.project.keywords || '').toLowerCase()
+    const combinedProjectText = `${pTitle} ${pAbstract} ${pKeywords}`
+
+    const scoredCandidates = nonDisqualified.map(cand => {
+      let score = 0
+      const tags = cand.expertise || []
+      
+      tags.forEach(tag => {
+        const tagLower = tag.toLowerCase().trim()
+        if (!tagLower) return
+
+        // Check if the tag is contained in the project text
+        if (combinedProjectText.includes(tagLower)) {
+          score += 1
+          // Boost score if it specifically matches title or keywords
+          if (pTitle.includes(tagLower)) score += 1
+          if (pKeywords.includes(tagLower)) score += 1
+        }
+      })
+      
+      return { cand, score }
+    })
+
+    // 4. Sort by match score descending
+    scoredCandidates.sort((a, b) => b.score - a.score)
+
+    // 5. Slice top 15 candidates
+    const topCandidates = scoredCandidates.slice(0, 15).map(item => item.cand)
+
+    console.log('[AI Assistant Pre-filtering] Base candidates:', eligibleCandidates.length, 'Non-disqualified:', nonDisqualified.length, 'Top 15 selected:', topCandidates.map(c => `${c.full_name} (${c.user_id}, score:${scoredCandidates.find(sc => sc.cand.user_id === c.user_id).score})`))
+
     // Create a context copy with dynamic fyp_title to satisfy requirements
     const fypProjectContext = {
       ...props.project,
       fyp_title: props.project.projectTitle || props.project.title || ''
     }
     
-    const recs = await getAISuggestedSupervisor(fypProjectContext, candidatesList)
+    const recs = await getAISuggestedSupervisor(fypProjectContext, topCandidates)
     drawerAIRecommendations.value = recs
   } catch (err) {
     console.error('Error in AI Suggest:', err)
@@ -73,6 +115,7 @@ const triggerDrawerAISuggest = async () => {
     isAnalyzing.value = false
   }
 }
+
 
 const isExaminerConflict = (project, candidate) => {
   if (!project || !project.examiners || !Array.isArray(project.examiners)) return false
