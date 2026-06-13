@@ -222,7 +222,7 @@ const handleStatusUpdate = async (status) => {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ status, feedback }),
+      body: JSON.stringify({ status, coordinator_comments: feedback }),
     })
     const data = await response.json()
     if (response.ok && data.success) {
@@ -416,8 +416,8 @@ onMounted(() => {
                 >
                   {{ proposal.status }}
                 </span>
-                <span v-if="proposal.status?.toLowerCase() === 'rejected' && proposal.feedback" class="block text-xs text-red-600 mt-2 max-w-[200px]">
-                  <strong>Reason:</strong> {{ proposal.feedback }}
+                <span v-if="proposal.status?.toLowerCase() === 'rejected' && proposal.coordinator_comments" class="block text-xs text-red-600 mt-2 max-w-[200px]">
+                  <strong>Reason:</strong> {{ proposal.coordinator_comments }}
                 </span>
               </div>
               <div class="mt-1">
@@ -482,6 +482,26 @@ onMounted(() => {
                 <X class="w-4 h-4" />
                 Reject Proposal
               </button>
+            </div>
+          </div>
+
+          <!-- Proposal Rejected Callout Banner -->
+          <div
+            v-if="proposal.status?.toLowerCase() === 'rejected'"
+            class="bg-red-50 border border-red-200 rounded-2xl p-6 flex flex-col gap-2"
+          >
+            <h3 class="font-bold text-red-950 flex items-center gap-2">
+              <AlertTriangle class="w-5 h-5 text-red-700" />
+              Proposal Rejected
+            </h3>
+            <p class="text-sm text-red-800">
+              This proposal has been rejected by the coordinator.
+            </p>
+            <div
+              v-if="proposal.coordinator_comments"
+              class="mt-2 text-sm bg-white p-4 rounded-xl border border-red-200 font-medium text-red-900 shadow-sm"
+            >
+              <strong>Rejection Comments:</strong> {{ proposal.coordinator_comments }}
             </div>
           </div>
 

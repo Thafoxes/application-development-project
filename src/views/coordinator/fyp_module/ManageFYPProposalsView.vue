@@ -133,7 +133,7 @@ const updateStatus = async (projectId, status) => {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ status, feedback }),
+      body: JSON.stringify({ status, coordinator_comments: feedback }),
     })
     const data = await response.json()
     if (response.ok && data.success) {
@@ -419,8 +419,8 @@ onMounted(async () => {
                         >
                           {{ project.status }}
                         </span>
-                        <span v-if="project.status?.toLowerCase() === 'rejected' && project.feedback" class="text-xs text-red-600 max-w-[200px]">
-                          <strong>Reason:</strong> {{ project.feedback }}
+                        <span v-if="project.status?.toLowerCase() === 'rejected' && project.coordinator_comments" class="text-xs text-red-600 max-w-[200px]">
+                          <strong>Reason:</strong> {{ project.coordinator_comments }}
                         </span>
                       </div>
                     </td>
@@ -593,8 +593,8 @@ onMounted(async () => {
                         >
                           {{ project.status }}
                         </span>
-                        <span v-if="project.status?.toLowerCase() === 'rejected' && project.feedback" class="text-xs text-red-600 max-w-[150px]">
-                          <strong>Reason:</strong> {{ project.feedback }}
+                        <span v-if="project.status?.toLowerCase() === 'rejected' && project.coordinator_comments" class="text-xs text-red-600 max-w-[150px]">
+                          <strong>Reason:</strong> {{ project.coordinator_comments }}
                         </span>
                       </div>
                     </td>

@@ -472,7 +472,7 @@ const mapProposalToFrontend = (p) => {
     abstract: p.abstract || '',
     keywords: p.keywords || '',
     fileName: p.fileName || 'Proposal document',
-    feedback: p.feedback || null,
+    coordinator_comments: p.coordinator_comments || null,
     details: p.details || {}
   };
 };
@@ -516,7 +516,7 @@ app.get("/api/coordinator/fyp-proposal/:id", (req, res) => {
 app.patch("/api/coordinator/fyp-status/:id", (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const { status, matchScore, feedback } = req.body;
+    const { status, matchScore, coordinator_comments } = req.body;
     if (fs.existsSync(proposalsFilePath)) {
       const raw = fs.readFileSync(proposalsFilePath, 'utf8');
       const proposals = JSON.parse(raw);
@@ -525,11 +525,11 @@ app.patch("/api/coordinator/fyp-status/:id", (req, res) => {
         proposals[idx].status = status.toLowerCase();
         if (status.toLowerCase() === 'approved') {
           proposals[idx].status = 'approved';
-          proposals[idx].feedback = null; // Clear feedback upon approval
+          proposals[idx].coordinator_comments = null; // Clear comments upon approval
         } else if (status.toLowerCase() === 'rejected') {
           proposals[idx].status = 'rejected';
-          if (feedback !== undefined) {
-            proposals[idx].feedback = feedback;
+          if (coordinator_comments !== undefined) {
+            proposals[idx].coordinator_comments = coordinator_comments;
           }
         }
         if (matchScore !== undefined) {
