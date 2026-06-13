@@ -3,6 +3,8 @@ const express = require("express");
 const mysql = require("mysql2");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
+const fs = require("fs");
+const path = require("path");
 
 require("dotenv").config();
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -444,9 +446,173 @@ app.post("/api/timetable/crosscheck", (req, res) => {
     });
 });
 
+// --- FYP PROPOSALS & AI MATCHING ENDPOINTS (File-based Mock Data) ---
+const proposalsFilePath = path.join(__dirname, '..', 'localData', 'fyp_proposals.json');
+
+const mapProposalToFrontend = (p) => {
+  return {
+    project_id: p.project_id,
+    fyp_session_id: p.fyp_session_id,
+    studentName: p.student?.full_name || p.studentName || '',
+    matricNo: p.student?.metric_number || p.matricNo || '',
+    projectTitle: p.title || p.projectTitle || '',
+    projectType: p.projectType || 'System Development',
+    status: p.status || 'submitted',
+    aiStatus: p.aiStatus || 'Pending AI Matching',
+    supervisorName: p.supervisor?.full_name || p.supervisorName || null,
+    supervisorEmail: p.supervisor?.email || p.supervisorEmail || null,
+    matchScore: p.matchScore || null,
+    abstract: p.abstract || '',
+    keywords: p.keywords || '',
+    fileName: p.fileName || 'Proposal document',
+    details: p.details || {}
+  };
+};
+
+app.get("/api/coordinator/fyp-queue", (req, res) => {
+  try {
+    if (fs.existsSync(proposalsFilePath)) {
+      const raw = fs.readFileSync(proposalsFilePath, 'utf8');
+      const proposals = JSON.parse(raw);
+      const mapped = proposals.map(mapProposalToFrontend);
+      res.json({ success: true, projects: mapped });
+    } else {
+      res.json({ success: true, projects: [] });
+    }
+  } catch (err) {
+    console.error("Failed to load proposals queue:", err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get("/api/coordinator/fyp-proposal/:id", (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (fs.existsSync(proposalsFilePath)) {
+      const raw = fs.readFileSync(proposalsFilePath, 'utf8');
+      const proposals = JSON.parse(raw);
+      const proposal = proposals.find(p => p.project_id === id);
+      if (!proposal) {
+        return res.status(404).json({ success: false, error: "Proposal not found" });
+      }
+      res.json({ success: true, proposal: mapProposalToFrontend(proposal) });
+    } else {
+      res.status(404).json({ success: false, error: "Proposal not found" });
+    }
+  } catch (err) {
+    console.error("Failed to load proposal details:", err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.patch("/api/coordinator/fyp-status/:id", (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const { status, matchScore } = req.body;
+    if (fs.existsSync(proposalsFilePath)) {
+      const raw = fs.readFileSync(proposalsFilePath, 'utf8');
+      const proposals = JSON.parse(raw);
+      const idx = proposals.findIndex(p => p.project_id === id);
+      if (idx !== -1) {
+        proposals[idx].status = status.toLowerCase();
+        if (status.toLowerCase() === 'approved') {
+          proposals[idx].status = 'approved';
+        } else if (status.toLowerCase() === 'rejected') {
+          proposals[idx].status = 'rejected';
+        }
+        if (matchScore !== undefined) {
+          proposals[idx].matchScore = matchScore;
+        }
+        fs.writeFileSync(proposalsFilePath, JSON.stringify(proposals, null, 4));
+        return res.json({ success: true, project: mapProposalToFrontend(proposals[idx]) });
+      }
+    }
+    res.status(404).json({ success: false, error: "Proposal not found" });
+  } catch (err) {
+    console.error("Failed to update status:", err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get("/api/supervisor-matching/projects", (req, res) => {
+  try {
+    if (fs.existsSync(proposalsFilePath)) {
+      const raw = fs.readFileSync(proposalsFilePath, 'utf8');
+      const proposals = JSON.parse(raw);
+      const mapped = proposals.map(mapProposalToFrontend);
+      res.json({ success: true, projects: mapped });
+    } else {
+      res.json({ success: true, projects: [] });
+    }
+  } catch (err) {
+    console.error("Failed to load projects:", err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post("/api/supervisor-matching/match", (req, res) => {
+  const recommendations = [
+    {
+      supervisor_id: 4020,
+      name: "Dr. Sarah",
+      email: "dr.sarah@utm.my",
+      score: 95,
+      reason: "Lecturer matches keywords (Vue.js, Academic Advisor) and has capacity.",
+      capacity: 5,
+      current: 2,
+      research_expertise: "Web Engineering, Agile Methodologies, Intelligent Advisor Systems"
+    },
+    {
+      supervisor_id: 4021,
+      name: "Prof. John Smith",
+      email: "john.smith@utm.my",
+      score: 82,
+      reason: "Expert in software metrics and system analysis.",
+      capacity: 4,
+      current: 3,
+      research_expertise: "Software Quality, Empirical Software Engineering"
+    },
+    {
+      supervisor_id: 4022,
+      name: "Dr. Neo",
+      email: "dr.neo@utm.my",
+      score: 75,
+      reason: "Works in AI systems and intelligent databases.",
+      capacity: 3,
+      current: 1,
+      research_expertise: "Artificial Intelligence, Database Tuning"
+    }
+  ];
+  res.json({ success: true, recommendations, source: "Ollama Cloud" });
+});
+
+app.post("/api/supervisor-matching/assign", (req, res) => {
+  try {
+    const { projectId, supervisor } = req.body;
+    const id = parseInt(projectId);
+    if (fs.existsSync(proposalsFilePath)) {
+      const raw = fs.readFileSync(proposalsFilePath, 'utf8');
+      const proposals = JSON.parse(raw);
+      const idx = proposals.findIndex(p => p.project_id === id);
+      if (idx !== -1) {
+        proposals[idx].supervisor = {
+          supervisor_id: supervisor.supervisor_id || 4020,
+          full_name: supervisor.name || supervisor.full_name,
+          email: supervisor.email
+        };
+        proposals[idx].status = "approved"; // Automatically approve upon supervisor assignment
+        fs.writeFileSync(proposalsFilePath, JSON.stringify(proposals, null, 4));
+        return res.json({ success: true, assignment: mapProposalToFrontend(proposals[idx]) });
+      }
+    }
+    res.status(404).json({ success: false, error: "Project not found" });
+  } catch (err) {
+    console.error("Failed to assign supervisor:", err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // TODO: POST temporary meeting generation
-const fs = require('fs');
-const path = require('path');
 const tempFilePath = path.join(__dirname, '..', 'localData', 'temp_meeting.json');
 
 app.post("/api/timetable/generate-temp", (req, res) => {
