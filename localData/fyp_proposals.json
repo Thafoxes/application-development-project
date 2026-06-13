@@ -1,0 +1,136 @@
+[
+  {
+    "project_id": 1,
+    "fyp_session_id": 25262,
+    "title": "Software Engineering Smart Academic Advisor (AA) Audit System",
+    "description": "Vue.js-based Credit Audit Dashboard that identifies failed or missed subjects and calculates remaining credit hours in real time.",
+    "status": "submitted",
+    "aiStatus": "Pending AI Matching",
+    "projectType": "System Development",
+    "student": {
+      "student_id": 4001,
+      "full_name": "Shaikh Amir Husaini Bin Sh.Mohd Saifuddeen",
+      "metric_number": "A24MJ5068",
+      "email": "amir.husaini@graduate.utm.my"
+    },
+    "supervisor": {
+      "supervisor_id": 4020,
+      "full_name": "Dr. Sarah",
+      "email": "dr.sarah@utm.my"
+    },
+    "abstract": "Managing academic progression is a significant challenge for students who must navigate complex course structures while tracking failed or missed subjects. Traditional methods of checking graduation eligibility are manual and prone to human error, often leading to delayed graduations due to missing credit hours. The system addresses this by implementing a Vue.js-based Credit Audit Dashboard that identifies failed or missed subjects and calculates remaining credit hours in real time.",
+    "keywords": "Vue.js, Academic Advisor, Credit Audit Dashboard, Reactive State Management, Pinia, Academic Progression, Graduation Eligibility",
+    "details": {
+      "nabc": {
+        "need": "Students often struggle to track failed or missed prerequisite courses across complex degree guidelines, leading to unexpected delays in graduation.",
+        "approach": "A Vue 3 web application implementing a Credit Audit Dashboard featuring reactive state tracking and real-time GPA calculations.",
+        "benefits": "Reduces advising time by 80%, eliminates manual calculation errors, and gives students visual graduation progress reports.",
+        "competition": "Manual spreadsheet checks by Academic Advisors and legacy UTM portal options that lack real-time calculations or prerequisites guidance.",
+        "potential_stakeholders": "UTM Software Engineering Students, Academic Advisors, Faculty Office Staff.",
+        "potential_data_respondents": "N/A (System Development-based)",
+        "references": "1. UTM Academic Policy Guideline Book (2025)\n2. ACM/IEEE Software Engineering Education Standards (2024)"
+      },
+      "project_proposal": {
+        "problem_background_solution": "Graduation eligibility audit requires compiling data from multiple transcripts manually. Our solution automates prerequisites parsing to highlight any gaps dynamically.",
+        "objectives": "1. To design a responsive Credit Audit Dashboard UI.\n2. To implement database logic for subject validation.\n3. To test system reliability and user acceptance with 50 students.",
+        "scopes": "The prototype will support Software Engineering majors in UTM.",
+        "requirements": {
+          "software": "Vue 3, Pinia, Node.js, Express, MySQL",
+          "hardware": "Standard server hosting, client web browsers",
+          "technology": "Composition API, REST API Architecture",
+          "network_elements": "UTM local server connection, SSL/HTTPS encryption",
+          "security_elements": "JWT Auth token validation, encrypted query params",
+          "project_area": "Academic Systems Development"
+        }
+      }
+    }
+  },
+  {
+    "project_id": 2,
+    "fyp_session_id": 25262,
+    "title": "IoT Smart Agriculture System with Precision Watering",
+    "description": "An internet-connected system utilizing soil moisture sensors to automate irrigation and conserve water resources in commercial green houses.",
+    "status": "submitted",
+    "aiStatus": "Pending AI Matching",
+    "projectType": "System Development",
+    "student": {
+      "student_id": 4002,
+      "full_name": "Ahmad Faiz Bin Roslan",
+      "metric_number": "A24MJ5111",
+      "email": "ahmad.faiz@graduate.utm.my"
+    },
+    "supervisor": null,
+    "abstract": "Water management in agriculture is crucial. This project designs a precision smart greenhouse watering system utilizing IoT sensor arrays to check soil humidity levels and trigger drip irrigation.",
+    "keywords": "IoT, Smart Agriculture, Precision Irrigation, Arduino, ESP32",
+    "details": {
+      "nabc": {
+        "need": "Commercial greenhouses waste up to 40% of their water supply due to uniform, scheduled watering schedules that do not take soil moisture into account.",
+        "approach": "Deploying soil moisture sensor nodes connected to an ESP32 microcontroller, reporting data to a central dashboard via MQTT protocol.",
+        "benefits": "Reduces water bills by 30% and improves crop yields by preventing overwatering and root decay.",
+        "competition": "Traditional timers and expensive industrial greenhouse automation systems.",
+        "potential_stakeholders": "Greenhouse Farmers, Water Conservancy Authorities, IoT Hardware Developers.",
+        "potential_data_respondents": "N/A (System Development-based)",
+        "references": "1. IEEE Internet of Things Journal - IoT in Greenhouse Management (2023)\n2. FAO Guide on Smart Irrigation Systems (2024)"
+      },
+      "project_proposal": {
+        "problem_background_solution": "Greenhouses depend on labor to manually inspect soil moisture. An automated system can continuously monitor moisture levels and irrigate precise amounts.",
+        "objectives": "1. To assemble ESP32 sensor nodes.\n2. To build an administrative control dashboard.\n3. To analyze water conservation statistics over 4 weeks.",
+        "scopes": "The scope covers indoor vegetable greenhouses.",
+        "requirements": {
+          "software": "C++ (Arduino IDE), Vue.js, Node-RED, InfluxDB",
+          "hardware": "ESP32, Soil Moisture Sensors, Drip Valves",
+          "technology": "MQTT Telemetry Transport, Wi-Fi connectivity",
+          "network_elements": "Local WLAN, MQTT broker gateway",
+          "security_elements": "MQTT credential validation, secure router access",
+          "project_area": "Internet of Things (IoT) & Smart Systems"
+        }
+      }
+    }
+  },
+  {
+    "project_id": 3,
+    "fyp_session_id": 25262,
+    "title": "Machine Learning Analysis on Cyberbullying Trends in Malaysian Higher Education",
+    "description": "A research-based study applying Natural Language Processing models on academic forum data to identify and categorize cyberbullying behaviors.",
+    "status": "approved",
+    "aiStatus": "Matched",
+    "projectType": "Research",
+    "student": {
+      "student_id": 4003,
+      "full_name": "Siti Nurhaliza Binti Osman",
+      "metric_number": "A24MJ5222",
+      "email": "siti.nurhaliza@graduate.utm.my"
+    },
+    "supervisor": {
+      "supervisor_id": 4016,
+      "full_name": "Dr. Sarah",
+      "email": "dr.sarah@utm.my"
+    },
+    "abstract": "Cyberbullying is an increasing issue on university campus forums. This research uses machine learning classification algorithms to detect patterns of offensive comments and toxic language on student-facing public forums.",
+    "keywords": "Cyberbullying, Machine Learning, Natural Language Processing, BERT Model, Sentiment Analysis",
+    "details": {
+      "nabc": {
+        "need": "University administrations lack tools to automatically flag harassment on internal discussion channels, leading to undetected mental health stresses among students.",
+        "approach": "Applying pre-trained BERT models fine-tuned on Malay and English code-switched text collected from public university online spaces.",
+        "benefits": "Enables administrators to proactively address harassment with a 92% bullying detection accuracy.",
+        "competition": "Manual keyword blacklists and human moderator screening, which fail to capture context or slang.",
+        "potential_stakeholders": "University Student Affairs Division, Platform Administrators, Student Counselors.",
+        "potential_data_respondents": "Survey records from 200 Malaysian undergraduates, plus anonymized public forum comment blocks.",
+        "references": "1. Journal of Campus Student Mental Health (2024)\n2. Fine-tuning BERT for Toxic Language Classification (IEEE 2023)"
+      },
+      "project_proposal": {
+        "problem_background_solution": "Manual comment review is impossible at scale. Machine learning models analyze grammatical contexts to detect target-oriented harassment.",
+        "objectives": "1. To curate a code-switched Malay-English toxic language dataset.\n2. To train SVM, Random Forest, and BERT classifiers.\n3. To identify the most common bullying triggers on campus.",
+        "scopes": "This research analyzes public, non-private forums representing Malaysian universities.",
+        "requirements": {
+          "software": "Python, PyTorch, Hugging Face Transformers, Pandas",
+          "hardware": "NVIDIA GPU enabled workstation for training BERT",
+          "technology": "Deep Learning, Natural Language Processing",
+          "network_elements": "Web scraping endpoints (API-restricted)",
+          "security_elements": "Data anonymization filter, hashing of student IDs",
+          "project_area": "Natural Language Processing (NLP) & Cybersecurity"
+        }
+      }
+    }
+  }
+]
