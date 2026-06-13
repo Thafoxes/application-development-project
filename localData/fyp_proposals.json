@@ -151,5 +151,130 @@
         }
       }
     }
+  },
+  {
+    "project_id": 4,
+    "fyp_session_id": 25262,
+    "title": "Autonomous UAV Path Planning using Reinforcement Learning",
+    "description": "Research on optimization of drone flight paths under wind disturbances using deep reinforcement learning models.",
+    "status": "submitted",
+    "aiStatus": "Pending AI Matching",
+    "projectType": "Research",
+    "github_link": null,
+    "drive_link": "https://drive.google.com/drive/folders/uav-path-planning",
+    "use_case_diagrams": [],
+    "student": {
+      "student_id": 4004,
+      "full_name": "Muhammad Haziq Bin Azman",
+      "metric_number": "A24MJ5333",
+      "email": "haziq.azman@graduate.utm.my",
+      "cgpa": 3.67
+    },
+    "supervisor": null,
+    "abstract": "Path planning for unmanned aerial vehicles (UAVs) in dynamic environments is a complex problem. This research develops a reinforcement learning algorithm based on Deep Q-Networks to navigate wind turbulence and static obstacles.",
+    "keywords": "UAV, Reinforcement Learning, DQN, Path Planning, Drone Simulation",
+    "details": null
+  },
+  {
+    "project_id": 5,
+    "fyp_session_id": 25262,
+    "title": "Blockchain-Based Secure Student Credentials Verification System",
+    "description": "A decentralized portal built on Ethereum to verify academic certificates and transcripts securely and instantaneously.",
+    "status": "submitted",
+    "aiStatus": "Pending AI Matching",
+    "projectType": "System Development",
+    "github_link": "https://github.com/sharmila/blockchain-credentials",
+    "drive_link": null,
+    "use_case_diagrams": [
+      "/localData/use_case_diagram_imgs/uml-use-case-diagram.png"
+    ],
+    "student": {
+      "student_id": 4005,
+      "full_name": "Sharmila Devi A/P Rajoo",
+      "metric_number": "A24MJ5444",
+      "email": "sharmila.devi@graduate.utm.my",
+      "cgpa": 3.71
+    },
+    "supervisor": {
+      "supervisor_id": 4022,
+      "full_name": "Prof. John Smith",
+      "status": "approved"
+    },
+    "abstract": "Educational credentials fraud remains a critical issue globally. This project designs a secure web dashboard using smart contracts on the Ethereum blockchain to allow recruiters to instantly verify graduation details without central authorities.",
+    "keywords": "Blockchain, Ethereum, Smart Contracts, Solidity, Credential Verification",
+    "details": {
+      "nabc": {
+        "need": "Educational institutions face difficulties verifying degree certificates, causing employment delays and credentials fraud.",
+        "approach": "Developing a Solidity/Ethereum decentralized app integrating with student profile portals.",
+        "benefits": "Reduces verification time from days to seconds with zero trust architecture.",
+        "competition": "Traditional registrar requests or centralized database APIs that are prone to hacks.",
+        "potential_stakeholders": "Employers, UTM Graduates, Academic Registrar Office."
+      }
+    }
+  },
+  {
+    "project_id": 6,
+    "fyp_session_id": 25262,
+    "title": "Predictive Analytics for Student Mental Health and Burnout Detection",
+    "description": "Applying anomaly detection algorithms to analyze VLE engagement logs for early warnings of student academic burnout.",
+    "status": "submitted",
+    "aiStatus": "Pending AI Matching",
+    "projectType": "Research",
+    "github_link": "https://github.com/limkahseng/student-burnout-prediction",
+    "drive_link": "https://drive.google.com/drive/folders/burnout-prediction-docs",
+    "use_case_diagrams": [],
+    "student": {
+      "student_id": 4006,
+      "full_name": "Lim Kah Seng",
+      "metric_number": "A24MJ5555",
+      "email": "lim.kahseng@graduate.utm.my",
+      "cgpa": 3.58
+    },
+    "supervisor": {
+      "supervisor_id": 4023,
+      "email": "dr.neo@utm.my",
+      "status": "rejected"
+    },
+    "abstract": "Student burnout and stress often go unnoticed until academic performance is severely affected. This study explores the feasibility of predicting academic risk by building an unsupervised model trained on Virtual Learning Environment (VLE) engagement indicators.",
+    "keywords": "Predictive Analytics, Academic Burnout, Anomaly Detection, Machine Learning, VLE logs",
+    "details": {
+      "project_proposal": {
+        "problem_background_solution": "Mental health issues are rising among undergraduates. We propose an early warning system that tracks academic interaction frequency.",
+        "objectives": "1. To gather anonymous digital footprints from virtual learning environments.\n2. To train anomaly detection algorithms.",
+        "scopes": "Limited to pilot test group of 100 students.",
+        "requirements": {
+          "software": "Python, Jupyter, scikit-learn",
+          "technology": "Unsupervised Machine Learning, Isolation Forests"
+        }
+      }
+    }
+  },
+  {
+    "project_id": 7,
+    "fyp_session_id": 25262,
+    "title": "Virtual Reality Training Simulator for Chemistry Lab Safety",
+    "description": "An immersive VR experience built on Unity to train undergraduate chemistry students on laboratory safety and emergency protocols.",
+    "status": "submitted",
+    "aiStatus": "Pending AI Matching",
+    "projectType": "System Development",
+    "github_link": null,
+    "drive_link": null,
+    "use_case_diagrams": [
+      "/localData/use_case_diagram_imgs/UCD-2.png"
+    ],
+    "student": {
+      "student_id": 4007,
+      "full_name": "Nurul Aisyah Binti Mohd Yusof",
+      "metric_number": "A24MJ5666",
+      "email": "nurul.aisyah@graduate.utm.my",
+      "cgpa": 3.32
+    },
+    "supervisor": null,
+    "abstract": "Traditional chemistry laboratory safety briefings are non-interactive and lead to poor information retention. This simulator provides an immersive virtual environment where students practice handling chemical spills safely.",
+    "keywords": "Virtual Reality, Unity, Safety Simulator, Chemistry Education, Interactive Learning",
+    "details": {
+      "nabc": null,
+      "project_proposal": null
+    }
   }
 ]
