@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import AppHeader from '@/components/common_components/AppHeader.vue'
 import AppSidebar from '@/components/common_components/AppSidebar.vue'
 import AppFooter from '@/components/common_components/AppFooter.vue'
+import WorkflowSteps from '@/components/common_components/WorkflowSteps.vue'
 import {
   UploadCloud,
   FileText,
@@ -32,6 +33,33 @@ import {
 
 const router = useRouter()
 const route = useRoute()
+
+const fypSteps = [
+  {
+    stepLabel: 'Step 1',
+    title: 'Proposal Queue',
+    description: 'Review proposal files submitted by students.',
+    icon: UploadCloud,
+  },
+  {
+    stepLabel: 'Step 2',
+    title: 'AI Matching',
+    description: 'Compare project content with lecturer expertise.',
+    icon: BrainCircuit,
+  },
+  {
+    stepLabel: 'Step 3',
+    title: 'Assign Supervisor',
+    description: 'Coordinator confirms the recommended supervisor and examiner.',
+    icon: UserCheck,
+  },
+  {
+    stepLabel: 'Step 4',
+    title: 'Track Records',
+    description: 'Assignment and approval status are monitored from one workspace.',
+    icon: ClipboardList,
+  },
+]
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 
@@ -424,6 +452,15 @@ onMounted(async () => {
       <AppSidebar />
 
       <main class="flex-1 flex flex-col px-[50px] py-[30px] gap-8 overflow-y-auto">
+        <!-- Breadcrumbs -->
+        <div class="text-[#5c001f] text-sm">
+          <router-link to="/dashboard" class="hover:underline font-semibold text-[#5c001f]">
+            Dashboard
+          </router-link>
+          <span class="mx-2 text-gray-500">&gt;</span>
+          <span class="font-bold underline text-[#5c001f]">Manage FYP Proposals</span>
+        </div>
+
         <!-- Page Header -->
         <section
           class="relative overflow-hidden rounded-lg bg-[#5c001f] text-white shadow-xl border border-black/10"
@@ -452,73 +489,11 @@ onMounted(async () => {
                 Review student-submitted proposal records, run AI supervisor matching, assign supervisors and examiners, and monitor project status.
               </p>
             </div>
-
-            <div class="flex flex-col sm:flex-row gap-3">
-              <button
-                @click="loadSubmittedProposalQueue"
-                class="bg-[#f8be17] text-[#5c001f] px-6 py-3 rounded-lg font-bold hover:bg-[#ffd45a] transition-colors shadow-md border-none flex items-center gap-2"
-              >
-                <Sparkles class="w-5 h-5" />
-                Fill Demo Data
-              </button>
-
-              <button
-                @click="goToDashboard"
-                class="bg-white/10 text-white px-6 py-3 rounded-lg font-bold hover:bg-white/20 transition-colors border border-white/20 flex items-center gap-2"
-              >
-                Back Dashboard
-                <ArrowRight class="w-5 h-5" />
-              </button>
-            </div>
           </div>
         </section>
 
         <!-- Workflow Cards -->
-        <section class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-          <div class="bg-white rounded-lg p-6 shadow-lg border border-black/10">
-            <div class="w-14 h-14 rounded-lg bg-[#5c001f] p-3 flex items-center justify-center">
-              <UploadCloud class="w-7 h-7 text-[#f8be17]" />
-            </div>
-            <p class="text-gray-500 font-semibold mt-5">Step 1</p>
-            <h3 class="text-xl font-bold text-black mt-1">Proposal Queue</h3>
-            <p class="text-sm text-gray-500 mt-2">
-              Review proposal files submitted by students.
-            </p>
-          </div>
-
-          <div class="bg-white rounded-lg p-6 shadow-lg border border-black/10">
-            <div class="w-14 h-14 rounded-lg bg-[#5c001f] p-3 flex items-center justify-center">
-              <BrainCircuit class="w-7 h-7 text-[#f8be17]" />
-            </div>
-            <p class="text-gray-500 font-semibold mt-5">Step 2</p>
-            <h3 class="text-xl font-bold text-black mt-1">AI Matching</h3>
-            <p class="text-sm text-gray-500 mt-2">
-              Compare project content with lecturer expertise.
-            </p>
-          </div>
-
-          <div class="bg-white rounded-lg p-6 shadow-lg border border-black/10">
-            <div class="w-14 h-14 rounded-lg bg-[#5c001f] p-3 flex items-center justify-center">
-              <UserCheck class="w-7 h-7 text-[#f8be17]" />
-            </div>
-            <p class="text-gray-500 font-semibold mt-5">Step 3</p>
-            <h3 class="text-xl font-bold text-black mt-1">Assign Supervisor</h3>
-            <p class="text-sm text-gray-500 mt-2">
-              Coordinator confirms the recommended supervisor and examiner.
-            </p>
-          </div>
-
-          <div class="bg-white rounded-lg p-6 shadow-lg border border-black/10">
-            <div class="w-14 h-14 rounded-lg bg-[#5c001f] p-3 flex items-center justify-center">
-              <ClipboardList class="w-7 h-7 text-[#f8be17]" />
-            </div>
-            <p class="text-gray-500 font-semibold mt-5">Step 4</p>
-            <h3 class="text-xl font-bold text-black mt-1">Track Records</h3>
-            <p class="text-sm text-gray-500 mt-2">
-              Assignment and approval status are monitored from one workspace.
-            </p>
-          </div>
-        </section>
+        <WorkflowSteps :steps="fypSteps" />
 
         <!-- Main Panel -->
         <section class="bg-white rounded-lg shadow-lg border border-black/10 overflow-hidden">
