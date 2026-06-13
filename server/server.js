@@ -14,6 +14,7 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
+app.use('/localData', express.static(path.join(__dirname, '..', 'localData')));
 
 // Import and use the assistant router
 const assistantRouter = require("./routes/assistant");
@@ -463,6 +464,8 @@ const mapProposalToFrontend = (p) => {
     aiStatus: p.aiStatus || 'Pending AI Matching',
     supervisorName: p.supervisor?.full_name || p.supervisorName || null,
     supervisorEmail: p.supervisor?.email || p.supervisorEmail || null,
+    supervisorStatus: p.supervisor?.status || (p.supervisor ? 'pending' : null),
+    use_case_diagrams: p.use_case_diagrams || [],
     matchScore: p.matchScore || null,
     github_link: p.github_link || null,
     drive_link: p.drive_link || null,

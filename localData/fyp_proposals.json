@@ -9,6 +9,10 @@
     "projectType": "System Development",
     "github_link": "https://github.com/amirhusaini/smart-aa-audit-system",
     "drive_link": "https://drive.google.com/drive/folders/smart-aa-audit-system-assets",
+    "use_case_diagrams": [
+      "/localData/use_case_diagram_imgs/uml-use-case-diagram.png",
+      "/localData/use_case_diagram_imgs/UCD-2.png"
+    ],
     "student": {
       "student_id": 4001,
       "full_name": "Shaikh Amir Husaini Bin Sh.Mohd Saifuddeen",
@@ -19,7 +23,8 @@
     "supervisor": {
       "supervisor_id": 4020,
       "full_name": "Dr. Sarah",
-      "email": "dr.sarah@utm.my"
+      "email": "dr.sarah@utm.my",
+      "status": "approved"
     },
     "abstract": "Managing academic progression is a significant challenge for students who must navigate complex course structures while tracking failed or missed subjects. Traditional methods of checking graduation eligibility are manual and prone to human error, often leading to delayed graduations due to missing credit hours. The system addresses this by implementing a Vue.js-based Credit Audit Dashboard that identifies failed or missed subjects and calculates remaining credit hours in real time.",
     "keywords": "Vue.js, Academic Advisor, Credit Audit Dashboard, Reactive State Management, Pinia, Academic Progression, Graduation Eligibility",
@@ -58,6 +63,9 @@
     "projectType": "System Development",
     "github_link": "https://github.com/faizroslan/iot-smart-agriculture",
     "drive_link": "https://drive.google.com/drive/folders/iot-smart-agriculture-docs",
+    "use_case_diagrams": [
+      "/localData/use_case_diagram_imgs/uml-use-case-diagram.png"
+    ],
     "student": {
       "student_id": 4002,
       "full_name": "Ahmad Faiz Bin Roslan",
@@ -103,6 +111,7 @@
     "projectType": "Research",
     "github_link": "https://github.com/sitinurhaliza/cyberbullying-analysis-nlp",
     "drive_link": "https://drive.google.com/drive/folders/cyberbullying-analysis-nlp-resources",
+    "use_case_diagrams": [],
     "student": {
       "student_id": 4003,
       "full_name": "Siti Nurhaliza Binti Osman",
@@ -113,7 +122,8 @@
     "supervisor": {
       "supervisor_id": 4016,
       "full_name": "Dr. Sarah",
-      "email": "dr.sarah@utm.my"
+      "email": "dr.sarah@utm.my",
+      "status": "pending"
     },
     "abstract": "Cyberbullying is an increasing issue on university campus forums. This research uses machine learning classification algorithms to detect patterns of offensive comments and toxic language on student-facing public forums.",
     "keywords": "Cyberbullying, Machine Learning, Natural Language Processing, BERT Model, Sentiment Analysis",
