@@ -3,6 +3,25 @@ const axios = require('axios');
 const router = express.Router();
 
 const jwt = require('jsonwebtoken');
+
+const OLLAMA_BASE_URL = (process.env.OLLAMA_BASE_URL || 'http://localhost:11434').replace(/\/$/, '');
+const OLLAMA_API_KEY = process.env.OLLAMA_API_KEY || '';
+const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'gemma4:latest';
+
+const getOllamaRequestConfig = () => {
+    const url = `${OLLAMA_BASE_URL}/api/chat`;
+    const options = {
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    };
+    
+    if (OLLAMA_API_KEY) {
+        options.headers['Authorization'] = `Bearer ${OLLAMA_API_KEY}`;
+    }
+    
+    return { url, options };
+};
 const mysql = require("mysql2");
 const bcrypt = require("bcrypt");
 
@@ -59,7 +78,7 @@ router.post('/api/assistant/chat', async (req, res) => {
 
         // 2. Format the payload for Ollama (Injecting the System Prompt first)
         const ollamaPayload = {
-            model: process.env.OLLAMA_MODEL || 'gemma4:latest', // Loaded from env variable, fallback to default
+            model: OLLAMA_MODEL,
             stream: false,       // We want the whole message at once, not streamed
             messages: [
                 { role: "system", content: SYSTEM_PROMPT },
@@ -67,8 +86,9 @@ router.post('/api/assistant/chat', async (req, res) => {
             ]
         };
 
-        // 3. Send request to local Ollama instance
-        const ollamaResponse = await axios.post('http://localhost:11434/api/chat', ollamaPayload);
+        // 3. Send request to cloud/local Ollama instance
+        const { url, options } = getOllamaRequestConfig();
+        const ollamaResponse = await axios.post(url, ollamaPayload, options);
         let replyContent = ollamaResponse.data.message.content;
 
         // 4. Check if the AI wants to create a user (Function Calling Simulation)
@@ -251,7 +271,7 @@ Rules:
 `;
 
         const ollamaPayload = {
-            model: process.env.OLLAMA_MODEL || 'gemma4:latest',
+            model: OLLAMA_MODEL,
             stream: false,
             messages: [
                 {
@@ -262,7 +282,8 @@ Rules:
             ]
         };
 
-        const ollamaResponse = await axios.post('http://localhost:11434/api/chat', ollamaPayload);
+        const { url, options } = getOllamaRequestConfig();
+        const ollamaResponse = await axios.post(url, ollamaPayload, options);
         let reply = ollamaResponse.data.message.content;
 
         // Clean up possible markdown tags if the model still includes them
@@ -338,7 +359,7 @@ Rules:
 `;
 
         const ollamaPayload = {
-            model: process.env.OLLAMA_MODEL || 'gemma4:latest',
+            model: OLLAMA_MODEL,
             stream: false,
             messages: [
                 {
@@ -348,7 +369,8 @@ Rules:
             ]
         };
 
-        const ollamaResponse = await axios.post('http://localhost:11434/api/chat', ollamaPayload);
+        const { url, options } = getOllamaRequestConfig();
+        const ollamaResponse = await axios.post(url, ollamaPayload, options);
         let reply = ollamaResponse.data.message.content;
 
         if (reply.startsWith('\`\`\`json')) {
