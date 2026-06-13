@@ -1,0 +1,146 @@
+{
+  "coordinator": [
+    {
+      "notification_id": 1,
+      "title": "New FYP Proposal Submitted",
+      "message": "Dr. Sarah has submitted a new FYP proposal \"AI-based Smart Farming\" for review.",
+      "createdAt": "2026-07-24T09:00:00.000Z",
+      "isRead": false,
+      "project_id": 10
+    },
+    {
+      "notification_id": 2,
+      "title": "Supervisor Quota Alert",
+      "message": "Dr. Hazim has requested an increase in supervisor quota from 3 students to 5.",
+      "createdAt": "2026-07-24T10:30:00.000Z",
+      "isRead": false,
+      "project_id": null
+    },
+    {
+      "notification_id": 3,
+      "title": "Schedule meeting created",
+      "message": "A schedule meeting was created on 24 July 2026.",
+      "createdAt": "2026-07-24T08:00:00.000Z",
+      "isRead": true,
+      "project_id": null
+    },
+    {
+      "notification_id": 4,
+      "title": "Student Unassigned",
+      "message": "Student John Doe (A21EC0123) has not selected any project or supervisor.",
+      "createdAt": "2026-07-23T15:00:00.000Z",
+      "isRead": true,
+      "project_id": null
+    },
+    {
+      "notification_id": 101,
+      "title": "Welcome to I-FAMOUS",
+      "message": "Explore the new FYP Management portal designed for UTM students and staff.",
+      "createdAt": "2026-07-20T08:00:00.000Z",
+      "isRead": true,
+      "project_id": null
+    }
+  ],
+  "supervisor": [
+    {
+      "notification_id": 11,
+      "title": "Student Application Received",
+      "message": "Alice Tan (A21EC4567) has applied for your project: \"IoT Home Automation System\".",
+      "createdAt": "2026-07-24T09:30:00.000Z",
+      "isRead": false,
+      "project_id": 12
+    },
+    {
+      "notification_id": 12,
+      "title": "Logbook Submission Alert",
+      "message": "Student Bob Lee has submitted Logbook entry #4 for review.",
+      "createdAt": "2026-07-24T11:00:00.000Z",
+      "isRead": false,
+      "project_id": 15
+    },
+    {
+      "notification_id": 13,
+      "title": "Schedule meeting created",
+      "message": "A schedule meeting was created on 24 July 2026.",
+      "createdAt": "2026-07-24T08:00:00.000Z",
+      "isRead": true,
+      "project_id": 12
+    },
+    {
+      "notification_id": 101,
+      "title": "Welcome to I-FAMOUS",
+      "message": "Explore the new FYP Management portal designed for UTM students and staff.",
+      "createdAt": "2026-07-20T08:00:00.000Z",
+      "isRead": true,
+      "project_id": null
+    }
+  ],
+  "examiner": [
+    {
+      "notification_id": 21,
+      "title": "Examiner Assignment",
+      "message": "You have been assigned as Examiner for Charlie Lim's project presentation.",
+      "createdAt": "2026-07-24T09:15:00.000Z",
+      "isRead": false,
+      "project_id": 18
+    },
+    {
+      "notification_id": 22,
+      "title": "Presentation Time Changed",
+      "message": "The presentation slot for David Wong has been moved to 10:30 AM on 19th June.",
+      "createdAt": "2026-07-23T14:30:00.000Z",
+      "isRead": true,
+      "project_id": 19
+    },
+    {
+      "notification_id": 23,
+      "title": "Schedule meeting created",
+      "message": "A schedule meeting was created on 24 July 2026.",
+      "createdAt": "2026-07-24T08:00:00.000Z",
+      "isRead": true,
+      "project_id": null
+    },
+    {
+      "notification_id": 101,
+      "title": "Welcome to I-FAMOUS",
+      "message": "Explore the new FYP Management portal designed for UTM students and staff.",
+      "createdAt": "2026-07-20T08:00:00.000Z",
+      "isRead": true,
+      "project_id": null
+    }
+  ],
+  "student": [
+    {
+      "notification_id": 31,
+      "title": "FYP Proposal Approved",
+      "message": "Your project proposal \"AR Campus Tour\" has been approved by your Supervisor, Dr. Aminah.",
+      "createdAt": "2026-07-24T09:00:00.000Z",
+      "isRead": false,
+      "project_id": 5
+    },
+    {
+      "notification_id": 32,
+      "title": "Logbook Comment Added",
+      "message": "Dr. Aminah commented on your Logbook Entry #3: \"Good progress, focus on database design next\".",
+      "createdAt": "2026-07-24T10:00:00.000Z",
+      "isRead": false,
+      "project_id": 5
+    },
+    {
+      "notification_id": 33,
+      "title": "Schedule meeting created",
+      "message": "A schedule meeting was created on 24 July 2026.",
+      "createdAt": "2026-07-24T08:00:00.000Z",
+      "isRead": true,
+      "project_id": 5
+    },
+    {
+      "notification_id": 101,
+      "title": "Welcome to I-FAMOUS",
+      "message": "Explore the new FYP Management portal designed for UTM students and staff.",
+      "createdAt": "2026-07-20T08:00:00.000Z",
+      "isRead": true,
+      "project_id": null
+    }
+  ]
+}
