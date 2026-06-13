@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { jsPDF } from 'jspdf'
 import AppHeader from '@/components/common_components/AppHeader.vue'
 import AppSidebar from '@/components/common_components/AppSidebar.vue'
 import AppFooter from '@/components/common_components/AppFooter.vue'
@@ -31,6 +32,156 @@ const proposal = ref(null)
 const isLoading = ref(true)
 const errorMessage = ref('')
 const isActioning = ref(false)
+
+const getBase64ImageFromUrl = async (imageUrl) => {
+  const res = await fetch(imageUrl)
+  const blob = await res.blob()
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.addEventListener(
+      'load',
+      function () {
+        resolve(reader.result)
+      },
+      false,
+    )
+    reader.onerror = () => {
+      reject(new Error('Failed to load image blob'))
+    }
+    reader.readAsDataURL(blob)
+  })
+}
+
+const exportProposalToPDF = async () => {
+  if (!proposal.value) return
+
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'a4',
+  })
+
+  const p = proposal.value
+  let y = 15
+
+  const addTitle = (text, size = 16) => {
+    doc.setFont('Helvetica', 'bold')
+    doc.setFontSize(size)
+    doc.setTextColor(92, 0, 31)
+    doc.text(text, 105, y, { align: 'center' })
+    y += 10
+  }
+
+  const addSectionHeading = (title) => {
+    if (y > 250) {
+      doc.addPage()
+      y = 15
+    }
+    doc.setFont('Helvetica', 'bold')
+    doc.setFontSize(12)
+    doc.setTextColor(92, 0, 31)
+    doc.text(title, 15, y)
+    doc.setDrawColor(92, 0, 31)
+    doc.setLineWidth(0.4)
+    doc.line(15, y + 2, 195, y + 2)
+    y += 8
+  }
+
+  const addMetaRow = (label, val) => {
+    if (y > 270) {
+      doc.addPage()
+      y = 15
+    }
+    doc.setFont('Helvetica', 'bold')
+    doc.setFontSize(10)
+    doc.setTextColor(80, 80, 80)
+    doc.text(label + ':', 15, y)
+    doc.setFont('Helvetica', 'normal')
+    doc.setTextColor(0, 0, 0)
+    doc.text(String(val || 'N/A'), 55, y)
+    y += 6
+  }
+
+  const addParagraph = (text) => {
+    doc.setFont('Helvetica', 'normal')
+    doc.setFontSize(10)
+    doc.setTextColor(50, 50, 50)
+    const lines = doc.splitTextToSize(text || 'N/A', 180)
+    for (let line of lines) {
+      if (y > 275) {
+        doc.addPage()
+        y = 15
+      }
+      doc.text(line, 15, y)
+      y += 5.5
+    }
+    y += 3
+  }
+
+  addTitle('Final Year Project (FYP) Proposal Report', 16)
+  y += 5
+
+  addSectionHeading('1. Student & Project Information')
+  addMetaRow('Project Title', p.projectTitle)
+  addMetaRow('Project Type', p.projectType)
+  addMetaRow('Student Name', p.studentName)
+  addMetaRow('Matric Number', p.matricNo)
+  addMetaRow('Student Email', p.studentEmail || 'N/A')
+  addMetaRow('Student CGPA', p.cgpa ? parseFloat(p.cgpa).toFixed(2) : 'N/A')
+  addMetaRow('Supervisor', p.supervisorName || 'Not Assigned')
+  addMetaRow('Supervisor Status', p.supervisorStatus || 'N/A')
+  y += 5
+
+  addSectionHeading('2. Project Abstract / Summary')
+  addParagraph(p.abstract)
+
+  addSectionHeading('3. NABC Framework Analysis')
+  addMetaRow('Need (N)', p.details?.nabc?.need)
+  addMetaRow('Approach (A)', p.details?.nabc?.approach)
+  addMetaRow('Benefits (B)', p.details?.nabc?.benefits)
+  addMetaRow('Competition (C)', p.details?.nabc?.competition)
+  if (p.projectType === 'System Development') {
+    addMetaRow('Stakeholders', p.details?.nabc?.potential_stakeholders)
+  } else {
+    addMetaRow('Data/Respondents', p.details?.nabc?.potential_data_respondents)
+  }
+  y += 5
+
+  addSectionHeading('4. Technical Requirements')
+  const req = p.details?.project_proposal?.requirements
+  addMetaRow('Software', req?.software)
+  addMetaRow('Hardware', req?.hardware)
+  addMetaRow('Technology', req?.technology)
+  addMetaRow('Network Elements', req?.network_elements)
+  addMetaRow('Security Elements', req?.security_elements)
+  addMetaRow('Project Area', req?.project_area)
+  y += 5
+
+  if (p.projectType === 'System Development' && p.use_case_diagrams?.length > 0) {
+    addSectionHeading('5. Use Case Diagrams')
+    for (let i = 0; i < p.use_case_diagrams.length; i++) {
+      const imgPath = `${API_BASE_URL}${p.use_case_diagrams[i]}`
+      try {
+        const base64Img = await getBase64ImageFromUrl(imgPath)
+        if (y > 210) {
+          doc.addPage()
+          y = 15
+        }
+        doc.setFont('Helvetica', 'bold')
+        doc.setFontSize(10)
+        doc.setTextColor(100, 100, 100)
+        doc.text(`Diagram ${i + 1}: Use Case Layout`, 15, y)
+        y += 5
+        doc.addImage(base64Img, 'PNG', 15, y, 120, 68)
+        y += 75
+      } catch (err) {
+        console.error('Failed to add diagram image to PDF:', err)
+      }
+    }
+  }
+
+  doc.save(`FYP_Proposal_${p.matricNo || 'Report'}.pdf`)
+}
 
 const fetchProposalDetails = async () => {
   isLoading.value = true
@@ -104,7 +255,7 @@ onMounted(() => {
           <span class="font-bold underline text-[#5c001f]">FYP Proposal Details</span>
         </div>
 
-        <!-- Back Button -->
+        <!-- Back Button & Actions -->
         <div class="flex items-center justify-between">
           <button
             @click="router.push('/manage-fyp')"
@@ -112,6 +263,14 @@ onMounted(() => {
           >
             <ArrowLeft class="w-5 h-5" />
             Back to Queue
+          </button>
+          <button
+            v-if="proposal"
+            @click="exportProposalToPDF"
+            class="bg-[#5c001f] hover:bg-[#4a0019] text-white px-5 py-2.5 rounded-lg font-bold transition shadow flex items-center gap-2 text-sm border-none"
+          >
+            <FileText class="w-4 h-4 text-[#f8be17]" />
+            Export PDF Report
           </button>
         </div>
 
@@ -249,9 +408,28 @@ onMounted(() => {
               </div>
               <div class="mt-1">
                 <span class="text-xs text-gray-400 uppercase font-bold block mb-1">Supervisor</span>
-                <span class="font-semibold text-sm">
-                  {{ proposal.supervisorName || 'Not Assigned Yet' }}
-                </span>
+                <div class="flex items-center gap-2">
+                  <span class="font-semibold text-sm">
+                    {{ proposal.supervisorName || 'Not Assigned Yet' }}
+                  </span>
+                  <span
+                    v-if="proposal.supervisorName && proposal.supervisorStatus"
+                    class="px-2 py-0.5 rounded-full font-bold text-[10px] uppercase border"
+                    :class="{
+                      'bg-green-50 text-green-700 border-green-200':
+                        proposal.supervisorStatus.toLowerCase() === 'approved',
+                      'bg-yellow-50 text-yellow-700 border-yellow-200':
+                        proposal.supervisorStatus.toLowerCase() === 'pending',
+                      'bg-red-50 text-red-700 border-red-200':
+                        proposal.supervisorStatus.toLowerCase() === 'rejected',
+                      'bg-orange-50 text-orange-700 border-orange-200':
+                        proposal.supervisorStatus.toLowerCase() === 'need changes' ||
+                        proposal.supervisorStatus.toLowerCase() === 'need_changes',
+                    }"
+                  >
+                    {{ proposal.supervisorStatus }}
+                  </span>
+                </div>
                 <span v-if="proposal.supervisorEmail" class="block text-xs text-gray-500 mt-0.5">
                   {{ proposal.supervisorEmail }}
                 </span>
@@ -432,6 +610,50 @@ onMounted(() => {
                   <p class="text-sm font-semibold text-gray-800">
                     {{ proposal.details?.project_proposal?.requirements?.project_area || 'N/A' }}
                   </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Use Case Diagrams Section (System Development ONLY) -->
+          <div
+            v-if="
+              proposal.projectType === 'System Development' &&
+              proposal.use_case_diagrams?.length > 0
+            "
+            class="bg-white border border-gray-300 rounded-2xl p-6 shadow-sm"
+          >
+            <h3 class="text-lg font-bold text-[#5c001f] border-b pb-3 mb-6 flex items-center gap-2">
+              <Layers class="w-5 h-5 text-gray-500" />
+              Use Case Diagrams
+            </h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              <div
+                v-for="(img, idx) in proposal.use_case_diagrams.slice(0, 3)"
+                :key="idx"
+                class="rounded-xl border border-gray-200 overflow-hidden bg-gray-50 group hover:shadow-md transition-all relative"
+              >
+                <div
+                  class="aspect-video relative overflow-hidden bg-white flex items-center justify-center p-4"
+                >
+                  <img
+                    :src="`${API_BASE_URL}${img}`"
+                    alt="Use Case Diagram"
+                    class="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300"
+                  />
+                </div>
+                <div
+                  class="p-3 bg-gray-100 border-t border-gray-200 flex items-center justify-between text-xs font-semibold text-gray-700"
+                >
+                  <span>Diagram {{ idx + 1 }}</span>
+                  <a
+                    :href="`${API_BASE_URL}${img}`"
+                    target="_blank"
+                    class="text-[#5c001f] hover:underline"
+                  >
+                    Open Full Image
+                  </a>
                 </div>
               </div>
             </div>
