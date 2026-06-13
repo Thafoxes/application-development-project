@@ -1,3 +1,4 @@
+<!-- This is for drawer slide from the right, I use this for the view FYP to assign the supervisor  -->
 <script setup>
 import AssignSupervisorPanel from '@/components/AssignSupervisorPanel.vue'
 
@@ -35,6 +36,7 @@ const emit = defineEmits(['close', 'assigned'])
         v-if="project"
         :project="project"
         :records="records"
+        layoutMode="drawer"
         @close="$emit('close')"
         @assigned="(val) => { $emit('assigned', val); }"
       />

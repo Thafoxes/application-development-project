@@ -11,6 +11,10 @@ const props = defineProps({
   records: {
     type: Array,
     required: true
+  },
+  layoutMode: {
+    type: String,
+    default: 'inline' // 'inline' or 'drawer'
   }
 })
 
@@ -258,7 +262,7 @@ onMounted(() => {
         </div>
 
         <!-- Roster Grid List -->
-        <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div v-else :class="['grid gap-4', layoutMode === 'drawer' ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2']">
           <div 
             v-for="candidate in filteredLecturers.slice(0, 10)" 
             :key="candidate.user_id"
