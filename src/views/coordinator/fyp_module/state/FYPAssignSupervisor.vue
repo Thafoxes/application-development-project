@@ -197,6 +197,18 @@ const filteredDrawerCandidates = computed(() => {
       return nameMatch || tagMatch
     })
   }
+
+  // Sort AI recommended supervisor to the top
+  if (drawerAIRecommendation.value && drawerAIRecommendation.value.suggested_user_id) {
+    const recId = Number(drawerAIRecommendation.value.suggested_user_id)
+    list.sort((a, b) => {
+      const aIsRec = Number(a.user_id) === recId
+      const bIsRec = Number(b.user_id) === recId
+      if (aIsRec && !bIsRec) return -1
+      if (!aIsRec && bIsRec) return 1
+      return 0
+    })
+  }
   
   // Limit to first 10
   return list.slice(0, 10)

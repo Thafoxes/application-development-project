@@ -13,7 +13,8 @@
         ],
         "affiliation": "UTM",
         "co_org_name": null,
-        "sv_vapacity": 5
+        "sv_vapacity": 5,
+        "current_sv_capacity": 0
     },
     {
         "user_id": 2,
@@ -28,7 +29,8 @@
         ],
         "affiliation": "UTM",
         "co_org_name": null,
-        "sv_vapacity": 0
+        "sv_vapacity": 0,
+        "current_sv_capacity": 0
     },
     {
         "user_id": 3,
@@ -43,7 +45,8 @@
         ],
         "affiliation": "UTM",
         "co_org_name": null,
-        "sv_vapacity": 1
+        "sv_vapacity": 1,
+        "current_sv_capacity": 0
     },
     {
         "user_id": 4,
@@ -58,7 +61,8 @@
         ],
         "affiliation": "UTM",
         "co_org_name": null,
-        "sv_vapacity": 1
+        "sv_vapacity": 1,
+        "current_sv_capacity": 0
     },
     {
         "user_id": 10,
@@ -73,7 +77,8 @@
         ],
         "affiliation": "Industry",
         "co_org_name": "CyberSecurity Malaysia",
-        "sv_vapacity": 1
+        "sv_vapacity": 1,
+        "current_sv_capacity": 0
     },
     {
         "user_id": 11,
@@ -88,6 +93,7 @@
         ],
         "affiliation": "Industry",
         "co_org_name": "Tech Solutions Inc.",
-        "sv_vapacity": 1
+        "sv_vapacity": 1,
+        "current_sv_capacity": 0
     }
 ]

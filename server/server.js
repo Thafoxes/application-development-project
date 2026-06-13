@@ -563,19 +563,8 @@ app.get("/api/coordinator/supervisor-candidates", (req, res) => {
 
       // Enrich with capacity mock data
       const enriched = candidates.map((u) => {
-        let max_capacity = 5;
-        let current_capacity = (u.user_id % 3); // mock values
-
-        if (u.user_id === 1) {
-          max_capacity = 0; // infinite capacity
-          current_capacity = 0;
-        } else if (u.user_id === 4) {
-          max_capacity = 3;
-          current_capacity = 3; // reached max capacity
-        } else if (u.user_id === 10) {
-          max_capacity = 2;
-          current_capacity = 2; // reached max capacity
-        }
+        let max_capacity = u.sv_capacity !== undefined ? u.sv_capacity : (u.sv_vapacity !== undefined ? u.sv_vapacity : 5);
+        let current_capacity = u.current_sv_capacity !== undefined ? u.current_sv_capacity : 0;
 
         return {
           user_id: u.user_id,
@@ -663,6 +652,9 @@ app.post("/api/supervisor-matching/assign", (req, res) => {
       const proposals = JSON.parse(raw);
       const idx = proposals.findIndex(p => p.project_id === id);
       if (idx !== -1) {
+        // Save the old supervisor ID if there was one
+        const oldSupervisorId = proposals[idx].supervisor ? proposals[idx].supervisor.supervisor_id : null;
+
         proposals[idx].supervisor = {
           supervisor_id: supervisor.supervisor_id || 4020,
           full_name: supervisor.name || supervisor.full_name,
@@ -670,6 +662,38 @@ app.post("/api/supervisor-matching/assign", (req, res) => {
         };
 
         fs.writeFileSync(proposalsFilePath, JSON.stringify(proposals, null, 4));
+
+        // Update current_sv_capacity in user_data.json
+        const newSupervisorId = supervisor.supervisor_id;
+        if (fs.existsSync(userDataFilePath)) {
+          const usersRaw = fs.readFileSync(userDataFilePath, 'utf8');
+          const users = JSON.parse(usersRaw);
+          
+          let updated = false;
+          users.forEach(u => {
+            // Decrement old supervisor
+            if (oldSupervisorId && Number(u.user_id) === Number(oldSupervisorId) && Number(oldSupervisorId) !== Number(newSupervisorId)) {
+              u.current_sv_capacity = Math.max(0, (u.current_sv_capacity || 0) - 1);
+              updated = true;
+            }
+            // Increment new supervisor
+            if (newSupervisorId && Number(u.user_id) === Number(newSupervisorId) && Number(oldSupervisorId) !== Number(newSupervisorId)) {
+              u.current_sv_capacity = (u.current_sv_capacity || 0) + 1;
+              updated = true;
+            }
+          });
+
+          if (updated) {
+            fs.writeFileSync(userDataFilePath, JSON.stringify(users, null, 4));
+            
+            // Also write to src/mock/user_data.json if it exists
+            const mockUserPath = path.join(__dirname, '..', 'src', 'mock', 'user_data.json');
+            if (fs.existsSync(mockUserPath)) {
+              fs.writeFileSync(mockUserPath, JSON.stringify(users, null, 4));
+            }
+          }
+        }
+
         return res.json({ success: true, assignment: mapProposalToFrontend(proposals[idx]) });
       }
     }
