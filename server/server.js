@@ -1235,6 +1235,50 @@ app.post("/api/users", (req, res) => {
     });
 });
 
+// update password securely
+app.post("/api/users/update-password", async (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return res.status(401).json({ error: "No token provided" });
+
+  const token = authHeader.split(" ")[1];
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET || "ifamous-super-secret-key-2026");
+    const userId = decoded.user_id;
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: "Missing password fields" });
+    }
+
+    // 1. Fetch current user
+    db.query("SELECT password_hash FROM users WHERE user_id = ?", [userId], async (err, results) => {
+      if (err) return res.status(500).json({ error: "Database error" });
+      if (results.length === 0) return res.status(404).json({ error: "User not found" });
+
+      const user = results[0];
+      const pepper = process.env.SECRET_PEPPER || '';
+
+      // 2. Verify current password
+      const match = await bcrypt.compare(currentPassword + pepper, user.password_hash);
+      if (!match) {
+        return res.status(401).json({ error: "Incorrect current password" });
+      }
+
+      // 3. Hash new password and update
+      const saltRounds = 10;
+      const newHash = await bcrypt.hash(newPassword + pepper, saltRounds);
+
+      db.query("UPDATE users SET password_hash = ? WHERE user_id = ?", [newHash, userId], (updateErr) => {
+        if (updateErr) return res.status(500).json({ error: "Failed to update password" });
+        res.json({ success: true, message: "Password updated successfully" });
+      });
+    });
+
+  } catch (err) {
+    return res.status(403).json({ error: "Invalid token" });
+  }
+});
+
 // update user
 app.put("/api/users/:id", (req, res) => {
   const { full_name, email, phone_number, expertise, affiliation } = req.body;
