@@ -257,7 +257,7 @@ onMounted(() => {
         <p class="text-sm font-bold text-[#5c001f] uppercase tracking-[0.18em]">
           Project Database
         </p>
-        <h2 class="text-[28px] font-bold text-gray-900">FYP Project Records</h2>
+        <h2 class="text-[28px] font-bold text-gray-900">FYP Assign Supervisor</h2>
       </div>
 
       <div class="flex gap-3 items-center">

@@ -5,7 +5,7 @@ import AppSidebar from '@/components/common_components/AppSidebar.vue'
 import AppFooter from '@/components/common_components/AppFooter.vue'
 import WorkflowSteps from '@/components/common_components/WorkflowSteps.vue'
 import SubmittedProposalQueue from './state/SubmittedProposalQueue.vue'
-import FYPProjectRecords from './state/FYPProjectRecords.vue'
+import FYPAssignSupervisor from './state/FYPAssignSupervisor.vue'
 import {
   UploadCloud,
   ClipboardList,
@@ -224,7 +224,7 @@ onMounted(async () => {
                 ]"
               >
                 <ClipboardList class="w-5 h-5" />
-                Project Records
+                Assign Supervisor
               </button>
             </div>
           </div>
@@ -240,7 +240,7 @@ onMounted(async () => {
           />
 
           <!-- Records Tab -->
-          <FYPProjectRecords
+          <FYPAssignSupervisor
             v-if="activeTab === 'records'"
             :records="projectRecords"
             :isLoading="isLoadingRecords"
