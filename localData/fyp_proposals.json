@@ -74,6 +74,13 @@
       "cgpa": 3.45
     },
     "supervisor": null,
+    "examiners": [
+      {
+        "user_id": 4,
+        "full_name": "Prof. John Smith",
+        "role": "Examiner"
+      }
+    ],
     "abstract": "Water management in agriculture is crucial. This project designs a precision smart greenhouse watering system utilizing IoT sensor arrays to check soil humidity levels and trigger drip irrigation.",
     "keywords": "IoT, Smart Agriculture, Precision Irrigation, Arduino, ESP32",
     "details": {
