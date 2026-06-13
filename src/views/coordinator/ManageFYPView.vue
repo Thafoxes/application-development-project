@@ -104,7 +104,6 @@ const isLoadingQueue = ref(false)
 const queueError = ref('')
 const selectedQueueProjectId = ref(null)
 
-
 const loadSubmittedProposalQueue = async () => {
   isLoadingQueue.value = true
   queueError.value = ''
@@ -169,7 +168,6 @@ const openSubmittedProposal = (project) => {
   activeTab.value = 'matching'
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
-
 
 const setActiveTab = async (tabName) => {
   activeTab.value = tabName
@@ -261,30 +259,56 @@ const handleFileUpload = async (event) => {
   }
 }
 
-const fillSampleProposal = () => {
-  proposalForm.value = {
-    members: [
-      { name: 'Shaikh Amir Husaini Bin Sh.Mohd Saifuddeen', matricNo: 'A24MJ5068' },
-      { name: 'Ahmad Fadzril Bin Ahmad Badril', matricNo: 'A24MJ5050' },
-      { name: 'Ahmad Daniel Tamingsari Bin Ramlan', matricNo: 'A24MJ5074' },
-      { name: 'Adlan Hazim Bin Abdul Rahman', matricNo: 'A24MJ5056' },
-    ],
-    memberText:
-      '1. Shaikh Amir Husaini Bin Sh.Mohd Saifuddeen (A24MJ5068)\n2. Ahmad Fadzril Bin Ahmad Badril (A24MJ5050)\n3. Ahmad Daniel Tamingsari Bin Ramlan (A24MJ5074)\n4. Adlan Hazim Bin Abdul Rahman (A24MJ5056)',
-    studentName: 'Shaikh Amir Husaini Bin Sh.Mohd Saifuddeen',
-    matricNo: 'A24MJ5068',
-    projectTitle: 'Software Engineering Smart Academic Advisor (AA) Audit System',
-    projectType: 'Development',
-    abstract:
-      'Managing academic progression is a significant challenge for students who must navigate complex course structures while tracking failed or missed subjects. Traditional methods of checking graduation eligibility are manual and prone to human error, often leading to delayed graduations due to missing credit hours. The system addresses this by implementing a Vue.js-based Credit Audit Dashboard that identifies failed or missed subjects and calculates remaining credit hours in real time.',
-    keywords:
-      'Vue.js, Academic Advisor, Credit Audit Dashboard, Reactive State Management, Pinia, Academic Progression, Graduation Eligibility',
-  }
+const fillSampleProposal = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/coordinator/fyp-queue`)
+    const data = await response.json()
+    if (data.success && data.projects && data.projects.length > 0) {
+      const sample = data.projects.find((p) => p.matricNo === 'A24MJ5068') || data.projects[0]
+      const membersList = sample.details?.members ||
+        sample.members || [{ name: sample.studentName, matricNo: sample.matricNo }]
 
-  extractSuccess.value = 'Sample proposal data filled.'
-  extractError.value = ''
+      proposalForm.value = {
+        members: membersList,
+        memberText: membersList.map((m, idx) => `${idx + 1}. ${m.name} (${m.matricNo})`).join('\n'),
+        studentName: sample.studentName,
+        matricNo: sample.matricNo,
+        projectTitle: sample.projectTitle,
+        projectType: sample.projectType === 'Research' ? 'Research' : 'Development',
+        abstract: sample.abstract,
+        keywords: sample.keywords,
+      }
+      extractSuccess.value = 'Sample proposal data filled from database.'
+      extractError.value = ''
+    } else {
+      extractError.value = 'No sample proposal data found in database.'
+    }
+  } catch (error) {
+    console.error('Failed to fill sample proposal:', error)
+    extractError.value = 'Failed to load sample proposal from database.'
+  }
 }
 
+const updateStatus = async (projectId, status) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/coordinator/fyp-status/${projectId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ status }),
+    })
+    const data = await response.json()
+    if (response.ok && data.success) {
+      await loadSubmittedProposalQueue()
+    } else {
+      alert(data.error || 'Failed to update proposal status.')
+    }
+  } catch (error) {
+    console.error('Update status error:', error)
+    alert('Failed to connect to the server to update status.')
+  }
+}
 
 const updateProjectStatus = async (status, matchScore = null) => {
   if (!selectedQueueProjectId.value) return
@@ -343,7 +367,7 @@ const runAIMatch = async () => {
 
     await updateProjectStatus(
       'Pending Supervisor Assignment',
-      recommendedSupervisors.value[0]?.score || null
+      recommendedSupervisors.value[0]?.score || null,
     )
     matchSource.value = data.source || 'unknown'
   } catch (error) {
@@ -468,7 +492,9 @@ onMounted(async () => {
           <div class="absolute -right-16 -top-16 w-56 h-56 rounded-full bg-[#f8be17]/20"></div>
           <div class="absolute right-20 bottom-[-70px] w-40 h-40 rounded-full bg-white/10"></div>
 
-          <div class="relative p-8 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-6">
+          <div
+            class="relative p-8 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-6"
+          >
             <div>
               <div class="flex items-center gap-3 mb-4">
                 <div
@@ -486,7 +512,8 @@ onMounted(async () => {
               </div>
 
               <p class="text-white/80 max-w-3xl text-[16px] leading-relaxed">
-                Review student-submitted proposal records, run AI supervisor matching, assign supervisors and examiners, and monitor project status.
+                Review student-submitted proposal records, run AI supervisor matching, assign
+                supervisors and examiners, and monitor project status.
               </p>
             </div>
           </div>
@@ -564,7 +591,8 @@ onMounted(async () => {
                 <h2 class="text-[28px] font-bold">Submitted Proposal Queue</h2>
                 <p class="text-gray-600 mt-2 max-w-3xl">
                   Proposals are uploaded by students from the Student Document Submission Center.
-                  Coordinator reviews each proposal, runs AI matching, and assigns the most suitable supervisor.
+                  Coordinator reviews each proposal, runs AI matching, and assigns the most suitable
+                  supervisor.
                 </p>
               </div>
 
@@ -599,89 +627,111 @@ onMounted(async () => {
               <table class="w-full text-sm bg-white">
                 <thead class="bg-[#5c001f] text-white">
                   <tr class="text-left">
-                    <th class="px-5 py-4">Student / Members</th>
+                    <th class="px-5 py-4">Student</th>
                     <th class="px-5 py-4">Project Title</th>
                     <th class="px-5 py-4">Proposal Status</th>
-                    <th class="px-5 py-4">AI Status</th>
-                    <th class="px-5 py-4">Supervisor</th>
-                    <th class="px-5 py-4 text-right">Action</th>
+                    <th class="px-5 py-4">Supervisor Email</th>
+                    <th class="px-5 py-4 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                <tr v-if="isLoadingQueue">
-                  <td colspan="6" class="px-5 py-8 text-center font-bold text-[#5c001f]">
-                    Loading submitted proposals...
-                  </td>
-                </tr>
+                  <tr v-if="isLoadingQueue">
+                    <td colspan="5" class="px-5 py-8 text-center font-bold text-[#5c001f]">
+                      Loading submitted proposals...
+                    </td>
+                  </tr>
 
-                <tr v-else-if="queueError">
-                  <td colspan="6" class="px-5 py-8 text-center font-bold text-red-700">
-                    {{ queueError }}
-                  </td>
-                </tr>
+                  <tr v-else-if="queueError">
+                    <td colspan="5" class="px-5 py-8 text-center font-bold text-red-700">
+                      {{ queueError }}
+                    </td>
+                  </tr>
 
-                <tr v-else-if="submittedProposals.length === 0">
-                  <td colspan="6" class="px-5 py-8 text-center text-gray-600">
-                    No student-submitted proposals found.
-                  </td>
-                </tr>
+                  <tr v-else-if="submittedProposals.length === 0">
+                    <td colspan="5" class="px-5 py-8 text-center text-gray-600">
+                      No student-submitted proposals found.
+                    </td>
+                  </tr>
 
-                <tr
-                  v-for="project in submittedProposals"
-                  v-else
-                  :key="project.project_id"
-                  class="border-t border-gray-300"
-                  :class="String(selectedQueueProjectId) === String(project.project_id) ? 'bg-yellow-50' : ''"
-                >
-                  <td class="px-5 py-4 font-bold">
-                    {{ project.studentName }}
-                    <br />
-                    <span class="text-xs text-gray-500 font-medium">{{ project.matricNo }}</span>
-                  </td>
+                  <tr
+                    v-for="project in submittedProposals"
+                    v-else
+                    :key="project.project_id"
+                    class="border-t border-gray-300"
+                    :class="
+                      String(selectedQueueProjectId) === String(project.project_id)
+                        ? 'bg-yellow-50'
+                        : ''
+                    "
+                  >
+                    <td class="px-5 py-4 font-bold">
+                      {{ project.studentName }}
+                      <br />
+                      <span class="text-xs text-gray-500 font-medium">{{ project.matricNo }}</span>
+                    </td>
 
-                  <td class="px-5 py-4 font-bold max-w-[240px]">
-                    {{ project.projectTitle }}
-                  </td>
+                    <td class="px-5 py-4 font-bold max-w-[240px]">
+                      {{ project.projectTitle }}
+                    </td>
 
-                  <td class="px-5 py-4">
-                    <span class="px-3 py-1 rounded-full bg-yellow-100 text-yellow-700 font-bold text-xs">
-                      {{ project.status }}
-                    </span>
-                  </td>
+                    <td class="px-5 py-4">
+                      <span
+                        class="px-3 py-1 rounded-full font-bold text-xs uppercase"
+                        :class="{
+                          'bg-yellow-100 text-yellow-800':
+                            project.status?.toLowerCase() === 'submitted' ||
+                            project.status?.toLowerCase() === 'pending',
+                          'bg-green-100 text-green-800':
+                            project.status?.toLowerCase() === 'approved',
+                          'bg-red-100 text-red-800': project.status?.toLowerCase() === 'rejected',
+                        }"
+                      >
+                        {{ project.status }}
+                      </span>
+                    </td>
 
-                  <td class="px-5 py-4">
-                    <span
-                      class="px-3 py-1 rounded-lg font-bold text-xs"
-                      :class="project.matchScore ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'"
-                    >
-                      {{ project.aiStatus }}
-                    </span>
-                  </td>
+                    <td class="px-5 py-4 font-medium text-gray-700">
+                      {{ project.supervisorEmail || 'Not Assigned Yet' }}
+                    </td>
 
-                  <td class="px-5 py-4">
-                    {{ project.supervisorName || 'Not Assigned' }}
-                    <div v-if="project.matchScore" class="text-xs text-gray-500">
-                      Score: {{ project.matchScore }}
-                    </div>
-                  </td>
-
-                  <td class="px-5 py-4">
-                    <button
-                      @click="openSubmittedProposal(project)"
-                      class="bg-[#5c001f] text-white px-4 py-2 rounded-lg font-bold hover:bg-[#4a0019]"
-                    >
-                      Review / Run AI
-                    </button>
-                  </td>
-                </tr>
-</tbody>
+                    <td class="px-5 py-4 text-right flex justify-end gap-2 items-center">
+                      <router-link
+                        :to="`/manage-fyp/${project.project_id}`"
+                        class="bg-[#5c001f] text-white px-3 py-1.5 rounded-lg font-bold hover:bg-[#4a0019] transition-all text-xs inline-block"
+                      >
+                        Check FYP
+                      </router-link>
+                      <button
+                        v-if="
+                          project.status?.toLowerCase() === 'submitted' ||
+                          project.status?.toLowerCase() === 'pending'
+                        "
+                        @click="updateStatus(project.project_id, 'approved')"
+                        class="bg-green-700 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-green-800 transition-all text-xs"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        v-if="
+                          project.status?.toLowerCase() === 'submitted' ||
+                          project.status?.toLowerCase() === 'pending'
+                        "
+                        @click="updateStatus(project.project_id, 'rejected')"
+                        class="bg-red-700 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-red-800 transition-all text-xs"
+                      >
+                        Reject
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
               </table>
             </div>
 
             <div class="mt-6 rounded-lg bg-yellow-50 border border-yellow-400 p-5 text-[#5c001f]">
               <p class="font-bold">Updated workflow reminder</p>
               <p class="text-sm mt-1">
-                Student uploads proposal first. Coordinator only reviews submitted proposals, runs AI supervisor matching, assigns supervisor/examiner, and tracks status.
+                Student uploads proposal first. Coordinator only reviews submitted proposals, runs
+                AI supervisor matching, assigns supervisor/examiner, and tracks status.
               </p>
             </div>
           </div>
@@ -711,9 +761,7 @@ onMounted(async () => {
 
                     <div class="bg-white/10 rounded-lg p-4 border border-white/10">
                       <p class="text-xs text-[#f8be17] font-bold uppercase">Project Members</p>
-                      <p class="font-semibold mt-1">
-                        {{ proposalForm.members.length }} member(s)
-                      </p>
+                      <p class="font-semibold mt-1">{{ proposalForm.members.length }} member(s)</p>
                     </div>
 
                     <div class="bg-white/10 rounded-lg p-4 border border-white/10">
@@ -779,7 +827,6 @@ onMounted(async () => {
                 </div>
 
                 <div v-else class="space-y-5">
-                  
                   <div
                     v-if="recommendedSupervisors.length === 0"
                     class="rounded-lg border border-gray-300 bg-gray-50 p-8 text-center"
@@ -787,7 +834,8 @@ onMounted(async () => {
                     <BrainCircuit class="w-12 h-12 mx-auto text-[#5c001f]" />
                     <h3 class="text-xl font-bold mt-4">No AI matching result yet</h3>
                     <p class="text-gray-600 mt-2">
-                      Open a submitted proposal from the queue, then click Run AI Matching to generate supervisor recommendations.
+                      Open a submitted proposal from the queue, then click Run AI Matching to
+                      generate supervisor recommendations.
                     </p>
 
                     <button
@@ -799,7 +847,7 @@ onMounted(async () => {
                     </button>
                   </div>
 
-<div
+                  <div
                     v-for="supervisor in recommendedSupervisors"
                     :key="supervisor.rank"
                     class="rounded-lg border border-gray-300 p-6 hover:shadow-lg transition-shadow"
@@ -1050,7 +1098,10 @@ onMounted(async () => {
                   been created for the supervisor and project members.
                 </p>
 
-                <div v-if="lastAssignment" class="mt-7 rounded-lg bg-gray-50 border border-gray-300 p-6 text-left">
+                <div
+                  v-if="lastAssignment"
+                  class="mt-7 rounded-lg bg-gray-50 border border-gray-300 p-6 text-left"
+                >
                   <p class="text-sm font-bold text-[#5c001f] uppercase tracking-[0.18em]">
                     Assignment Summary
                   </p>
@@ -1142,7 +1193,10 @@ onMounted(async () => {
               </div>
             </div>
 
-            <div v-else-if="projectRecords.length === 0" class="rounded-lg border border-gray-300 p-8 text-center">
+            <div
+              v-else-if="projectRecords.length === 0"
+              class="rounded-lg border border-gray-300 p-8 text-center"
+            >
               <ClipboardList class="w-12 h-12 text-[#5c001f] mx-auto" />
               <h3 class="font-bold text-xl mt-4">No Assigned Projects Yet</h3>
               <p class="text-gray-600 mt-2">
@@ -1221,7 +1275,9 @@ onMounted(async () => {
       v-if="showAssignModal"
       class="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-6"
     >
-      <div class="bg-white rounded-lg shadow-2xl max-w-3xl w-full border border-gray-300 overflow-hidden">
+      <div
+        class="bg-white rounded-lg shadow-2xl max-w-3xl w-full border border-gray-300 overflow-hidden"
+      >
         <div class="bg-[#5c001f] text-white p-6 flex items-center justify-between">
           <div>
             <p class="text-[#f8be17] font-bold text-sm uppercase tracking-[0.18em]">
