@@ -12,6 +12,8 @@ import {
   ShieldAlert,
   CheckCircle2
 } from 'lucide-vue-next'
+// Loaded from candidates ref via server API
+import { getAISuggestedSupervisor } from '@/utils/assistant.js'
 
 const props = defineProps({
   records: {
@@ -33,13 +35,17 @@ const emit = defineEmits(['refresh'])
 const searchQuery = ref('')
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 
-// Workspace State
-const activeAssignmentProject = ref(null)
+// Roster & Assignment Drawer States
 const candidates = ref([])
 const isLoadingCandidates = ref(false)
 const candidatesError = ref('')
 const isAssigning = ref(false)
-const hoveredCandidate = ref(null)
+
+const isDrawerOpen = ref(false)
+const selectedProject = ref(null)
+const drawerSearchQuery = ref('')
+const isAnalyzing = ref(false)
+const drawerAIRecommendation = ref(null)
 
 const filteredRecords = computed(() => {
   if (!searchQuery.value.trim()) return props.records
@@ -75,14 +81,8 @@ const loadCandidates = async () => {
 }
 
 const filteredCandidates = computed(() => {
-  // Loop through a non-student array (filtering academic staff where is_utm_staff: true or independent industry experts where affiliation: 'Industry')
-  return candidates.value.filter(u => u.is_utm_staff || u.affiliation === 'Industry')
+  return candidates.value.filter(u => u.is_utm_staff || u.affiliation === 'UTM' || u.affiliation === 'Industry')
 })
-
-const isDisqualified = (project, candidate) => {
-  if (!project.examiners || !Array.isArray(project.examiners)) return false
-  return project.examiners.some(ex => Number(ex.user_id) === Number(candidate.user_id))
-}
 
 const getAIEnginePayload = (project, candidate) => {
   if (!project || !candidate) return { score: 50, reason: 'N/A' }
@@ -102,110 +102,107 @@ const getAIEnginePayload = (project, candidate) => {
     }
   })
   
-  // Custom mock rules matching backend suggestions
-  if (candidate.user_id === 2) { // Dr. Sarah
-    return {
-      score: 95,
-      reason: "High semantic match of 95% is driven by the alignment of your web technologies requirements with Dr. Sarah's publications in Web Engineering and Agile Methodologies."
-    }
-  } else if (candidate.user_id === 4) { // Prof. John Smith
-    return {
-      score: 82,
-      reason: "Strong matching score of 82% is established due to overlap in software quality metrics and student dashboard validation scopes."
-    }
-  } else if (candidate.user_id === 3) { // Dr. Neo
-    return {
-      score: 75,
-      reason: "Works in AI systems and intelligent databases, making them a solid technical fit for the system design components."
-    }
-  } else if (candidate.user_id === 10) { // Robert Chen
-    return {
-      score: 91,
-      reason: "Industry relevance score of 91% is determined by the cybersecurity aspects of the project matching Robert's expertise in Network Auditing."
-    }
-  }
-  
-  let score = 60 + (candidate.user_id * 3) % 15
-  if (matches.length > 0) {
-    score = Math.min(85 + matches.length * 4, 98)
-  }
-  
-  let reason = ''
-  if (matches.length > 0) {
-    reason = `Excellent alignment identified between the student's project scope and ${name}'s specialized expertise in ${matches.slice(0, 2).join(' & ')}.`
-  } else {
-    reason = `Suitable candidate matches general supervision profile for ${project.projectType} projects, with focus in ${expertiseList.slice(0, 2).join(', ') || 'related areas'}.`
-  }
   
   return { score, reason }
 }
 
-const topMatchCandidate = computed(() => {
-  if (!activeAssignmentProject.value || filteredCandidates.value.length === 0) return null
-  
-  let bestCand = null
-  let maxScore = -1
-  
-  filteredCandidates.value.forEach(cand => {
-    const payload = getAIEnginePayload(activeAssignmentProject.value, cand)
-    if (payload.score > maxScore) {
-      maxScore = payload.score
-      bestCand = cand
-    }
-  })
-  
-  return bestCand
-})
+const openAssignmentDrawer = (project) => {
+  selectedProject.value = project
+  drawerSearchQuery.value = ''
+  drawerAIRecommendation.value = null
+  isDrawerOpen.value = true
+}
 
-const activeAIBannerPayload = computed(() => {
-  if (!activeAssignmentProject.value) return null
+const triggerDrawerAISuggest = async () => {
+  if (!selectedProject.value) return
+  isAnalyzing.value = true
+  drawerAIRecommendation.value = null
   
-  const targetCandidate = hoveredCandidate.value || topMatchCandidate.value
-  if (!targetCandidate) {
-    return {
-      score: 0,
-      reason: "No suitable supervisor candidates found in directory."
-    }
-  }
-  
-  const payload = getAIEnginePayload(activeAssignmentProject.value, targetCandidate)
-  return {
-    candidateName: targetCandidate.full_name,
-    isHovered: !!hoveredCandidate.value,
-    score: payload.score,
-    reason: payload.reason
-  }
-})
-
-const openAssignmentWorkspace = (project) => {
-  if (activeAssignmentProject.value?.project_id === project.project_id) {
-    activeAssignmentProject.value = null
-  } else {
-    activeAssignmentProject.value = project
-    hoveredCandidate.value = null
+  try {
+    const candidatesList = filteredDrawerCandidates.value
+    // this sends the whole project proposal and the candidates list to the AI suggested supervisor
+    const rec = await getAISuggestedSupervisor(selectedProject.value, candidatesList)
+    drawerAIRecommendation.value = rec
+  } catch (err) {
+    console.error('Error in drawer AI Suggest:', err)
+    alert('AI Assistant is currently unavailable.')
+  } finally {
+    isAnalyzing.value = false
   }
 }
 
-const closeWorkspace = () => {
-  activeAssignmentProject.value = null
-  hoveredCandidate.value = null
+const isExaminerConflict = (project, candidate) => {
+  if (!project || !project.examiners || !Array.isArray(project.examiners)) return false
+  return project.examiners.some(ex => Number(ex.user_id) === Number(candidate.user_id))
 }
 
-const handleAssign = async (project, candidate) => {
-  const isOverCapacity = candidate.max_capacity > 0 && candidate.current_capacity >= candidate.max_capacity
+const getWorkloadRatio = (candidate) => {
+  const cap = candidate.sv_capacity !== undefined ? candidate.sv_capacity : candidate.sv_vapacity
+  if (cap === 0 || cap === null || cap === undefined) {
+    return '0 / ∞ (No Limit)'
+  }
+  const current = props.records.filter(
+    p => p.supervisor && Number(p.supervisor.supervisor_id || p.supervisor.user_id) === Number(candidate.user_id)
+  ).length
+  return `${current} / ${cap}`
+}
+
+const isWorkloadFull = (candidate) => {
+  const cap = candidate.sv_capacity !== undefined ? candidate.sv_capacity : candidate.sv_vapacity
+  if (cap === 0 || cap === null || cap === undefined) {
+    return false
+  }
+  const current = props.records.filter(
+    p => p.supervisor && Number(p.supervisor.supervisor_id || p.supervisor.user_id) === Number(candidate.user_id)
+  ).length
+  return current >= cap
+}
+
+const confirmAssignment = async (candidate) => {
+  if (!selectedProject.value) return
   
-  if (isOverCapacity) {
-    const confirmOverride = confirm(
+  if (isWorkloadFull(candidate)) {
+    const ok = confirm(
       `⚠️ CAPACITY THRESHOLD EXCEEDED\n\n` +
       `Supervisor: ${candidate.full_name}\n` +
-      `Current Capacity: ${candidate.current_capacity} student(s)\n` +
-      `Maximum Quota: ${candidate.max_capacity} student(s)\n\n` +
       `You are manually superseding the maximum operational capacity thresholds for this staff member.\n\n` +
       `Do you wish to force override this assignment?`
     )
-    if (!confirmOverride) return
+    if (!ok) return
   }
   
+  // Decoupled State Persistence: strictly update nested supervisor object
+  selectedProject.value.supervisor = {
+    user_id: candidate.user_id,
+    full_name: candidate.full_name,
+    email: candidate.email
+  }
+  // Make sure we also update the supervisorName and supervisorEmail computed references used in other components
+  selectedProject.value.supervisorName = candidate.full_name
+  selectedProject.value.supervisorEmail = candidate.email
+  
+  await handleAssign(selectedProject.value, candidate)
+  isDrawerOpen.value = false
+}
+
+const filteredDrawerCandidates = computed(() => {
+  // Filter out student profiles. Include if is_utm_staff === true or affiliation === 'UTM' or affiliation === 'Industry'.
+  let list = candidates.value.filter(u => u.is_utm_staff || u.affiliation === 'UTM' || u.affiliation === 'Industry')
+  
+  if (drawerSearchQuery.value.trim()) {
+    const query = drawerSearchQuery.value.toLowerCase()
+    list = list.filter(u => {
+      const nameMatch = u.full_name?.toLowerCase().includes(query)
+      const tagMatch = u.expertise?.some(tag => tag.toLowerCase().includes(query))
+      return nameMatch || tagMatch
+    })
+  }
+  
+  // Limit to first 10
+  return list.slice(0, 10)
+})
+
+const handleAssign = async (project, candidate) => {
   isAssigning.value = true
   try {
     const response = await fetch(`${API_BASE_URL}/api/supervisor-matching/assign`, {
@@ -226,7 +223,6 @@ const handleAssign = async (project, candidate) => {
     const data = await response.json()
     if (response.ok && data.success) {
       alert(`🎉 Supervisor successfully assigned!\n\n${candidate.full_name} is now the supervisor for "${project.projectTitle}".`)
-      activeAssignmentProject.value = null
       emit('refresh')
       await loadCandidates()
     } else {
@@ -319,7 +315,7 @@ onMounted(() => {
             <th class="px-5 py-4 text-sm font-bold font-sans">Project Title</th>
             <th class="px-5 py-4 text-sm font-bold font-sans">Project Type</th>
             <th class="px-5 py-4 text-sm font-bold font-sans">Supervisor</th>
-            <th class="px-5 py-4 text-sm font-bold font-sans">Status</th>
+            <th class="px-5 py-4 text-sm font-bold font-sans">Supervisor Assignment</th>
           </tr>
         </thead>
 
@@ -329,8 +325,8 @@ onMounted(() => {
             <tr
               class="border-b border-gray-100 transition-colors"
               :class="[
-                activeAssignmentProject?.project_id === project.project_id
-                  ? 'bg-[#fff8df] hover:bg-[#fff8df]'
+                isDrawerOpen && selectedProject?.project_id === project.project_id
+                  ? 'bg-[#fff8df]'
                   : 'bg-white hover:bg-[#fff8df]/40'
               ]"
             >
@@ -360,294 +356,224 @@ onMounted(() => {
                   <p class="font-bold text-gray-900 font-sans text-sm">{{ project.supervisorName }}</p>
                   <p class="text-xs text-gray-500 font-sans">{{ project.supervisorEmail }}</p>
                 </div>
-                <div v-else class="flex flex-col gap-1.5">
+                <div v-else>
                   <p class="text-gray-400 font-medium italic text-xs font-sans">Not Assigned Yet</p>
-                  <button
-                    v-if="project.status?.toLowerCase() === 'approved'"
-                    @click="openAssignmentWorkspace(project)"
-                    class="bg-[#5c001f] text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-[#4a0019] transition-all border-none cursor-pointer flex items-center justify-center gap-1 shadow-md w-fit active:scale-95 text-center font-sans"
-                  >
-                    <UserPlus class="w-3.5 h-3.5" />
-                    Assign Supervisor
-                  </button>
                 </div>
               </td>
-
               <td class="px-5 py-4">
-                <div class="flex flex-col gap-1">
-                  <span
-                    class="px-3 py-1 rounded-full text-xs font-bold uppercase w-fit font-sans"
-                    :class="{
-                      'bg-yellow-100 text-yellow-800':
-                        project.status?.toLowerCase() === 'submitted' ||
-                        project.status?.toLowerCase() === 'pending',
-                      'bg-green-100 text-green-800':
-                        project.status?.toLowerCase() === 'approved',
-                      'bg-red-100 text-red-800': project.status?.toLowerCase() === 'rejected',
-                    }"
-                  >
-                    {{ project.status }}
-                  </span>
-                  <span v-if="project.status?.toLowerCase() === 'rejected' && project.coordinator_comments" class="text-xs text-red-600 max-w-[150px] font-sans">
-                    <strong>Reason:</strong> {{ project.coordinator_comments }}
-                  </span>
-                </div>
-              </td>
-            </tr>
-
-            <!-- Expanded Workspace Panel Row (Inline Context Preservation) -->
-            <tr v-if="activeAssignmentProject?.project_id === project.project_id" class="bg-gray-50">
-              <td colspan="6" class="px-8 py-6 border-b border-gray-200">
-                <div class="border border-[#5c001f]/20 rounded-xl bg-white shadow-xl overflow-hidden animate-fadeIn">
-                  
-                  <!-- Workspace Header -->
-                  <div class="bg-[#5c001f] text-white px-6 py-4 flex justify-between items-center border-b border-[#f8be17]/30">
-                    <div>
-                      <span class="text-[10px] uppercase tracking-[0.2em] text-[#f8be17] font-bold font-sans">
-                        Supervisor Assignment Workspace
-                      </span>
-                      <h3 class="text-base font-bold text-white mt-0.5 leading-tight flex items-center gap-2 font-sans">
-                        <span>{{ project.projectTitle }}</span>
-                      </h3>
-                      <div class="flex items-center gap-2 mt-1.5 text-xs text-white/90 font-sans">
-                        <span class="bg-[#f8be17] text-[#5c001f] font-bold px-2 py-0.5 rounded">
-                          Student: {{ project.studentName }}
-                        </span>
-                        <span>·</span>
-                        <span class="bg-white/20 px-2 py-0.5 rounded">
-                          Matric: {{ project.matricNo }}
-                        </span>
-                        <span v-if="project.cgpa">·</span>
-                        <span v-if="project.cgpa" class="bg-white/20 px-2 py-0.5 rounded">
-                          CGPA: {{ parseFloat(project.cgpa).toFixed(2) }}
-                        </span>
-                      </div>
-                    </div>
-                    <button
-                      @click="closeWorkspace"
-                      class="text-white/80 hover:text-[#f8be17] font-bold text-xs bg-transparent border border-white/20 hover:border-[#f8be17]/40 px-3 py-1.5 rounded transition-all cursor-pointer flex items-center gap-1.5 self-start font-sans"
-                    >
-                      <X class="w-4 h-4" />
-                      ✕ Close Workspace
-                    </button>
-                  </div>
-
-                  <!-- Gemma 4 AI Matching Banner -->
-                  <div class="bg-[#f8be17]/10 border-b border-[#f8be17]/25 px-6 py-4 flex items-start gap-4">
-                    <div class="bg-[#f8be17] text-[#5c001f] rounded-lg px-3 py-2 font-bold text-center shrink-0 flex flex-col items-center justify-center min-w-[70px] shadow-sm font-sans">
-                      <span class="text-[9px] uppercase tracking-wider leading-none">Match</span>
-                      <span class="text-2xl leading-none mt-1 font-extrabold font-mono text-[#5c001f]">{{ activeAIBannerPayload?.score }}%</span>
-                    </div>
-                    
-                    <div class="flex-1">
-                      <div class="flex items-center gap-2 font-sans">
-                        <span class="bg-[#5c001f] text-white text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">
-                          Gemma 4 AI Insight
-                        </span>
-                        <span class="text-xs text-[#5c001f] font-bold">
-                          {{ activeAIBannerPayload?.isHovered ? '⚡ Live Previewing:' : '🏆 Best AI Match:' }}
-                        </span>
-                        <span class="text-xs font-bold text-[#5c001f]">
-                          {{ activeAIBannerPayload?.candidateName }}
-                        </span>
-                      </div>
-                      <p class="text-sm text-gray-700 mt-1.5 italic font-medium leading-relaxed font-sans">
-                        "{{ activeAIBannerPayload?.reason }}"
-                      </p>
-                    </div>
-                  </div>
-
-                  <!-- Candidate Directory Section -->
-                  <div class="p-6">
-                    <div class="flex items-center justify-between mb-4">
-                      <div>
-                        <h4 class="text-sm font-bold text-[#5c001f] uppercase tracking-wider font-sans">
-                          Supervisor Candidates Directory
-                        </h4>
-                        <p class="text-xs text-gray-500 mt-0.5 font-sans">
-                          List of university faculty staff and verified industry professionals. Hover on any candidate to see details and AI match score.
-                        </p>
-                      </div>
-                      
-                      <div v-if="isLoadingCandidates" class="flex items-center gap-1.5 text-xs text-gray-500 font-medium font-sans">
-                        <Loader2 class="w-3.5 h-3.5 animate-spin text-[#5c001f]" />
-                        <span>Fetching capacities...</span>
-                      </div>
-                    </div>
-
-                    <!-- Loader inside directory -->
-                    <div v-if="isLoadingCandidates && candidates.length === 0" class="py-12 text-center border rounded-lg bg-gray-50 border-gray-200">
-                      <Loader2 class="w-8 h-8 animate-spin text-[#5c001f] mx-auto" />
-                      <p class="text-xs font-bold text-gray-550 mt-2 font-sans">Loading candidate directory...</p>
-                    </div>
-
-                    <div v-else-if="candidatesError" class="p-4 border border-red-200 bg-red-50 rounded-lg text-red-700 text-xs font-sans">
-                      <p class="font-bold">Failed to load candidates directory:</p>
-                      <p class="mt-1">{{ candidatesError }}</p>
-                    </div>
-
-                    <!-- Candidate Table -->
-                    <div v-else class="overflow-hidden rounded-lg border border-gray-200 shadow-sm bg-white">
-                      <table class="w-full text-left text-xs bg-white">
-                        <thead class="bg-gray-50 text-gray-600 border-b border-gray-200">
-                          <tr>
-                            <th class="px-4 py-3 text-[11px] font-bold uppercase tracking-wider font-sans">Full Name & Affiliation</th>
-                            <th class="px-4 py-3 text-[11px] font-bold uppercase tracking-wider font-sans">Contact Email</th>
-                            <th class="px-4 py-3 text-[11px] font-bold uppercase tracking-wider font-sans">Expertise Tags</th>
-                            <th class="px-4 py-3 text-[11px] font-bold uppercase tracking-wider font-sans">Load Capacity Allocation</th>
-                            <th class="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-right font-sans">Action</th>
-                          </tr>
-                        </thead>
-                        
-                        <tbody class="divide-y divide-gray-100">
-                          <tr
-                            v-for="candidate in filteredCandidates"
-                            :key="candidate.user_id"
-                            @mouseenter="hoveredCandidate = candidate"
-                            @mouseleave="hoveredCandidate = null"
-                            class="transition-colors group"
-                            :class="[
-                              isDisqualified(project, candidate)
-                                ? 'bg-gray-100 text-gray-400/80 opacity-65'
-                                : 'bg-white hover:bg-[#fff8df]/25 text-gray-700'
-                            ]"
-                          >
-                            <!-- Name & Affiliation Badge -->
-                            <td class="px-4 py-3 font-semibold text-gray-900 font-sans">
-                              <div class="flex items-center gap-1 flex-wrap">
-                                <span class="font-bold text-gray-800 text-sm" :class="{ 'text-gray-400': isDisqualified(project, candidate) }">
-                                  {{ candidate.full_name }}
-                                </span>
-                                
-                                <span
-                                  v-if="candidate.affiliation?.toLowerCase() === 'industry'"
-                                  class="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase shrink-0 transition-all font-sans"
-                                  :class="[
-                                    isDisqualified(project, candidate)
-                                      ? 'bg-gray-200 text-gray-400'
-                                      : 'bg-purple-100 text-purple-800 border border-purple-200'
-                                  ]"
-                                >
-                                  Industry
-                                </span>
-                                <span
-                                  v-else
-                                  class="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase shrink-0 transition-all font-sans"
-                                  :class="[
-                                    isDisqualified(project, candidate)
-                                      ? 'bg-gray-200 text-gray-400'
-                                      : 'bg-blue-100 text-blue-800 border border-blue-200'
-                                  ]"
-                                >
-                                  Staff
-                                </span>
-                              </div>
-                              <div v-if="candidate.co_org_name" class="text-[10px] text-gray-400 font-normal mt-0.5 font-sans">
-                                {{ candidate.co_org_name }}
-                              </div>
-                            </td>
-
-                            <!-- Contact Email -->
-                            <td class="px-4 py-3 font-mono text-gray-500 select-all">
-                              {{ candidate.email }}
-                            </td>
-
-                            <!-- Expertise Tag Badges -->
-                            <td class="px-4 py-3">
-                              <div class="flex flex-wrap gap-1 max-w-[280px]">
-                                <span
-                                  v-for="tag in candidate.expertise"
-                                  :key="tag"
-                                  class="px-2 py-0.5 rounded text-[10px] font-medium border transition-colors font-sans"
-                                  :class="[
-                                    isDisqualified(project, candidate)
-                                      ? 'bg-gray-100 border-gray-200 text-gray-400'
-                                      : 'bg-gray-50 hover:bg-gray-100 border-gray-200 text-gray-650'
-                                  ]"
-                                >
-                                  {{ tag }}
-                                </span>
-                                <span v-if="!candidate.expertise || candidate.expertise.length === 0" class="text-gray-450 italic font-sans text-[11px]">
-                                  No tags
-                                </span>
-                              </div>
-                            </td>
-
-                            <!-- Load Capacity Allocation -->
-                            <td class="px-4 py-3">
-                              <div class="flex items-center gap-1.5 font-sans">
-                                <span
-                                  v-if="candidate.max_capacity === 0 || candidate.max_capacity == null"
-                                  class="font-extrabold text-green-700 font-mono text-sm"
-                                >
-                                  {{ candidate.current_capacity || 0 }} / ∞ (No Limit)
-                                </span>
-                                <span
-                                  v-else-if="candidate.current_capacity >= candidate.max_capacity"
-                                  class="font-extrabold text-red-600 font-mono text-sm bg-red-50 border border-red-200 px-2 py-0.5 rounded flex items-center gap-1"
-                                >
-                                  {{ candidate.current_capacity }} / {{ candidate.max_capacity }}
-                                </span>
-                                <span
-                                  v-else
-                                  class="font-extrabold text-gray-700 font-mono text-sm"
-                                >
-                                  {{ candidate.current_capacity }} / {{ candidate.max_capacity }}
-                                </span>
-                              </div>
-                            </td>
-
-                            <!-- Action Button -->
-                            <td class="px-4 py-3 text-right">
-                              <div class="flex items-center justify-end gap-2 font-sans">
-                                <span
-                                  v-if="isDisqualified(project, candidate)"
-                                  class="text-[10px] font-extrabold text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded inline-flex items-center gap-0.5 uppercase tracking-wide font-sans shrink-0"
-                                >
-                                  ⚠️ Disqualified: User is Examiner
-                                </span>
-                                
-                                <button
-                                  v-if="isDisqualified(project, candidate)"
-                                  disabled
-                                  class="bg-gray-100 text-gray-400 px-3 py-1.5 rounded font-bold text-xs cursor-not-allowed border border-gray-200 shadow-none uppercase flex items-center gap-1 select-none font-sans shrink-0"
-                                >
-                                  Assign Proposal
-                                </button>
-                                
-                                <button
-                                  v-else-if="candidate.max_capacity === 0 || candidate.max_capacity === null || candidate.current_capacity < candidate.max_capacity"
-                                  @click="handleAssign(project, candidate)"
-                                  :disabled="isAssigning"
-                                  class="bg-[#5c001f] text-white hover:bg-[#4a0019] px-4 py-1.5 rounded-lg font-bold text-xs shadow-md hover:shadow-lg transition-all active:scale-95 cursor-pointer border-none flex items-center gap-1.5 font-sans shrink-0"
-                                >
-                                  <Loader2 v-if="isAssigning" class="w-3 h-3 animate-spin text-white" />
-                                  Assign Proposal
-                                </button>
-                                
-                                <button
-                                  v-else
-                                  @click="handleAssign(project, candidate)"
-                                  :disabled="isAssigning"
-                                  class="bg-[#f8be17] text-[#5c001f] hover:bg-[#e0ab12] px-4 py-1.5 rounded-lg font-bold text-xs shadow-md hover:shadow-lg transition-all active:scale-95 cursor-pointer border-none flex items-center gap-1.5 font-bold font-sans shrink-0"
-                                >
-                                  <Loader2 v-if="isAssigning" class="w-3 h-3 animate-spin text-[#5c001f]" />
-                                  ⚠️ Force Override
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                  
-                </div>
+                <button
+                  v-if="project.supervisor === null || !project.supervisor"
+                  @click="openAssignmentDrawer(project)"
+                  class="bg-[#5c001f] text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-[#4a0019] transition-all cursor-pointer shadow-md active:scale-95 text-center font-sans border-none inline-flex items-center gap-1.5"
+                >
+                  <span>🟢 Assign Supervisor</span>
+                </button>
+                <button
+                  v-else
+                  @click="openAssignmentDrawer(project)"
+                  class="bg-white text-gray-700 border border-gray-300 px-4 py-2 rounded-lg text-xs font-bold hover:bg-gray-55 transition-all cursor-pointer shadow-sm active:scale-95 text-center font-sans inline-flex items-center gap-1.5"
+                >
+                  <span>🔄 Change Supervisor</span>
+                </button>
               </td>
             </tr>
           </template>
         </tbody>
       </table>
+    </div>
+
+    <!-- Right-Side Slide-out Drawer Sheet -->
+    <div v-if="isDrawerOpen" class="fixed inset-0 z-50 flex justify-end font-sans">
+      <!-- Backdrop mask layer -->
+      <div 
+        @click="isDrawerOpen = false" 
+        class="absolute inset-0 bg-black/55 backdrop-blur-xs transition-opacity duration-300"
+      ></div>
+      
+      <!-- Drawer Panel -->
+      <div class="relative w-[500px] bg-white h-full shadow-2xl flex flex-col z-50 border-l border-gray-200 transform transition-transform duration-300 ease-out overflow-y-auto p-6">
+        <!-- Drawer Header -->
+        <div class="flex items-center justify-between pb-4 border-b border-gray-200 mb-4">
+          <div>
+            <span class="text-[10px] uppercase tracking-[0.2em] text-[#5c001f] font-bold">
+              Allocation Manager
+            </span>
+            <h3 class="text-lg font-bold text-gray-900 leading-tight">
+              Supervisor Assignment
+            </h3>
+          </div>
+          <button 
+            @click="isDrawerOpen = false" 
+            class="text-gray-400 hover:text-gray-600 bg-transparent border-none cursor-pointer p-1"
+          >
+            <X class="w-5 h-5" />
+          </button>
+        </div>
+
+        <!-- Active Project Details Box -->
+        <div v-if="selectedProject" class="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-4">
+          <span class="text-[9px] uppercase tracking-wider text-gray-500 font-bold">Selected Project</span>
+          <h4 class="font-bold text-gray-800 text-sm mt-0.5">{{ selectedProject.projectTitle }}</h4>
+          <div class="flex items-center gap-2 mt-2 text-xs text-gray-500">
+            <span>Student: {{ selectedProject.studentName }}</span>
+            <span>·</span>
+            <span>Matric: {{ selectedProject.matricNo }}</span>
+          </div>
+        </div>
+
+        <!-- AI Banner Box Container -->
+        <div class="bg-[#f8be17]/10 border border-[#f8be17]/30 rounded-xl p-4 mb-5 flex flex-col gap-3">
+          <div class="flex items-start gap-3">
+            <Sparkles class="w-5 h-5 text-[#5c001f] shrink-0 mt-0.5" />
+            <div>
+              <h5 class="text-xs font-bold text-[#5c001f] uppercase tracking-wide">AI Recommendation Assistant</h5>
+              <p class="text-xs text-gray-700 mt-1 leading-relaxed">
+                Let Gemma AI analyze this project's title and find the best matching supervisor candidate from the sliced directory list.
+              </p>
+            </div>
+          </div>
+          <button 
+            @click="triggerDrawerAISuggest"
+            :disabled="isAnalyzing"
+            class="bg-[#5c001f] hover:bg-[#4a0019] text-white py-2 px-4 rounded-lg text-xs font-bold shadow-md transition-all flex items-center justify-center gap-1.5 border-none cursor-pointer disabled:opacity-50"
+          >
+            <Loader2 v-if="isAnalyzing" class="w-3.5 h-3.5 animate-spin text-[#f8be17]" />
+            <Sparkles v-else class="w-3.5 h-3.5 text-[#f8be17]" />
+            <span>⚡ Let AI Help Me Choose</span>
+          </button>
+        </div>
+
+        <!-- Roster Search input -->
+        <div class="relative mb-4">
+          <Search class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <input 
+            v-model="drawerSearchQuery" 
+            type="text" 
+            placeholder="Search candidate by name or tags..." 
+            class="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#5c001f] bg-white text-gray-800"
+          />
+        </div>
+
+        <!-- Candidate list roster -->
+        <div class="flex-1 flex flex-col">
+          <h5 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+            Available Candidates (Max 10)
+          </h5>
+
+          <!-- Empty fallback layout block -->
+          <div 
+            v-if="filteredDrawerCandidates.length === 0" 
+            class="flex-1 flex flex-col items-center justify-center py-12 text-center text-gray-400 bg-gray-50 border border-dashed border-gray-200 rounded-xl"
+          >
+            <AlertTriangle class="w-8 h-8 text-gray-300 mb-2" />
+            <p class="text-xs font-medium">⚠️ No users found</p>
+          </div>
+
+          <!-- Roster List -->
+          <div v-else class="space-y-3">
+            <div 
+              v-for="candidate in filteredDrawerCandidates" 
+              :key="candidate.user_id"
+              class="border border-gray-200 rounded-xl p-4 bg-white transition-all hover:shadow-md flex flex-col gap-2.5"
+              :class="{
+                'opacity-45 pointer-events-none bg-gray-50': isExaminerConflict(selectedProject, candidate)
+              }"
+            >
+              <!-- Info Row -->
+              <div class="flex items-start justify-between gap-4">
+                <div>
+                  <div class="flex items-center gap-1.5 flex-wrap">
+                    <span class="font-bold text-gray-800 text-sm">
+                      {{ candidate.full_name }}
+                    </span>
+                    <!-- Specialty Badges -->
+                    <span 
+                      v-if="candidate.affiliation === 'Industry'" 
+                      class="px-2 py-0.5 rounded text-[9px] font-extrabold uppercase bg-purple-50 text-purple-700 border border-purple-100 font-sans"
+                    >
+                      Industry
+                    </span>
+                    <span 
+                      v-else 
+                      class="px-2 py-0.5 rounded text-[9px] font-extrabold uppercase bg-blue-50 text-blue-700 border border-blue-100 font-sans"
+                    >
+                      Faculty
+                    </span>
+                  </div>
+                  <p class="text-[10px] text-gray-400 font-mono mt-0.5">{{ candidate.email }}</p>
+                </div>
+
+                <!-- Load Capacity -->
+                <div class="text-right shrink-0">
+                  <span class="text-[10px] text-gray-400 block uppercase tracking-wider font-bold">Capacity</span>
+                  <span class="font-extrabold text-xs text-gray-700 font-mono">
+                    {{ getWorkloadRatio(candidate) }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Expertise list -->
+              <div class="flex flex-wrap gap-1">
+                <span 
+                  v-for="tag in candidate.expertise" 
+                  :key="tag" 
+                  class="px-2 py-0.5 bg-gray-50 border border-gray-200 rounded text-[9px] text-gray-555 font-medium font-sans"
+                >
+                  {{ tag }}
+                </span>
+              </div>
+
+              <!-- AI recommendation layout -->
+              <div 
+                v-if="drawerAIRecommendation && Number(drawerAIRecommendation.suggested_user_id) === Number(candidate.user_id)" 
+                class="bg-[#f8be17]/10 border border-[#f8be17]/30 rounded-lg p-3 text-xs flex flex-col gap-1.5 mt-1"
+              >
+                <div class="flex items-center justify-between">
+                  <span class="text-[10px] font-extrabold text-[#5c001f] flex items-center gap-1">
+                    <Sparkles class="w-3 h-3 text-[#5c001f]" />
+                    AI Selection Match Recommendation
+                  </span>
+                  <span class="bg-[#f8be17] text-[#5c001f] font-extrabold text-[9px] px-2 py-0.5 rounded-full font-sans">
+                    {{ drawerAIRecommendation.score }}% Match
+                  </span>
+                </div>
+                <p class="text-gray-750 leading-relaxed italic">
+                  "{{ drawerAIRecommendation.reason }}"
+                </p>
+              </div>
+
+              <!-- Action button inside candidate block -->
+              <div class="flex items-center justify-end mt-1 border-t border-gray-100 pt-2">
+                <!-- Examiner conflict disabled state -->
+                <span 
+                  v-if="isExaminerConflict(selectedProject, candidate)"
+                  class="text-[10px] font-extrabold text-red-600 bg-red-50 border border-red-200 px-2.5 py-1 rounded-full uppercase tracking-wider inline-flex items-center gap-1 font-sans"
+                >
+                  🚫 Disqualified: User is Examiner
+                </span>
+                
+                <!-- Force override warning action -->
+                <button 
+                  v-else-if="isWorkloadFull(candidate)"
+                  @click="confirmAssignment(candidate)"
+                  class="bg-[#f8be17] text-[#5c001f] hover:bg-[#e0ab12] py-1.5 px-4 rounded-lg font-bold text-xs shadow-md border-none cursor-pointer active:scale-95 transition-colors uppercase tracking-wider flex items-center gap-1 font-sans"
+                >
+                  <span>⚠️ Force Override</span>
+                </button>
+
+                <!-- Regular Assignment button -->
+                <button 
+                  v-else
+                  @click="confirmAssignment(candidate)"
+                  class="bg-[#5c001f] hover:bg-[#4a0019] text-white py-1.5 px-4 rounded-lg font-bold text-xs shadow-md border-none cursor-pointer active:scale-95 transition-colors uppercase tracking-wider font-sans"
+                >
+                  <span>Select & Allocate</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>

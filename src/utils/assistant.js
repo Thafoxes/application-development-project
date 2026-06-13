@@ -1,12 +1,12 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 
 /**
- * Calls the backend AI endpoint to suggest a supervisor based on the FYP title.
- * @param {string} fypTitle - The title of the FYP project.
+ * Calls the backend AI endpoint to suggest a supervisor based on the full FYP details.
+ * @param {Object} project - The full FYP project details object.
  * @param {Array} candidates - The list of supervisor candidates.
- * @returns {Promise<Object>} The recommendation recommendation object containing score, reason, and suggested_user_id.
+ * @returns {Promise<Object>} The recommendation object containing score, reason, and suggested_user_id.
  */
-export async function getAISuggestedSupervisor(fypTitle, candidates) {
+export async function getAISuggestedSupervisor(project, candidates) {
   const response = await fetch(`${API_BASE_URL}/api/assistant/suggest-supervisor`, {
     method: 'POST',
     headers: {
@@ -14,12 +14,12 @@ export async function getAISuggestedSupervisor(fypTitle, candidates) {
     },
     body: JSON.stringify({
       project: {
-        projectTitle: fypTitle,
-        title: fypTitle,
-        abstract: '',
-        keywords: '',
-        projectType: 'System Development',
-        examiners: []
+        projectTitle: project.projectTitle || project.title || '',
+        title: project.projectTitle || project.title || '',
+        abstract: project.abstract || '',
+        keywords: project.keywords || '',
+        projectType: project.projectType || 'System Development',
+        examiners: project.examiners || []
       },
       candidates: candidates
     })
