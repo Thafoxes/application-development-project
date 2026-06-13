@@ -1,288 +1,293 @@
 [
-  {
-    "project_id": 1,
-    "fyp_session_id": 25262,
-    "title": "Software Engineering Smart Academic Advisor (AA) Audit System",
-    "description": "Vue.js-based Credit Audit Dashboard that identifies failed or missed subjects and calculates remaining credit hours in real time.",
-    "status": "submitted",
-    "aiStatus": "Pending AI Matching",
-    "projectType": "System Development",
-    "github_link": "https://github.com/amirhusaini/smart-aa-audit-system",
-    "drive_link": "https://drive.google.com/drive/folders/smart-aa-audit-system-assets",
-    "use_case_diagrams": [
-      "/localData/use_case_diagram_imgs/uml-use-case-diagram.png",
-      "/localData/use_case_diagram_imgs/UCD-2.png"
-    ],
-    "student": {
-      "student_id": 4001,
-      "full_name": "Shaikh Amir Husaini Bin Sh.Mohd Saifuddeen",
-      "metric_number": "A24MJ5068",
-      "email": "amir.husaini@graduate.utm.my",
-      "cgpa": 3.85
-    },
-    "supervisor": {
-      "supervisor_id": 4020,
-      "full_name": "Dr. Sarah",
-      "email": "dr.sarah@utm.my",
-      "status": "approved"
-    },
-    "abstract": "Managing academic progression is a significant challenge for students who must navigate complex course structures while tracking failed or missed subjects. Traditional methods of checking graduation eligibility are manual and prone to human error, often leading to delayed graduations due to missing credit hours. The system addresses this by implementing a Vue.js-based Credit Audit Dashboard that identifies failed or missed subjects and calculates remaining credit hours in real time.",
-    "keywords": "Vue.js, Academic Advisor, Credit Audit Dashboard, Reactive State Management, Pinia, Academic Progression, Graduation Eligibility",
-    "details": {
-      "nabc": {
-        "need": "Students often struggle to track failed or missed prerequisite courses across complex degree guidelines, leading to unexpected delays in graduation.",
-        "approach": "A Vue 3 web application implementing a Credit Audit Dashboard featuring reactive state tracking and real-time GPA calculations.",
-        "benefits": "Reduces advising time by 80%, eliminates manual calculation errors, and gives students visual graduation progress reports.",
-        "competition": "Manual spreadsheet checks by Academic Advisors and legacy UTM portal options that lack real-time calculations or prerequisites guidance.",
-        "potential_stakeholders": "UTM Software Engineering Students, Academic Advisors, Faculty Office Staff.",
-        "potential_data_respondents": "N/A (System Development-based)",
-        "references": "1. UTM Academic Policy Guideline Book (2025)\n2. ACM/IEEE Software Engineering Education Standards (2024)"
-      },
-      "project_proposal": {
-        "problem_background_solution": "Graduation eligibility audit requires compiling data from multiple transcripts manually. Our solution automates prerequisites parsing to highlight any gaps dynamically.",
-        "objectives": "1. To design a responsive Credit Audit Dashboard UI.\n2. To implement database logic for subject validation.\n3. To test system reliability and user acceptance with 50 students.",
-        "scopes": "The prototype will support Software Engineering majors in UTM.",
-        "requirements": {
-          "software": "Vue 3, Pinia, Node.js, Express, MySQL",
-          "hardware": "Standard server hosting, client web browsers",
-          "technology": "Composition API, REST API Architecture",
-          "network_elements": "UTM local server connection, SSL/HTTPS encryption",
-          "security_elements": "JWT Auth token validation, encrypted query params",
-          "project_area": "Academic Systems Development"
+    {
+        "project_id": 1,
+        "fyp_session_id": 25262,
+        "title": "Software Engineering Smart Academic Advisor (AA) Audit System",
+        "description": "Vue.js-based Credit Audit Dashboard that identifies failed or missed subjects and calculates remaining credit hours in real time.",
+        "status": "submitted",
+        "aiStatus": "Pending AI Matching",
+        "projectType": "System Development",
+        "github_link": "https://github.com/amirhusaini/smart-aa-audit-system",
+        "drive_link": "https://drive.google.com/drive/folders/smart-aa-audit-system-assets",
+        "use_case_diagrams": [
+            "/localData/use_case_diagram_imgs/uml-use-case-diagram.png",
+            "/localData/use_case_diagram_imgs/UCD-2.png"
+        ],
+        "student": {
+            "student_id": 4001,
+            "full_name": "Shaikh Amir Husaini Bin Sh.Mohd Saifuddeen",
+            "metric_number": "A24MJ5068",
+            "email": "amir.husaini@graduate.utm.my",
+            "cgpa": 3.85
+        },
+        "supervisor": {
+            "supervisor_id": 4020,
+            "full_name": "Dr. Sarah",
+            "email": "dr.sarah@utm.my",
+            "status": "approved"
+        },
+        "abstract": "Managing academic progression is a significant challenge for students who must navigate complex course structures while tracking failed or missed subjects. Traditional methods of checking graduation eligibility are manual and prone to human error, often leading to delayed graduations due to missing credit hours. The system addresses this by implementing a Vue.js-based Credit Audit Dashboard that identifies failed or missed subjects and calculates remaining credit hours in real time.",
+        "keywords": "Vue.js, Academic Advisor, Credit Audit Dashboard, Reactive State Management, Pinia, Academic Progression, Graduation Eligibility",
+        "details": {
+            "nabc": {
+                "need": "Students often struggle to track failed or missed prerequisite courses across complex degree guidelines, leading to unexpected delays in graduation.",
+                "approach": "A Vue 3 web application implementing a Credit Audit Dashboard featuring reactive state tracking and real-time GPA calculations.",
+                "benefits": "Reduces advising time by 80%, eliminates manual calculation errors, and gives students visual graduation progress reports.",
+                "competition": "Manual spreadsheet checks by Academic Advisors and legacy UTM portal options that lack real-time calculations or prerequisites guidance.",
+                "potential_stakeholders": "UTM Software Engineering Students, Academic Advisors, Faculty Office Staff.",
+                "potential_data_respondents": "N/A (System Development-based)",
+                "references": "1. UTM Academic Policy Guideline Book (2025)\n2. ACM/IEEE Software Engineering Education Standards (2024)"
+            },
+            "project_proposal": {
+                "problem_background_solution": "Graduation eligibility audit requires compiling data from multiple transcripts manually. Our solution automates prerequisites parsing to highlight any gaps dynamically.",
+                "objectives": "1. To design a responsive Credit Audit Dashboard UI.\n2. To implement database logic for subject validation.\n3. To test system reliability and user acceptance with 50 students.",
+                "scopes": "The prototype will support Software Engineering majors in UTM.",
+                "requirements": {
+                    "software": "Vue 3, Pinia, Node.js, Express, MySQL",
+                    "hardware": "Standard server hosting, client web browsers",
+                    "technology": "Composition API, REST API Architecture",
+                    "network_elements": "UTM local server connection, SSL/HTTPS encryption",
+                    "security_elements": "JWT Auth token validation, encrypted query params",
+                    "project_area": "Academic Systems Development"
+                }
+            }
         }
-      }
-    }
-  },
-  {
-    "project_id": 2,
-    "fyp_session_id": 25262,
-    "title": "IoT Smart Agriculture System with Precision Watering",
-    "description": "An internet-connected system utilizing soil moisture sensors to automate irrigation and conserve water resources in commercial green houses.",
-    "status": "submitted",
-    "aiStatus": "Pending AI Matching",
-    "projectType": "System Development",
-    "github_link": "https://github.com/faizroslan/iot-smart-agriculture",
-    "drive_link": "https://drive.google.com/drive/folders/iot-smart-agriculture-docs",
-    "use_case_diagrams": [
-      "/localData/use_case_diagram_imgs/uml-use-case-diagram.png"
-    ],
-    "student": {
-      "student_id": 4002,
-      "full_name": "Ahmad Faiz Bin Roslan",
-      "metric_number": "A24MJ5111",
-      "email": "ahmad.faiz@graduate.utm.my",
-      "cgpa": 3.45
     },
-    "supervisor": null,
-    "examiners": [
-      {
-        "user_id": 4,
-        "full_name": "Prof. John Smith",
-        "role": "Examiner"
-      }
-    ],
-    "abstract": "Water management in agriculture is crucial. This project designs a precision smart greenhouse watering system utilizing IoT sensor arrays to check soil humidity levels and trigger drip irrigation.",
-    "keywords": "IoT, Smart Agriculture, Precision Irrigation, Arduino, ESP32",
-    "details": {
-      "nabc": {
-        "need": "Commercial greenhouses waste up to 40% of their water supply due to uniform, scheduled watering schedules that do not take soil moisture into account.",
-        "approach": "Deploying soil moisture sensor nodes connected to an ESP32 microcontroller, reporting data to a central dashboard via MQTT protocol.",
-        "benefits": "Reduces water bills by 30% and improves crop yields by preventing overwatering and root decay.",
-        "competition": "Traditional timers and expensive industrial greenhouse automation systems.",
-        "potential_stakeholders": "Greenhouse Farmers, Water Conservancy Authorities, IoT Hardware Developers.",
-        "potential_data_respondents": "N/A (System Development-based)",
-        "references": "1. IEEE Internet of Things Journal - IoT in Greenhouse Management (2023)\n2. FAO Guide on Smart Irrigation Systems (2024)"
-      },
-      "project_proposal": {
-        "problem_background_solution": "Greenhouses depend on labor to manually inspect soil moisture. An automated system can continuously monitor moisture levels and irrigate precise amounts.",
-        "objectives": "1. To assemble ESP32 sensor nodes.\n2. To build an administrative control dashboard.\n3. To analyze water conservation statistics over 4 weeks.",
-        "scopes": "The scope covers indoor vegetable greenhouses.",
-        "requirements": {
-          "software": "C++ (Arduino IDE), Vue.js, Node-RED, InfluxDB",
-          "hardware": "ESP32, Soil Moisture Sensors, Drip Valves",
-          "technology": "MQTT Telemetry Transport, Wi-Fi connectivity",
-          "network_elements": "Local WLAN, MQTT broker gateway",
-          "security_elements": "MQTT credential validation, secure router access",
-          "project_area": "Internet of Things (IoT) & Smart Systems"
+    {
+        "project_id": 2,
+        "fyp_session_id": 25262,
+        "title": "IoT Smart Agriculture System with Precision Watering",
+        "description": "An internet-connected system utilizing soil moisture sensors to automate irrigation and conserve water resources in commercial green houses.",
+        "status": "approved",
+        "aiStatus": "Pending AI Matching",
+        "projectType": "System Development",
+        "github_link": "https://github.com/faizroslan/iot-smart-agriculture",
+        "drive_link": "https://drive.google.com/drive/folders/iot-smart-agriculture-docs",
+        "use_case_diagrams": [
+            "/localData/use_case_diagram_imgs/uml-use-case-diagram.png"
+        ],
+        "student": {
+            "student_id": 4002,
+            "full_name": "Ahmad Faiz Bin Roslan",
+            "metric_number": "A24MJ5111",
+            "email": "ahmad.faiz@graduate.utm.my",
+            "cgpa": 3.45
+        },
+        "supervisor": {
+            "supervisor_id": 1,
+            "full_name": "Ts. Dr. Tan",
+            "email": "tan@utm.my"
+        },
+        "examiners": [
+            {
+                "user_id": 4,
+                "full_name": "Prof. John Smith",
+                "role": "Examiner"
+            }
+        ],
+        "abstract": "Water management in agriculture is crucial. This project designs a precision smart greenhouse watering system utilizing IoT sensor arrays to check soil humidity levels and trigger drip irrigation.",
+        "keywords": "IoT, Smart Agriculture, Precision Irrigation, Arduino, ESP32",
+        "details": {
+            "nabc": {
+                "need": "Commercial greenhouses waste up to 40% of their water supply due to uniform, scheduled watering schedules that do not take soil moisture into account.",
+                "approach": "Deploying soil moisture sensor nodes connected to an ESP32 microcontroller, reporting data to a central dashboard via MQTT protocol.",
+                "benefits": "Reduces water bills by 30% and improves crop yields by preventing overwatering and root decay.",
+                "competition": "Traditional timers and expensive industrial greenhouse automation systems.",
+                "potential_stakeholders": "Greenhouse Farmers, Water Conservancy Authorities, IoT Hardware Developers.",
+                "potential_data_respondents": "N/A (System Development-based)",
+                "references": "1. IEEE Internet of Things Journal - IoT in Greenhouse Management (2023)\n2. FAO Guide on Smart Irrigation Systems (2024)"
+            },
+            "project_proposal": {
+                "problem_background_solution": "Greenhouses depend on labor to manually inspect soil moisture. An automated system can continuously monitor moisture levels and irrigate precise amounts.",
+                "objectives": "1. To assemble ESP32 sensor nodes.\n2. To build an administrative control dashboard.\n3. To analyze water conservation statistics over 4 weeks.",
+                "scopes": "The scope covers indoor vegetable greenhouses.",
+                "requirements": {
+                    "software": "C++ (Arduino IDE), Vue.js, Node-RED, InfluxDB",
+                    "hardware": "ESP32, Soil Moisture Sensors, Drip Valves",
+                    "technology": "MQTT Telemetry Transport, Wi-Fi connectivity",
+                    "network_elements": "Local WLAN, MQTT broker gateway",
+                    "security_elements": "MQTT credential validation, secure router access",
+                    "project_area": "Internet of Things (IoT) & Smart Systems"
+                }
+            }
+        },
+        "coordinator_comments": null
+    },
+    {
+        "project_id": 3,
+        "fyp_session_id": 25262,
+        "title": "Machine Learning Analysis on Cyberbullying Trends in Malaysian Higher Education",
+        "description": "A research-based study applying Natural Language Processing models on academic forum data to identify and categorize cyberbullying behaviors.",
+        "status": "approved",
+        "aiStatus": "Matched",
+        "projectType": "Research",
+        "github_link": "https://github.com/sitinurhaliza/cyberbullying-analysis-nlp",
+        "drive_link": "https://drive.google.com/drive/folders/cyberbullying-analysis-nlp-resources",
+        "use_case_diagrams": [],
+        "student": {
+            "student_id": 4003,
+            "full_name": "Siti Nurhaliza Binti Osman",
+            "metric_number": "A24MJ5222",
+            "email": "siti.nurhaliza@graduate.utm.my",
+            "cgpa": 3.92
+        },
+        "supervisor": {
+            "supervisor_id": 4016,
+            "full_name": "Dr. Sarah",
+            "email": "dr.sarah@utm.my",
+            "status": "pending"
+        },
+        "abstract": "Cyberbullying is an increasing issue on university campus forums. This research uses machine learning classification algorithms to detect patterns of offensive comments and toxic language on student-facing public forums.",
+        "keywords": "Cyberbullying, Machine Learning, Natural Language Processing, BERT Model, Sentiment Analysis",
+        "details": {
+            "nabc": {
+                "need": "University administrations lack tools to automatically flag harassment on internal discussion channels, leading to undetected mental health stresses among students.",
+                "approach": "Applying pre-trained BERT models fine-tuned on Malay and English code-switched text collected from public university online spaces.",
+                "benefits": "Enables administrators to proactively address harassment with a 92% bullying detection accuracy.",
+                "competition": "Manual keyword blacklists and human moderator screening, which fail to capture context or slang.",
+                "potential_stakeholders": "University Student Affairs Division, Platform Administrators, Student Counselors.",
+                "potential_data_respondents": "Survey records from 200 Malaysian undergraduates, plus anonymized public forum comment blocks.",
+                "references": "1. Journal of Campus Student Mental Health (2024)\n2. Fine-tuning BERT for Toxic Language Classification (IEEE 2023)"
+            },
+            "project_proposal": {
+                "problem_background_solution": "Manual comment review is impossible at scale. Machine learning models analyze grammatical contexts to detect target-oriented harassment.",
+                "objectives": "1. To curate a code-switched Malay-English toxic language dataset.\n2. To train SVM, Random Forest, and BERT classifiers.\n3. To identify the most common bullying triggers on campus.",
+                "scopes": "This research analyzes public, non-private forums representing Malaysian universities.",
+                "requirements": {
+                    "software": "Python, PyTorch, Hugging Face Transformers, Pandas",
+                    "hardware": "NVIDIA GPU enabled workstation for training BERT",
+                    "technology": "Deep Learning, Natural Language Processing",
+                    "network_elements": "Web scraping endpoints (API-restricted)",
+                    "security_elements": "Data anonymization filter, hashing of student IDs",
+                    "project_area": "Natural Language Processing (NLP) & Cybersecurity"
+                }
+            }
         }
-      }
-    }
-  },
-  {
-    "project_id": 3,
-    "fyp_session_id": 25262,
-    "title": "Machine Learning Analysis on Cyberbullying Trends in Malaysian Higher Education",
-    "description": "A research-based study applying Natural Language Processing models on academic forum data to identify and categorize cyberbullying behaviors.",
-    "status": "approved",
-    "aiStatus": "Matched",
-    "projectType": "Research",
-    "github_link": "https://github.com/sitinurhaliza/cyberbullying-analysis-nlp",
-    "drive_link": "https://drive.google.com/drive/folders/cyberbullying-analysis-nlp-resources",
-    "use_case_diagrams": [],
-    "student": {
-      "student_id": 4003,
-      "full_name": "Siti Nurhaliza Binti Osman",
-      "metric_number": "A24MJ5222",
-      "email": "siti.nurhaliza@graduate.utm.my",
-      "cgpa": 3.92
     },
-    "supervisor": {
-      "supervisor_id": 4016,
-      "full_name": "Dr. Sarah",
-      "email": "dr.sarah@utm.my",
-      "status": "pending"
+    {
+        "project_id": 4,
+        "fyp_session_id": 25262,
+        "title": "Autonomous UAV Path Planning using Reinforcement Learning",
+        "description": "Research on optimization of drone flight paths under wind disturbances using deep reinforcement learning models.",
+        "status": "submitted",
+        "aiStatus": "Pending AI Matching",
+        "projectType": "Research",
+        "github_link": null,
+        "drive_link": "https://drive.google.com/drive/folders/uav-path-planning",
+        "use_case_diagrams": [],
+        "student": {
+            "student_id": 4004,
+            "full_name": "Muhammad Haziq Bin Azman",
+            "metric_number": "A24MJ5333",
+            "email": "haziq.azman@graduate.utm.my",
+            "cgpa": 3.67
+        },
+        "supervisor": null,
+        "abstract": "Path planning for unmanned aerial vehicles (UAVs) in dynamic environments is a complex problem. This research develops a reinforcement learning algorithm based on Deep Q-Networks to navigate wind turbulence and static obstacles.",
+        "keywords": "UAV, Reinforcement Learning, DQN, Path Planning, Drone Simulation",
+        "details": null
     },
-    "abstract": "Cyberbullying is an increasing issue on university campus forums. This research uses machine learning classification algorithms to detect patterns of offensive comments and toxic language on student-facing public forums.",
-    "keywords": "Cyberbullying, Machine Learning, Natural Language Processing, BERT Model, Sentiment Analysis",
-    "details": {
-      "nabc": {
-        "need": "University administrations lack tools to automatically flag harassment on internal discussion channels, leading to undetected mental health stresses among students.",
-        "approach": "Applying pre-trained BERT models fine-tuned on Malay and English code-switched text collected from public university online spaces.",
-        "benefits": "Enables administrators to proactively address harassment with a 92% bullying detection accuracy.",
-        "competition": "Manual keyword blacklists and human moderator screening, which fail to capture context or slang.",
-        "potential_stakeholders": "University Student Affairs Division, Platform Administrators, Student Counselors.",
-        "potential_data_respondents": "Survey records from 200 Malaysian undergraduates, plus anonymized public forum comment blocks.",
-        "references": "1. Journal of Campus Student Mental Health (2024)\n2. Fine-tuning BERT for Toxic Language Classification (IEEE 2023)"
-      },
-      "project_proposal": {
-        "problem_background_solution": "Manual comment review is impossible at scale. Machine learning models analyze grammatical contexts to detect target-oriented harassment.",
-        "objectives": "1. To curate a code-switched Malay-English toxic language dataset.\n2. To train SVM, Random Forest, and BERT classifiers.\n3. To identify the most common bullying triggers on campus.",
-        "scopes": "This research analyzes public, non-private forums representing Malaysian universities.",
-        "requirements": {
-          "software": "Python, PyTorch, Hugging Face Transformers, Pandas",
-          "hardware": "NVIDIA GPU enabled workstation for training BERT",
-          "technology": "Deep Learning, Natural Language Processing",
-          "network_elements": "Web scraping endpoints (API-restricted)",
-          "security_elements": "Data anonymization filter, hashing of student IDs",
-          "project_area": "Natural Language Processing (NLP) & Cybersecurity"
+    {
+        "project_id": 5,
+        "fyp_session_id": 25262,
+        "title": "Blockchain-Based Secure Student Credentials Verification System",
+        "description": "A decentralized portal built on Ethereum to verify academic certificates and transcripts securely and instantaneously.",
+        "status": "submitted",
+        "aiStatus": "Pending AI Matching",
+        "projectType": "System Development",
+        "github_link": "https://github.com/sharmila/blockchain-credentials",
+        "drive_link": null,
+        "use_case_diagrams": [
+            "/localData/use_case_diagram_imgs/uml-use-case-diagram.png"
+        ],
+        "student": {
+            "student_id": 4005,
+            "full_name": "Sharmila Devi A/P Rajoo",
+            "metric_number": "A24MJ5444",
+            "email": "sharmila.devi@graduate.utm.my",
+            "cgpa": 3.71
+        },
+        "supervisor": {
+            "supervisor_id": 4022,
+            "full_name": "Prof. John Smith",
+            "status": "approved"
+        },
+        "abstract": "Educational credentials fraud remains a critical issue globally. This project designs a secure web dashboard using smart contracts on the Ethereum blockchain to allow recruiters to instantly verify graduation details without central authorities.",
+        "keywords": "Blockchain, Ethereum, Smart Contracts, Solidity, Credential Verification",
+        "details": {
+            "nabc": {
+                "need": "Educational institutions face difficulties verifying degree certificates, causing employment delays and credentials fraud.",
+                "approach": "Developing a Solidity/Ethereum decentralized app integrating with student profile portals.",
+                "benefits": "Reduces verification time from days to seconds with zero trust architecture.",
+                "competition": "Traditional registrar requests or centralized database APIs that are prone to hacks.",
+                "potential_stakeholders": "Employers, UTM Graduates, Academic Registrar Office."
+            }
         }
-      }
-    }
-  },
-  {
-    "project_id": 4,
-    "fyp_session_id": 25262,
-    "title": "Autonomous UAV Path Planning using Reinforcement Learning",
-    "description": "Research on optimization of drone flight paths under wind disturbances using deep reinforcement learning models.",
-    "status": "submitted",
-    "aiStatus": "Pending AI Matching",
-    "projectType": "Research",
-    "github_link": null,
-    "drive_link": "https://drive.google.com/drive/folders/uav-path-planning",
-    "use_case_diagrams": [],
-    "student": {
-      "student_id": 4004,
-      "full_name": "Muhammad Haziq Bin Azman",
-      "metric_number": "A24MJ5333",
-      "email": "haziq.azman@graduate.utm.my",
-      "cgpa": 3.67
     },
-    "supervisor": null,
-    "abstract": "Path planning for unmanned aerial vehicles (UAVs) in dynamic environments is a complex problem. This research develops a reinforcement learning algorithm based on Deep Q-Networks to navigate wind turbulence and static obstacles.",
-    "keywords": "UAV, Reinforcement Learning, DQN, Path Planning, Drone Simulation",
-    "details": null
-  },
-  {
-    "project_id": 5,
-    "fyp_session_id": 25262,
-    "title": "Blockchain-Based Secure Student Credentials Verification System",
-    "description": "A decentralized portal built on Ethereum to verify academic certificates and transcripts securely and instantaneously.",
-    "status": "submitted",
-    "aiStatus": "Pending AI Matching",
-    "projectType": "System Development",
-    "github_link": "https://github.com/sharmila/blockchain-credentials",
-    "drive_link": null,
-    "use_case_diagrams": [
-      "/localData/use_case_diagram_imgs/uml-use-case-diagram.png"
-    ],
-    "student": {
-      "student_id": 4005,
-      "full_name": "Sharmila Devi A/P Rajoo",
-      "metric_number": "A24MJ5444",
-      "email": "sharmila.devi@graduate.utm.my",
-      "cgpa": 3.71
-    },
-    "supervisor": {
-      "supervisor_id": 4022,
-      "full_name": "Prof. John Smith",
-      "status": "approved"
-    },
-    "abstract": "Educational credentials fraud remains a critical issue globally. This project designs a secure web dashboard using smart contracts on the Ethereum blockchain to allow recruiters to instantly verify graduation details without central authorities.",
-    "keywords": "Blockchain, Ethereum, Smart Contracts, Solidity, Credential Verification",
-    "details": {
-      "nabc": {
-        "need": "Educational institutions face difficulties verifying degree certificates, causing employment delays and credentials fraud.",
-        "approach": "Developing a Solidity/Ethereum decentralized app integrating with student profile portals.",
-        "benefits": "Reduces verification time from days to seconds with zero trust architecture.",
-        "competition": "Traditional registrar requests or centralized database APIs that are prone to hacks.",
-        "potential_stakeholders": "Employers, UTM Graduates, Academic Registrar Office."
-      }
-    }
-  },
-  {
-    "project_id": 6,
-    "fyp_session_id": 25262,
-    "title": "Predictive Analytics for Student Mental Health and Burnout Detection",
-    "description": "Applying anomaly detection algorithms to analyze VLE engagement logs for early warnings of student academic burnout.",
-    "status": "rejected",
-    "coordinator_comments": "Missing details",
-    "aiStatus": "Pending AI Matching",
-    "projectType": "Research",
-    "github_link": "https://github.com/limkahseng/student-burnout-prediction",
-    "drive_link": "https://drive.google.com/drive/folders/burnout-prediction-docs",
-    "use_case_diagrams": [],
-    "student": {
-      "student_id": 4006,
-      "full_name": "Lim Kah Seng",
-      "metric_number": "A24MJ5555",
-      "email": "lim.kahseng@graduate.utm.my",
-      "cgpa": 3.58
-    },
-    "supervisor": {
-      "supervisor_id": 4023,
-      "email": "dr.neo@utm.my",
-      "status": "rejected"
-    },
-    "abstract": "Student burnout and stress often go unnoticed until academic performance is severely affected. This study explores the feasibility of predicting academic risk by building an unsupervised model trained on Virtual Learning Environment (VLE) engagement indicators.",
-    "keywords": "Predictive Analytics, Academic Burnout, Anomaly Detection, Machine Learning, VLE logs",
-    "details": {
-      "project_proposal": {
-        "problem_background_solution": "Mental health issues are rising among undergraduates. We propose an early warning system that tracks academic interaction frequency.",
-        "objectives": "1. To gather anonymous digital footprints from virtual learning environments.\n2. To train anomaly detection algorithms.",
-        "scopes": "Limited to pilot test group of 100 students.",
-        "requirements": {
-          "software": "Python, Jupyter, scikit-learn",
-          "technology": "Unsupervised Machine Learning, Isolation Forests"
+    {
+        "project_id": 6,
+        "fyp_session_id": 25262,
+        "title": "Predictive Analytics for Student Mental Health and Burnout Detection",
+        "description": "Applying anomaly detection algorithms to analyze VLE engagement logs for early warnings of student academic burnout.",
+        "status": "rejected",
+        "coordinator_comments": "Missing details",
+        "aiStatus": "Pending AI Matching",
+        "projectType": "Research",
+        "github_link": "https://github.com/limkahseng/student-burnout-prediction",
+        "drive_link": "https://drive.google.com/drive/folders/burnout-prediction-docs",
+        "use_case_diagrams": [],
+        "student": {
+            "student_id": 4006,
+            "full_name": "Lim Kah Seng",
+            "metric_number": "A24MJ5555",
+            "email": "lim.kahseng@graduate.utm.my",
+            "cgpa": 3.58
+        },
+        "supervisor": {
+            "supervisor_id": 4023,
+            "email": "dr.neo@utm.my",
+            "status": "rejected"
+        },
+        "abstract": "Student burnout and stress often go unnoticed until academic performance is severely affected. This study explores the feasibility of predicting academic risk by building an unsupervised model trained on Virtual Learning Environment (VLE) engagement indicators.",
+        "keywords": "Predictive Analytics, Academic Burnout, Anomaly Detection, Machine Learning, VLE logs",
+        "details": {
+            "project_proposal": {
+                "problem_background_solution": "Mental health issues are rising among undergraduates. We propose an early warning system that tracks academic interaction frequency.",
+                "objectives": "1. To gather anonymous digital footprints from virtual learning environments.\n2. To train anomaly detection algorithms.",
+                "scopes": "Limited to pilot test group of 100 students.",
+                "requirements": {
+                    "software": "Python, Jupyter, scikit-learn",
+                    "technology": "Unsupervised Machine Learning, Isolation Forests"
+                }
+            }
         }
-      }
-    }
-  },
-  {
-    "project_id": 7,
-    "fyp_session_id": 25262,
-    "title": "Virtual Reality Training Simulator for Chemistry Lab Safety",
-    "description": "An immersive VR experience built on Unity to train undergraduate chemistry students on laboratory safety and emergency protocols.",
-    "status": "submitted",
-    "aiStatus": "Pending AI Matching",
-    "projectType": "System Development",
-    "github_link": null,
-    "drive_link": null,
-    "use_case_diagrams": [
-      "/localData/use_case_diagram_imgs/UCD-2.png"
-    ],
-    "student": {
-      "student_id": 4007,
-      "full_name": "Nurul Aisyah Binti Mohd Yusof",
-      "metric_number": "A24MJ5666",
-      "email": "nurul.aisyah@graduate.utm.my",
-      "cgpa": 3.32
     },
-    "supervisor": null,
-    "abstract": "Traditional chemistry laboratory safety briefings are non-interactive and lead to poor information retention. This simulator provides an immersive virtual environment where students practice handling chemical spills safely.",
-    "keywords": "Virtual Reality, Unity, Safety Simulator, Chemistry Education, Interactive Learning",
-    "details": {
-      "nabc": null,
-      "project_proposal": null
+    {
+        "project_id": 7,
+        "fyp_session_id": 25262,
+        "title": "Virtual Reality Training Simulator for Chemistry Lab Safety",
+        "description": "An immersive VR experience built on Unity to train undergraduate chemistry students on laboratory safety and emergency protocols.",
+        "status": "submitted",
+        "aiStatus": "Pending AI Matching",
+        "projectType": "System Development",
+        "github_link": null,
+        "drive_link": null,
+        "use_case_diagrams": [
+            "/localData/use_case_diagram_imgs/UCD-2.png"
+        ],
+        "student": {
+            "student_id": 4007,
+            "full_name": "Nurul Aisyah Binti Mohd Yusof",
+            "metric_number": "A24MJ5666",
+            "email": "nurul.aisyah@graduate.utm.my",
+            "cgpa": 3.32
+        },
+        "supervisor": null,
+        "abstract": "Traditional chemistry laboratory safety briefings are non-interactive and lead to poor information retention. This simulator provides an immersive virtual environment where students practice handling chemical spills safely.",
+        "keywords": "Virtual Reality, Unity, Safety Simulator, Chemistry Education, Interactive Learning",
+        "details": {
+            "nabc": null,
+            "project_proposal": null
+        }
     }
-  }
 ]
