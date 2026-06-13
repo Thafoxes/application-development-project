@@ -7,6 +7,8 @@
     "status": "submitted",
     "aiStatus": "Pending AI Matching",
     "projectType": "System Development",
+    "github_link": "https://github.com/amirhusaini/smart-aa-audit-system",
+    "drive_link": "https://drive.google.com/drive/folders/smart-aa-audit-system-assets",
     "student": {
       "student_id": 4001,
       "full_name": "Shaikh Amir Husaini Bin Sh.Mohd Saifuddeen",
@@ -53,6 +55,8 @@
     "status": "submitted",
     "aiStatus": "Pending AI Matching",
     "projectType": "System Development",
+    "github_link": "https://github.com/faizroslan/iot-smart-agriculture",
+    "drive_link": "https://drive.google.com/drive/folders/iot-smart-agriculture-docs",
     "student": {
       "student_id": 4002,
       "full_name": "Ahmad Faiz Bin Roslan",
@@ -95,6 +99,8 @@
     "status": "approved",
     "aiStatus": "Matched",
     "projectType": "Research",
+    "github_link": "https://github.com/sitinurhaliza/cyberbullying-analysis-nlp",
+    "drive_link": "https://drive.google.com/drive/folders/cyberbullying-analysis-nlp-resources",
     "student": {
       "student_id": 4003,
       "full_name": "Siti Nurhaliza Binti Osman",
