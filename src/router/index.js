@@ -72,6 +72,12 @@ const router = createRouter({
       component: () => import('../views/coordinator/ManageFYPView.vue'),
       meta: { requiresAuth: true },
     },
+    {
+      path: '/manage-fyp/:id',
+      name: 'view-fyp-proposal',
+      component: () => import('../views/coordinator/ViewFYPProposalView.vue'),
+      meta: { requiresAuth: true },
+    },
   ],
 })
 
