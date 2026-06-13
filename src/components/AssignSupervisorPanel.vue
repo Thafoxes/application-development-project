@@ -29,7 +29,7 @@ const isAssigning = ref(false)
 
 const rosterSearchQuery = ref('')
 const isAnalyzing = ref(false)
-const drawerAIRecommendation = ref(null)
+const drawerAIRecommendations = ref([])
 
 const loadCandidates = async () => {
   isLoadingCandidates.value = true
@@ -53,7 +53,7 @@ const loadCandidates = async () => {
 const triggerDrawerAISuggest = async () => {
   if (!props.project) return
   isAnalyzing.value = true
-  drawerAIRecommendation.value = null
+  drawerAIRecommendations.value = []
   
   try {
     const candidatesList = filteredLecturers.value
@@ -64,8 +64,8 @@ const triggerDrawerAISuggest = async () => {
       fyp_title: props.project.projectTitle || props.project.title || ''
     }
     
-    const rec = await getAISuggestedSupervisor(fypProjectContext, candidatesList)
-    drawerAIRecommendation.value = rec
+    const recs = await getAISuggestedSupervisor(fypProjectContext, candidatesList)
+    drawerAIRecommendations.value = recs
   } catch (err) {
     console.error('Error in AI Suggest:', err)
     alert('AI Assistant is currently unavailable.')
@@ -162,20 +162,29 @@ const filteredLecturers = computed(() => {
     })
   }
 
-  // Sort AI recommended supervisor to the top if present
-  if (drawerAIRecommendation.value && drawerAIRecommendation.value.suggested_user_id) {
-    const recId = Number(drawerAIRecommendation.value.suggested_user_id)
+  // Sort AI recommended supervisors to the top if present
+  if (drawerAIRecommendations.value && drawerAIRecommendations.value.length > 0) {
     list.sort((a, b) => {
-      const aIsRec = Number(a.user_id) === recId
-      const bIsRec = Number(b.user_id) === recId
-      if (aIsRec && !bIsRec) return -1
-      if (!aIsRec && bIsRec) return 1
-      return 0
+      const aIndex = drawerAIRecommendations.value.findIndex(r => Number(r.suggested_user_id) === Number(a.user_id));
+      const bIndex = drawerAIRecommendations.value.findIndex(r => Number(r.suggested_user_id) === Number(b.user_id));
+      
+      const aScore = aIndex !== -1 ? drawerAIRecommendations.value[aIndex].score : -1;
+      const bScore = bIndex !== -1 ? drawerAIRecommendations.value[bIndex].score : -1;
+      
+      if (aScore !== bScore) return bScore - aScore;
+      return 0;
     })
   }
   
   return list
 })
+
+const getAIRecommendation = (candidateId) => {
+  if (!drawerAIRecommendations.value) return null;
+  const index = drawerAIRecommendations.value.findIndex(r => Number(r.suggested_user_id) === Number(candidateId));
+  if (index === -1) return null;
+  return { ...drawerAIRecommendations.value[index], rank: index + 1 };
+}
 
 onMounted(() => {
   loadCandidates()
@@ -317,20 +326,20 @@ onMounted(() => {
 
             <!-- AI recommendation layout -->
             <div 
-              v-if="drawerAIRecommendation && Number(drawerAIRecommendation.suggested_user_id) === Number(candidate.user_id)" 
+              v-if="getAIRecommendation(candidate.user_id)" 
               class="bg-[#f8be17]/10 border border-[#f8be17]/30 rounded-lg p-3 text-xs flex flex-col gap-1.5 mt-1 animate-fadeIn"
             >
               <div class="flex items-center justify-between">
                 <span class="text-[10px] font-extrabold text-[#5c001f] flex items-center gap-1">
                   <Sparkles class="w-3 h-3 text-[#5c001f]" />
-                  AI Selection Match Recommendation
+                  #{{ getAIRecommendation(candidate.user_id).rank }} AI Match Probability
                 </span>
                 <span class="bg-[#f8be17] text-[#5c001f] font-extrabold text-[9px] px-2 py-0.5 rounded-full font-sans">
-                  {{ drawerAIRecommendation.score }}% Match
+                  {{ getAIRecommendation(candidate.user_id).score }}% Probability
                 </span>
               </div>
               <p class="text-gray-700 leading-relaxed italic">
-                "{{ drawerAIRecommendation.reason }}"
+                "{{ getAIRecommendation(candidate.user_id).reason }}"
               </p>
             </div>
 

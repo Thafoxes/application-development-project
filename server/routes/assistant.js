@@ -440,18 +440,20 @@ ${JSON.stringify(candidatesFormatted, null, 2)}
 
 Instructions:
 1. Filter out any candidate whose user_id is in the disqualified list of examiners.
-2. Select the candidate whose research expertise tags align best semantically with the project title, abstract, and keywords.
-3. Calculate a match score between 50% and 100% based on semantic similarity.
-4. Draft a clear, academic, and detailed justification explaining why this candidate's background matches the project's requirements. Keep it under 3 sentences.
-5. Return the result STRICTLY as a JSON object with this format:
-{
-  "suggested_user_id": <user_id of the recommended candidate>,
-  "score": <calculated match score as a number between 50 and 100>,
-  "reason": "<Your detailed matching justification explanation>"
-}
+2. Analyze all remaining candidates and select the top 5 candidates whose research expertise tags align best semantically with the project title, abstract, and keywords.
+3. Calculate a match probability score between 50% and 100% for each of the top 5 candidates based on semantic similarity.
+4. Draft a clear, academic, and detailed justification explaining why each candidate's background matches the project's requirements. Keep it under 3 sentences per candidate.
+5. Return the result STRICTLY as a JSON array containing up to 5 top candidates, sorted from highest score to lowest, in this format:
+[
+  {
+    "suggested_user_id": <user_id of the recommended candidate>,
+    "score": <calculated match score as a number between 50 and 100>,
+    "reason": "<Your detailed matching justification explanation>"
+  }
+]
 
 Rules:
-- Return ONLY the JSON object. Do not include markdown blocks (\`\`\`json), greetings, or explanations.
+- Return ONLY the JSON array. Do not include markdown blocks (\`\`\`json), greetings, or explanations.
 `;
 
         const ollamaPayload = {
@@ -485,7 +487,7 @@ Rules:
 
         res.json({
             success: true,
-            recommendation: parsedJson
+            recommendations: Array.isArray(parsedJson) ? parsedJson : [parsedJson]
         });
 
     } catch (error) {
@@ -497,14 +499,10 @@ Rules:
         const projectKeywords = (project.keywords || '').toLowerCase();
         const combinedText = `${projectTitle} ${projectAbstract} ${projectKeywords}`;
         
-        let bestCand = null;
-        let maxScore = 50;
-        let bestReason = "General match based on supervisor profile.";
-        
         const examiners = (project.examiners || []).map(ex => Number(ex.user_id));
         const filtered = candidates.filter(c => !examiners.includes(Number(c.user_id)));
         
-        filtered.forEach(cand => {
+        const scoredCandidates = filtered.map(cand => {
             const expertiseList = cand.expertise || [];
             let matchesCount = 0;
             expertiseList.forEach(exp => {
@@ -514,33 +512,27 @@ Rules:
             });
             
             let candScore = 60 + (cand.user_id * 3) % 15;
+            let reason = `Matches general supervision profile for ${project.projectType || 'System Development'} projects.`;
+            
             if (matchesCount > 0) {
                 candScore = Math.min(80 + matchesCount * 5, 95);
+                reason = `Matched due to alignment with expertise in ${expertiseList.slice(0, 2).join(', ')}.`;
             }
             
-            if (candScore > maxScore) {
-                maxScore = candScore;
-                bestCand = cand;
-                if (matchesCount > 0) {
-                    bestReason = `Matched due to alignment with expertise in ${expertiseList.slice(0, 2).join(', ')}.`;
-                } else {
-                    bestReason = `Matches general supervision profile for ${project.projectType || 'System Development'} projects.`;
-                }
-            }
+            return {
+                suggested_user_id: cand.user_id,
+                score: candScore,
+                reason: reason
+            };
         });
         
-        if (!bestCand && filtered.length > 0) {
-            bestCand = filtered[0];
-        }
+        scoredCandidates.sort((a, b) => b.score - a.score);
+        const top5 = scoredCandidates.slice(0, 5);
         
         res.json({
             success: true,
             fallback: true,
-            recommendation: {
-                suggested_user_id: bestCand ? bestCand.user_id : null,
-                score: maxScore,
-                reason: bestReason
-            }
+            recommendations: top5
         });
     }
 });

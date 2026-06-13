@@ -26,8 +26,8 @@ export async function getAISuggestedSupervisor(project, candidates) {
   });
 
   const data = await response.json();
-  if (response.ok && data.success && data.recommendation) {
-    return data.recommendation;
+  if (response.ok && data.success && data.recommendations) {
+    return data.recommendations;
   }
   throw new Error(data.error || 'Failed to get AI recommendation');
 }
