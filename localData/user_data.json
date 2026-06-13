@@ -12,7 +12,8 @@
             "AI"
         ],
         "affiliation": "UTM",
-        "co_org_name": null
+        "co_org_name": null,
+        "sv_vapacity": 5
     },
     {
         "user_id": 2,
@@ -26,7 +27,8 @@
             "Intelligent Advisor Systems"
         ],
         "affiliation": "UTM",
-        "co_org_name": null
+        "co_org_name": null,
+        "sv_vapacity": 0
     },
     {
         "user_id": 3,
@@ -40,7 +42,8 @@
             "Artificial Intelligence"
         ],
         "affiliation": "UTM",
-        "co_org_name": null
+        "co_org_name": null,
+        "sv_vapacity": 1
     },
     {
         "user_id": 4,
@@ -54,7 +57,8 @@
             "Metrics"
         ],
         "affiliation": "UTM",
-        "co_org_name": null
+        "co_org_name": null,
+        "sv_vapacity": 1
     },
     {
         "user_id": 10,
@@ -68,7 +72,8 @@
             "Cryptographic Protocols"
         ],
         "affiliation": "Industry",
-        "co_org_name": "CyberSecurity Malaysia"
+        "co_org_name": "CyberSecurity Malaysia",
+        "sv_vapacity": 1
     },
     {
         "user_id": 11,
@@ -82,6 +87,7 @@
             "Docker & Kubernetes"
         ],
         "affiliation": "Industry",
-        "co_org_name": "Tech Solutions Inc."
+        "co_org_name": "Tech Solutions Inc.",
+        "sv_vapacity": 1
     }
 ]
