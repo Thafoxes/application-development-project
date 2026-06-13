@@ -473,6 +473,7 @@ const mapProposalToFrontend = (p) => {
     keywords: p.keywords || '',
     fileName: p.fileName || 'Proposal document',
     coordinator_comments: p.coordinator_comments || null,
+    examiners: p.examiners || (p.project_id === 5 ? [{ user_id: 4, full_name: "Prof. John Smith", role: "Examiner" }] : p.project_id === 6 ? [{ user_id: 10, full_name: "Robert Chen", role: "Examiner" }] : []),
     details: p.details || {}
   };
 };
@@ -543,6 +544,57 @@ app.patch("/api/coordinator/fyp-status/:id", (req, res) => {
     res.status(404).json({ success: false, error: "Proposal not found" });
   } catch (err) {
     console.error("Failed to update status:", err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+
+// Mock data from json
+const userDataFilePath = path.join(__dirname, '..', 'localData', 'user_data.json');
+
+app.get("/api/coordinator/supervisor-candidates", (req, res) => {
+  try {
+    if (fs.existsSync(userDataFilePath)) {
+      const raw = fs.readFileSync(userDataFilePath, 'utf8');
+      const users = JSON.parse(raw);
+      // Filter non-students (staff or industry experts)
+      const candidates = users.filter(u => u.is_utm_staff || u.affiliation === 'Industry');
+
+      // Enrich with capacity mock data
+      const enriched = candidates.map((u) => {
+        let max_capacity = 5;
+        let current_capacity = (u.user_id % 3); // mock values
+
+        if (u.user_id === 1) {
+          max_capacity = 0; // infinite capacity
+          current_capacity = 0;
+        } else if (u.user_id === 4) {
+          max_capacity = 3;
+          current_capacity = 3; // reached max capacity
+        } else if (u.user_id === 10) {
+          max_capacity = 2;
+          current_capacity = 2; // reached max capacity
+        }
+
+        return {
+          user_id: u.user_id,
+          email: u.email,
+          full_name: u.full_name,
+          phone_number: u.phone_number || u["Phone number"] || "",
+          is_utm_staff: u.is_utm_staff,
+          affiliation: u.affiliation || (u.is_utm_staff ? "UTM" : "External"),
+          co_org_name: u.co_org_name || null,
+          expertise: u.expertise || [],
+          max_capacity,
+          current_capacity
+        };
+      });
+      res.json({ success: true, candidates: enriched });
+    } else {
+      res.json({ success: true, candidates: [] });
+    }
+  } catch (err) {
+    console.error("Failed to load candidates:", err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
