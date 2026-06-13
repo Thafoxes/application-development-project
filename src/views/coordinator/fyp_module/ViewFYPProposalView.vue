@@ -159,7 +159,7 @@ const exportProposalToPDF = async () => {
 
   if (p.projectType === 'System Development' && p.use_case_diagrams?.length > 0) {
     addSectionHeading('5. Use Case Diagrams')
-    for (let i = 0; i < p.use_case_diagrams.length; i++) {
+    for (let i = 0; i < Math.min(p.use_case_diagrams.length, 3); i++) {
       const imgPath = `${API_BASE_URL}${p.use_case_diagrams[i]}`
       try {
         const base64Img = await getBase64ImageFromUrl(imgPath)

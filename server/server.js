@@ -516,7 +516,7 @@ app.get("/api/coordinator/fyp-proposal/:id", (req, res) => {
 app.patch("/api/coordinator/fyp-status/:id", (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const { status, matchScore, coordinator_comments } = req.body;
+    const { status, matchScore, coordinator_comments, feedback } = req.body;
     if (fs.existsSync(proposalsFilePath)) {
       const raw = fs.readFileSync(proposalsFilePath, 'utf8');
       const proposals = JSON.parse(raw);
@@ -528,8 +528,9 @@ app.patch("/api/coordinator/fyp-status/:id", (req, res) => {
           proposals[idx].coordinator_comments = null; // Clear comments upon approval
         } else if (status.toLowerCase() === 'rejected') {
           proposals[idx].status = 'rejected';
-          if (coordinator_comments !== undefined) {
-            proposals[idx].coordinator_comments = coordinator_comments;
+          const comments = coordinator_comments !== undefined ? coordinator_comments : feedback;
+          if (comments !== undefined) {
+            proposals[idx].coordinator_comments = comments;
           }
         }
         if (matchScore !== undefined) {
