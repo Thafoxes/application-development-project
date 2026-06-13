@@ -69,9 +69,20 @@ const router = createRouter({
   ],
 })
 
+import { isTokenExpired } from '@/utils/authHelper'
+
 // Route Guard for Authentication
 router.beforeEach((to, from, next) => {
+  const token = localStorage.getItem('token')
   const isAuthenticated = !!localStorage.getItem('userSession')
+
+  // Check if session has expired actively
+  if (isAuthenticated && isTokenExpired(token)) {
+    localStorage.removeItem('userSession')
+    localStorage.removeItem('token')
+    alert("Your session has expired. Please sign in again.")
+    return next({ name: 'login' })
+  }
 
   if (to.meta.requiresAuth && !isAuthenticated) {
     // If the route requires auth and user is not logged in, redirect to login
