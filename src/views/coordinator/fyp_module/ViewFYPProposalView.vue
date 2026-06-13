@@ -5,6 +5,7 @@ import { jsPDF } from 'jspdf'
 import AppHeader from '@/components/common_components/AppHeader.vue'
 import AppSidebar from '@/components/common_components/AppSidebar.vue'
 import AppFooter from '@/components/common_components/AppFooter.vue'
+import AssignSupervisorDrawer from '@/components/AssignSupervisorDrawer.vue'
 import {
   FileText,
   AlertTriangle,
@@ -238,8 +239,29 @@ const handleStatusUpdate = async (status) => {
   }
 }
 
+const isAssignDrawerOpen = ref(false)
+const projectRecords = ref([])
+
+const loadProjectRecords = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/supervisor-matching/projects`)
+    const data = await response.json()
+    if (response.ok && data.success) {
+      projectRecords.value = data.projects || []
+    }
+  } catch (error) {
+    console.error('Load project records error:', error)
+  }
+}
+
+const handleSupervisorAssigned = async () => {
+  await fetchProposalDetails()
+  await loadProjectRecords()
+}
+
 onMounted(() => {
   fetchProposalDetails()
+  loadProjectRecords()
 })
 </script>
 
@@ -447,6 +469,13 @@ onMounted(() => {
                 <span v-if="proposal.supervisorEmail" class="block text-xs text-gray-500 mt-0.5">
                   {{ proposal.supervisorEmail }}
                 </span>
+                <button
+                  @click="isAssignDrawerOpen = true"
+                  class="mt-2 text-xs font-bold text-[#5c001f] bg-white border border-[#5c001f] px-3 py-1.5 rounded-lg hover:bg-[#5c001f] hover:text-white transition-all cursor-pointer inline-flex items-center gap-1 active:scale-95 shadow-sm font-sans"
+                >
+                  <span v-if="!proposal.supervisor">🟢 Assign Supervisor</span>
+                  <span v-else>🔄 Change Supervisor</span>
+                </button>
               </div>
             </div>
           </div>
@@ -780,5 +809,14 @@ onMounted(() => {
       </main>
     </div>
     <AppFooter />
+    
+    <!-- Reusable Supervisor Assignment Drawer -->
+    <AssignSupervisorDrawer
+      :isOpen="isAssignDrawerOpen"
+      :project="proposal"
+      :records="projectRecords"
+      @close="isAssignDrawerOpen = false"
+      @assigned="handleSupervisorAssigned"
+    />
   </div>
 </template>
