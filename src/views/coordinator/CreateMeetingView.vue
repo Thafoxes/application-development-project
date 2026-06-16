@@ -9,12 +9,13 @@ import AppSidebar from '@/components/common_components/AppSidebar.vue'
 import AppFooter from '@/components/common_components/AppFooter.vue'
 
 const calendarStore = useCalendarStore()
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 
 const generatedMeetings = ref([])
 
 const fetchTempMeeting = async () => {
   try {
-    const res = await axios.get('http://localhost:3000/api/timetable/temp')
+    const res = await axios.get(`${API_BASE_URL}/api/timetable/temp`)
     if (res.data.success && res.data.data) {
       generatedMeetings.value = res.data.data
     } else {
@@ -27,7 +28,7 @@ const fetchTempMeeting = async () => {
 
 const deleteTempMeeting = async (id) => {
   try {
-    await axios.delete(`http://localhost:3000/api/timetable/temp?id=${id}`)
+    await axios.delete(`${API_BASE_URL}/api/timetable/temp?id=${id}`)
     generatedMeetings.value = generatedMeetings.value.filter((m) => m.id !== id)
   } catch (e) {
     console.error('Failed to delete temp meeting:', e)
@@ -126,7 +127,7 @@ const exportToPdf = async () => {
 
   // Clear the backend temp file and the local state
   try {
-    const res = await axios.delete('http://localhost:3000/api/timetable/temp')
+    const res = await axios.delete(`${API_BASE_URL}/api/timetable/temp`)
     if (res.data.success) {
       generatedMeetings.value = []
       alert('PDF exported successfully. Temporary meeting schedules have been cleared!')
@@ -194,7 +195,7 @@ watch(selectedProjectId, async (newProjectId) => {
   }
 
   try {
-    const response = await axios.post('http://localhost:3000/api/timetable/crosscheck', {
+    const response = await axios.post(`${API_BASE_URL}/api/timetable/crosscheck`, {
       fyp_session_id: project.fyp_session_id,
       class_id: project.student?.class_id,
       user_ids: userIds,
@@ -309,7 +310,7 @@ const generateSchedule = async () => {
   // 2. Write to temporary JSON file via backend
   try {
     const projectFull = fypMockData.find((p) => p.project_id == selectedProjectId.value)
-    const response = await axios.post('http://localhost:3000/api/timetable/generate-temp', {
+    const response = await axios.post(`${API_BASE_URL}/api/timetable/generate-temp`, {
       project: projectFull,
       date: startingDate.value,
       start_time: startingTime.value,
@@ -346,7 +347,7 @@ const autoScheduleAll = async () => {
   isAutoScheduling.value = true
   try {
     const activeSessionId = calendarStore.activeSession?.session_id || 25262
-    const response = await axios.post('http://localhost:3000/api/timetable/auto-assign', {
+    const response = await axios.post(`${API_BASE_URL}/api/timetable/auto-assign`, {
       fyp_session_id: activeSessionId,
       startDate: startingDate.value,
       endDate: endingDate.value,

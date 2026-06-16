@@ -306,6 +306,8 @@ import { ref, nextTick } from 'vue'
 import axios from 'axios'
 import { marked } from 'marked'
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+
 // Configure marked to render safe GitHub Flavored Markdown
 marked.setOptions({
   gfm: true,
@@ -397,7 +399,7 @@ const sendMessage = async () => {
   try {
     const token = localStorage.getItem('token')
     const response = await axios.post(
-      'http://localhost:3000/api/assistant/chat',
+      `${API_BASE_URL}/api/assistant/chat`,
       {
         messages: chatHistory.value,
       },
@@ -437,7 +439,7 @@ const executeCreateUser = async (msg) => {
   try {
     const token = localStorage.getItem('token')
     const response = await axios.post(
-      'http://localhost:3000/api/assistant/execute-user-creation',
+      `${API_BASE_URL}/api/assistant/execute-user-creation`,
       msg.payload,
       {
         headers: { Authorization: `Bearer ${token}` },
@@ -472,7 +474,7 @@ const executeAutoSchedule = async (msg) => {
   try {
     const token = localStorage.getItem('token')
     const response = await axios.post(
-      'http://localhost:3000/api/timetable/auto-assign',
+      `${API_BASE_URL}/api/timetable/auto-assign`,
       {
         startDate: msg.payload.startDate,
         endDate: msg.payload.endDate,

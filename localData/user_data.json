@@ -1,0 +1,99 @@
+[
+    {
+        "user_id": 1,
+        "email": "tan@utm.my",
+        "full_name": "Ts. Dr. Tan",
+        "Phone number": "0126373233",
+        "is_utm_staff": true,
+        "expertise": [
+            "IoT",
+            "Machine Learning",
+            "Deep learning",
+            "AI"
+        ],
+        "affiliation": "UTM",
+        "co_org_name": null,
+        "sv_vapacity": 5,
+        "current_sv_capacity": 1
+    },
+    {
+        "user_id": 2,
+        "email": "dr.sarah@utm.my",
+        "full_name": "Dr. Sarah",
+        "Phone number": "0172345678",
+        "is_utm_staff": true,
+        "expertise": [
+            "Web Engineering",
+            "Agile Methodologies",
+            "Intelligent Advisor Systems"
+        ],
+        "affiliation": "UTM",
+        "co_org_name": null,
+        "sv_vapacity": 0,
+        "current_sv_capacity": 0
+    },
+    {
+        "user_id": 3,
+        "email": "dr.neo@utm.my",
+        "full_name": "Dr. Neo",
+        "Phone number": "0133456789",
+        "is_utm_staff": true,
+        "expertise": [
+            "Database Tuning",
+            "Cloud Computing",
+            "Artificial Intelligence"
+        ],
+        "affiliation": "UTM",
+        "co_org_name": null,
+        "sv_vapacity": 1,
+        "current_sv_capacity": 1
+    },
+    {
+        "user_id": 4,
+        "email": "prof.smith@utm.my",
+        "full_name": "Prof. John Smith",
+        "Phone number": "0124567890",
+        "is_utm_staff": true,
+        "expertise": [
+            "Software Quality",
+            "Empirical Software Engineering",
+            "Metrics"
+        ],
+        "affiliation": "UTM",
+        "co_org_name": null,
+        "sv_vapacity": 1,
+        "current_sv_capacity": 0
+    },
+    {
+        "user_id": 10,
+        "email": "robert.chen@cybersecurity.my",
+        "full_name": "Robert Chen",
+        "Phone number": "0157890125",
+        "is_utm_staff": false,
+        "expertise": [
+            "Penetration Testing",
+            "Network Auditing",
+            "Cryptographic Protocols"
+        ],
+        "affiliation": "Industry",
+        "co_org_name": "CyberSecurity Malaysia",
+        "sv_vapacity": 1,
+        "current_sv_capacity": 0
+    },
+    {
+        "user_id": 11,
+        "email": "elena.petrova@techsolutions.com",
+        "full_name": "Elena Petrova",
+        "Phone number": "0148901236",
+        "is_utm_staff": false,
+        "expertise": [
+            "Full-Stack Web Development",
+            "DevOps",
+            "Docker & Kubernetes"
+        ],
+        "affiliation": "Industry",
+        "co_org_name": "Tech Solutions Inc.",
+        "sv_vapacity": 1,
+        "current_sv_capacity": 0
+    }
+]

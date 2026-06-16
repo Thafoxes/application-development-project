@@ -5,7 +5,7 @@ export const navigationConfig = {
     { name: 'View Calendar', path: '/calendar', icon: 'calendar' },
     { name: 'Add Timetable', path: '/add-time-table', icon: 'timetable' },
     { name: 'Manage Users', path: '/manage-user', icon: 'users' },
-    { name: 'Manage FYP', path: '#', icon: 'document' },
+    { name: 'Manage FYP', path: '/manage-fyp', icon: 'document' },
     { name: 'Bulk Import', path: '/import-users', icon: 'import' },
   ],
   student: [

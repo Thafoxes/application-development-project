@@ -13,6 +13,12 @@ const router = createRouter({
       component: () => import('../views/auth/SignupView.vue'),
     },
     {
+      path: '/profile',
+      name: 'profile',
+      component: () => import('../views/ProfileView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/dashboard',
       name: 'dashboard',
       component: () => import('../views/coordinator/DashboardView.vue'),
@@ -64,6 +70,18 @@ const router = createRouter({
       path: '/import-users',
       name: 'import-users',
       component: () => import('../views/coordinator/UserBulkDataImportView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/manage-fyp',
+      name: 'manage-fyp',
+      component: () => import('../views/coordinator/fyp_module/ManageFYPProposalsView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/manage-fyp/:id',
+      name: 'view-fyp-proposal',
+      component: () => import('../views/coordinator/fyp_module/ViewFYPProposalView.vue'),
       meta: { requiresAuth: true },
     },
   ],

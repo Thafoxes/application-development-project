@@ -3,6 +3,8 @@ const express = require("express");
 const mysql = require("mysql2");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
+const fs = require("fs");
+const path = require("path");
 
 require("dotenv").config();
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -12,6 +14,7 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
+app.use('/localData', express.static(path.join(__dirname, '..', 'localData')));
 
 // Import and use the assistant router
 const assistantRouter = require("./routes/assistant");
@@ -26,7 +29,10 @@ const db = mysql.createPool({
   database: process.env.DB_NAME,
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0
+  queueLimit: 0,
+  ssl: process.env.DB_SSL === 'true' ? {
+    rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false'
+  } : undefined
 });
 
 console.log("Connected to database.");
@@ -444,9 +450,264 @@ app.post("/api/timetable/crosscheck", (req, res) => {
     });
 });
 
+// --- FYP PROPOSALS & AI MATCHING ENDPOINTS (File-based Mock Data) ---
+const proposalsFilePath = path.join(__dirname, '..', 'localData', 'fyp_proposals.json');
+
+const mapProposalToFrontend = (p) => {
+  return {
+    project_id: p.project_id,
+    fyp_session_id: p.fyp_session_id,
+    studentName: p.student?.full_name || p.studentName || '',
+    matricNo: p.student?.metric_number || p.matricNo || '',
+    studentEmail: p.student?.email || p.studentEmail || '',
+    cgpa: p.student?.cgpa || p.cgpa || null,
+    projectTitle: p.title || p.projectTitle || '',
+    projectType: p.projectType || 'System Development',
+    status: p.status || 'submitted',
+    aiStatus: p.aiStatus || 'Pending AI Matching',
+    supervisorName: p.supervisor?.full_name || p.supervisorName || null,
+    supervisorEmail: p.supervisor?.email || p.supervisorEmail || null,
+    supervisorStatus: p.supervisor?.status || (p.supervisor ? 'pending' : null),
+    supervisor: p.supervisor || null,
+    use_case_diagrams: p.use_case_diagrams || [],
+    matchScore: p.matchScore || null,
+    github_link: p.github_link || null,
+    drive_link: p.drive_link || null,
+    abstract: p.abstract || '',
+    keywords: p.keywords || '',
+    fileName: p.fileName || 'Proposal document',
+    coordinator_comments: p.coordinator_comments || null,
+    examiners: p.examiners || (p.project_id === 5 ? [{ user_id: 4, full_name: "Prof. John Smith", role: "Examiner" }] : p.project_id === 6 ? [{ user_id: 10, full_name: "Robert Chen", role: "Examiner" }] : []),
+    details: p.details || {}
+  };
+};
+
+app.get("/api/coordinator/fyp-queue", (req, res) => {
+  try {
+    if (fs.existsSync(proposalsFilePath)) {
+      const raw = fs.readFileSync(proposalsFilePath, 'utf8');
+      const proposals = JSON.parse(raw);
+      const mapped = proposals.map(mapProposalToFrontend);
+      res.json({ success: true, projects: mapped });
+    } else {
+      res.json({ success: true, projects: [] });
+    }
+  } catch (err) {
+    console.error("Failed to load proposals queue:", err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get("/api/coordinator/fyp-proposal/:id", (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (fs.existsSync(proposalsFilePath)) {
+      const raw = fs.readFileSync(proposalsFilePath, 'utf8');
+      const proposals = JSON.parse(raw);
+      const proposal = proposals.find(p => p.project_id === id);
+      if (!proposal) {
+        return res.status(404).json({ success: false, error: "Proposal not found" });
+      }
+      res.json({ success: true, proposal: mapProposalToFrontend(proposal) });
+    } else {
+      res.status(404).json({ success: false, error: "Proposal not found" });
+    }
+  } catch (err) {
+    console.error("Failed to load proposal details:", err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.patch("/api/coordinator/fyp-status/:id", (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const { status, matchScore, coordinator_comments, feedback } = req.body;
+    if (fs.existsSync(proposalsFilePath)) {
+      const raw = fs.readFileSync(proposalsFilePath, 'utf8');
+      const proposals = JSON.parse(raw);
+      const idx = proposals.findIndex(p => p.project_id === id);
+      if (idx !== -1) {
+        proposals[idx].status = status.toLowerCase();
+        if (status.toLowerCase() === 'approved') {
+          proposals[idx].status = 'approved';
+          proposals[idx].coordinator_comments = null; // Clear comments upon approval
+        } else if (status.toLowerCase() === 'rejected') {
+          proposals[idx].status = 'rejected';
+          const comments = coordinator_comments !== undefined ? coordinator_comments : feedback;
+          if (comments !== undefined) {
+            proposals[idx].coordinator_comments = comments;
+          }
+        }
+        if (matchScore !== undefined) {
+          proposals[idx].matchScore = matchScore;
+        }
+        fs.writeFileSync(proposalsFilePath, JSON.stringify(proposals, null, 4));
+        return res.json({ success: true, project: mapProposalToFrontend(proposals[idx]) });
+      }
+    }
+    res.status(404).json({ success: false, error: "Proposal not found" });
+  } catch (err) {
+    console.error("Failed to update status:", err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+
+// Mock data from json
+const userDataFilePath = path.join(__dirname, '..', 'localData', 'user_data.json');
+
+app.get("/api/coordinator/supervisor-candidates", (req, res) => {
+  try {
+    if (fs.existsSync(userDataFilePath)) {
+      const raw = fs.readFileSync(userDataFilePath, 'utf8');
+      const users = JSON.parse(raw);
+      // Filter non-students (staff or industry experts)
+      const candidates = users.filter(u => u.is_utm_staff || u.affiliation === 'Industry');
+
+      // Enrich with capacity mock data
+      const enriched = candidates.map((u) => {
+        let max_capacity = u.sv_capacity !== undefined ? u.sv_capacity : (u.sv_vapacity !== undefined ? u.sv_vapacity : 5);
+        let current_capacity = u.current_sv_capacity !== undefined ? u.current_sv_capacity : 0;
+
+        return {
+          user_id: u.user_id,
+          email: u.email,
+          full_name: u.full_name,
+          phone_number: u.phone_number || u["Phone number"] || "",
+          is_utm_staff: u.is_utm_staff,
+          affiliation: u.affiliation || (u.is_utm_staff ? "UTM" : "External"),
+          co_org_name: u.co_org_name || null,
+          expertise: u.expertise || [],
+          max_capacity,
+          current_capacity,
+          sv_capacity: u.sv_capacity !== undefined ? u.sv_capacity : u.sv_vapacity,
+          sv_vapacity: u.sv_vapacity !== undefined ? u.sv_vapacity : u.sv_capacity
+        };
+      });
+      res.json({ success: true, candidates: enriched });
+    } else {
+      res.json({ success: true, candidates: [] });
+    }
+  } catch (err) {
+    console.error("Failed to load candidates:", err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get("/api/supervisor-matching/projects", (req, res) => {
+  try {
+    if (fs.existsSync(proposalsFilePath)) {
+      const raw = fs.readFileSync(proposalsFilePath, 'utf8');
+      const proposals = JSON.parse(raw);
+      const mapped = proposals.map(mapProposalToFrontend);
+      res.json({ success: true, projects: mapped });
+    } else {
+      res.json({ success: true, projects: [] });
+    }
+  } catch (err) {
+    console.error("Failed to load projects:", err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post("/api/supervisor-matching/match", (req, res) => {
+  const recommendations = [
+    {
+      supervisor_id: 4020,
+      name: "Dr. Sarah",
+      email: "dr.sarah@utm.my",
+      score: 95,
+      reason: "Lecturer matches keywords (Vue.js, Academic Advisor) and has capacity.",
+      capacity: 5,
+      current: 2,
+      research_expertise: "Web Engineering, Agile Methodologies, Intelligent Advisor Systems"
+    },
+    {
+      supervisor_id: 4021,
+      name: "Prof. John Smith",
+      email: "john.smith@utm.my",
+      score: 82,
+      reason: "Expert in software metrics and system analysis.",
+      capacity: 4,
+      current: 3,
+      research_expertise: "Software Quality, Empirical Software Engineering"
+    },
+    {
+      supervisor_id: 4022,
+      name: "Dr. Neo",
+      email: "dr.neo@utm.my",
+      score: 75,
+      reason: "Works in AI systems and intelligent databases.",
+      capacity: 3,
+      current: 1,
+      research_expertise: "Artificial Intelligence, Database Tuning"
+    }
+  ];
+  res.json({ success: true, recommendations, source: "Ollama Cloud" });
+});
+
+app.post("/api/supervisor-matching/assign", (req, res) => {
+  try {
+    const { projectId, supervisor } = req.body;
+    const id = parseInt(projectId);
+    if (fs.existsSync(proposalsFilePath)) {
+      const raw = fs.readFileSync(proposalsFilePath, 'utf8');
+      const proposals = JSON.parse(raw);
+      const idx = proposals.findIndex(p => p.project_id === id);
+      if (idx !== -1) {
+        // Save the old supervisor ID if there was one
+        const oldSupervisorId = proposals[idx].supervisor ? proposals[idx].supervisor.supervisor_id : null;
+
+        proposals[idx].supervisor = {
+          supervisor_id: supervisor.supervisor_id || 4020,
+          full_name: supervisor.name || supervisor.full_name,
+          email: supervisor.email
+        };
+
+        fs.writeFileSync(proposalsFilePath, JSON.stringify(proposals, null, 4));
+
+        // Update current_sv_capacity in user_data.json
+        const newSupervisorId = supervisor.supervisor_id;
+        if (fs.existsSync(userDataFilePath)) {
+          const usersRaw = fs.readFileSync(userDataFilePath, 'utf8');
+          const users = JSON.parse(usersRaw);
+
+          let updated = false;
+          users.forEach(u => {
+            // Decrement old supervisor
+            if (oldSupervisorId && Number(u.user_id) === Number(oldSupervisorId) && Number(oldSupervisorId) !== Number(newSupervisorId)) {
+              u.current_sv_capacity = Math.max(0, (u.current_sv_capacity || 0) - 1);
+              updated = true;
+            }
+            // Increment new supervisor
+            if (newSupervisorId && Number(u.user_id) === Number(newSupervisorId) && Number(oldSupervisorId) !== Number(newSupervisorId)) {
+              u.current_sv_capacity = (u.current_sv_capacity || 0) + 1;
+              updated = true;
+            }
+          });
+
+          if (updated) {
+            fs.writeFileSync(userDataFilePath, JSON.stringify(users, null, 4));
+
+            // Also write to src/mock/user_data.json if it exists
+            const mockUserPath = path.join(__dirname, '..', 'src', 'mock', 'user_data.json');
+            if (fs.existsSync(mockUserPath)) {
+              fs.writeFileSync(mockUserPath, JSON.stringify(users, null, 4));
+            }
+          }
+        }
+
+        return res.json({ success: true, assignment: mapProposalToFrontend(proposals[idx]) });
+      }
+    }
+    res.status(404).json({ success: false, error: "Project not found" });
+  } catch (err) {
+    console.error("Failed to assign supervisor:", err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // TODO: POST temporary meeting generation
-const fs = require('fs');
-const path = require('path');
 const tempFilePath = path.join(__dirname, '..', 'localData', 'temp_meeting.json');
 
 app.post("/api/timetable/generate-temp", (req, res) => {
@@ -972,6 +1233,50 @@ app.post("/api/users", (req, res) => {
       if (err) return res.status(500).json({ error: err.message });
       res.json({ message: "User created successfully" });
     });
+});
+
+// update password securely
+app.post("/api/users/update-password", async (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return res.status(401).json({ error: "No token provided" });
+
+  const token = authHeader.split(" ")[1];
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET || "ifamous-super-secret-key-2026");
+    const userId = decoded.user_id;
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: "Missing password fields" });
+    }
+
+    // 1. Fetch current user
+    db.query("SELECT password_hash FROM users WHERE user_id = ?", [userId], async (err, results) => {
+      if (err) return res.status(500).json({ error: "Database error" });
+      if (results.length === 0) return res.status(404).json({ error: "User not found" });
+
+      const user = results[0];
+      const pepper = process.env.SECRET_PEPPER || '';
+
+      // 2. Verify current password
+      const match = await bcrypt.compare(currentPassword + pepper, user.password_hash);
+      if (!match) {
+        return res.status(401).json({ error: "Incorrect current password" });
+      }
+
+      // 3. Hash new password and update
+      const saltRounds = 10;
+      const newHash = await bcrypt.hash(newPassword + pepper, saltRounds);
+
+      db.query("UPDATE users SET password_hash = ? WHERE user_id = ?", [newHash, userId], (updateErr) => {
+        if (updateErr) return res.status(500).json({ error: "Failed to update password" });
+        res.json({ success: true, message: "Password updated successfully" });
+      });
+    });
+
+  } catch (err) {
+    return res.status(403).json({ error: "Invalid token" });
+  }
 });
 
 // update user

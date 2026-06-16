@@ -398,4 +398,143 @@ Rules:
     }
 });
 
+// Route: Suggest best supervisor candidate using Gemma/Ollama
+router.post('/api/assistant/suggest-supervisor', async (req, res) => {
+    try {
+        const { project, candidates } = req.body;
+        
+        if (!project || !candidates || !Array.isArray(candidates)) {
+            return res.status(400).json({ error: "Missing project or candidates data" });
+        }
+        
+        const candidatesFormatted = candidates.map(c => ({
+            user_id: c.user_id,
+            full_name: c.full_name,
+            expertise: c.expertise || [],
+            affiliation: c.affiliation || '',
+            co_org_name: c.co_org_name || '',
+            current_capacity: c.current_capacity || 0,
+            max_capacity: c.max_capacity || 0
+        }));
+
+        const projectFormatted = {
+            project_id: project.project_id,
+            title: project.projectTitle || project.title || '',
+            abstract: project.abstract || '',
+            keywords: project.keywords || '',
+            projectType: project.projectType || '',
+            examiners: (project.examiners || []).map(ex => ex.user_id)
+        };
+
+        const PROMPT = `You are an expert academic coordinator AI assistant in Final Year Project (FYP) management. Your task is to analyze an FYP project scope and recommend the best supervisor from a list of candidates.
+
+PROJECT DETAILS:
+- Title: ${projectFormatted.title}
+- Abstract: ${projectFormatted.abstract}
+- Keywords: ${projectFormatted.keywords}
+- Project Type: ${projectFormatted.projectType}
+- Disqualified Examiner User IDs: ${JSON.stringify(projectFormatted.examiners)} (A supervisor candidate is disqualified if their user_id is in this list).
+
+CANDIDATES:
+${JSON.stringify(candidatesFormatted, null, 2)}
+
+Instructions:
+1. Filter out any candidate whose user_id is in the disqualified list of examiners.
+2. Analyze all remaining candidates and select the top 5 candidates whose research expertise tags align best semantically with the project title, abstract, and keywords.
+3. Calculate a match probability score between 50% and 100% for each of the top 5 candidates based on semantic similarity.
+4. Draft a clear, academic, and detailed justification explaining why each candidate's background matches the project's requirements. Keep it under 3 sentences per candidate.
+5. Return the result STRICTLY as a JSON array containing up to 5 top candidates, sorted from highest score to lowest, in this format:
+[
+  {
+    "suggested_user_id": <user_id of the recommended candidate>,
+    "score": <calculated match score as a number between 50 and 100>,
+    "reason": "<Your detailed matching justification explanation>"
+  }
+]
+
+Rules:
+- Return ONLY the JSON array. Do not include markdown blocks (\`\`\`json), greetings, or explanations.
+`;
+
+        const ollamaPayload = {
+            model: OLLAMA_MODEL,
+            stream: false,
+            messages: [
+                {
+                    role: "user",
+                    content: PROMPT
+                }
+            ]
+        };
+
+        const { url, options } = getOllamaRequestConfig();
+        const ollamaResponse = await axios.post(url, ollamaPayload, options);
+        let reply = ollamaResponse.data.message.content;
+
+        if (reply.startsWith('\`\`\`json')) {
+            reply = reply.replace(/^\`\`\`json/, '').replace(/\`\`\`$/, '').trim();
+        } else if (reply.startsWith('\`\`\`')) {
+            reply = reply.replace(/^\`\`\`/, '').replace(/\`\`\`$/, '').trim();
+        }
+
+        let parsedJson;
+        try {
+            parsedJson = JSON.parse(reply);
+        } catch (e) {
+            console.error("Failed to parse JSON from AI response:", reply);
+            return res.status(500).json({ success: false, error: "AI output was not valid JSON." });
+        }
+
+        res.json({
+            success: true,
+            recommendations: Array.isArray(parsedJson) ? parsedJson : [parsedJson]
+        });
+
+    } catch (error) {
+        console.error("AI Backend Error (suggest-supervisor):", error.message);
+        
+        // Robust fallback logic in case Ollama is offline or fails
+        const projectTitle = (project.projectTitle || project.title || '').toLowerCase();
+        const projectAbstract = (project.abstract || '').toLowerCase();
+        const projectKeywords = (project.keywords || '').toLowerCase();
+        const combinedText = `${projectTitle} ${projectAbstract} ${projectKeywords}`;
+        
+        const examiners = (project.examiners || []).map(ex => Number(ex.user_id));
+        const filtered = candidates.filter(c => !examiners.includes(Number(c.user_id)));
+        
+        const scoredCandidates = filtered.map(cand => {
+            const expertiseList = cand.expertise || [];
+            let matchesCount = 0;
+            expertiseList.forEach(exp => {
+                if (combinedText.includes(exp.toLowerCase())) {
+                    matchesCount++;
+                }
+            });
+            
+            let candScore = 60 + (cand.user_id * 3) % 15;
+            let reason = `Matches general supervision profile for ${project.projectType || 'System Development'} projects.`;
+            
+            if (matchesCount > 0) {
+                candScore = Math.min(80 + matchesCount * 5, 95);
+                reason = `Matched due to alignment with expertise in ${expertiseList.slice(0, 2).join(', ')}.`;
+            }
+            
+            return {
+                suggested_user_id: cand.user_id,
+                score: candScore,
+                reason: reason
+            };
+        });
+        
+        scoredCandidates.sort((a, b) => b.score - a.score);
+        const top5 = scoredCandidates.slice(0, 5);
+        
+        res.json({
+            success: true,
+            fallback: true,
+            recommendations: top5
+        });
+    }
+});
+
 module.exports = router;
