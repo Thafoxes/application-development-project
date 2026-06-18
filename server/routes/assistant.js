@@ -15,11 +15,11 @@ const getOllamaRequestConfig = () => {
             'Content-Type': 'application/json'
         }
     };
-    
+
     if (OLLAMA_API_KEY) {
         options.headers['Authorization'] = `Bearer ${OLLAMA_API_KEY}`;
     }
-    
+
     return { url, options };
 };
 const mysql = require("mysql2");
@@ -221,22 +221,76 @@ const multer = require('multer');
 // Configure multer for memory storage
 const upload = multer({ storage: multer.memoryStorage() });
 
+// Analze timetable as image
 router.post('/api/assistant/analyze-timetable', upload.single('image'), async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ error: "No image provided" });
         }
 
-        const base64Image = req.file.buffer.toString('base64');
+        const fs = require('fs');
+        const path = require('path');
+        const { spawn } = require('child_process');
 
-        const PROMPT = `You are an expert AI system designed to extract scheduling information from university timetable images and output the result strictly in JSON.
+        // Create a temporary file for the uploaded image so Python can read it
+        const tempFilename = `temp_timetable_${Date.now()}_${Math.floor(Math.random() * 1000)}.jpg`;
+        const tempFilePath = path.join(__dirname, '..', tempFilename);
+        fs.writeFileSync(tempFilePath, req.file.buffer);
 
-IMPORTANT: If the provided image is NOT a timetable or schedule, you must return EXACTLY this JSON:
+        // Run the Python docling helper using the virtual environment's Python
+        const pyScriptPath = path.join(__dirname, '..', 'docling_helper.py');
+        
+        // Check for .venv path (Windows vs Linux/Mac)
+        const venvPathWindows = path.join(__dirname, '..', '..', '.venv', 'Scripts', 'python.exe');
+        const venvPathUnix = path.join(__dirname, '..', '..', '.venv', 'bin', 'python');
+        
+        const pythonExecutable = fs.existsSync(venvPathWindows) ? venvPathWindows : 
+                                 fs.existsSync(venvPathUnix) ? venvPathUnix : 'python';
+                                 
+        const pythonProcess = spawn(pythonExecutable, [pyScriptPath, tempFilePath]);
+
+        let markdownData = '';
+        let errorData = '';
+
+        pythonProcess.stdout.on('data', (data) => {
+            markdownData += data.toString();
+        });
+
+        pythonProcess.stderr.on('data', (data) => {
+            errorData += data.toString();
+        });
+
+        await new Promise((resolve, reject) => {
+            pythonProcess.on('close', (code) => {
+                // Cleanup temp file
+                if (fs.existsSync(tempFilePath)) {
+                    fs.unlinkSync(tempFilePath);
+                }
+                if (code !== 0) {
+                    reject(new Error(`Docling script failed with code ${code}: ${errorData}`));
+                } else {
+                    resolve();
+                }
+            });
+        });
+
+        if (!markdownData.trim()) {
+            return res.status(400).json({ error: "Could not extract table data from the image using Docling." });
+        }
+
+        const PROMPT = `You are an expert AI system designed to extract scheduling information from a university timetable.
+
+Here is the markdown representation of the timetable extracted via OCR:
+\`\`\`markdown
+${markdownData}
+\`\`\`
+
+IMPORTANT: If the markdown does not look like a timetable or schedule, return EXACTLY this JSON:
 {
   "error": "Not a timetable"
 }
 
-If it IS a timetable, extract all classes/events. The image is a grid where rows are days of the week and columns are time slots. Look for text in the cells. The text often contains the class name (e.g., SCSE1013, SMJM1023), section (e.g., SEC 15), type (e.g., Lecture, LAB), and location. Map each occupied cell to its corresponding day and time.
+If it IS a timetable, extract all classes/events. The markdown is a table where rows are days of the week and columns are time slots. Look for text in the cells. The text often contains the class name (e.g., SCSE1013, SMJM1023), section (e.g., SEC 15), type (e.g., Lecture, LAB), and location. Map each occupied cell to its corresponding day and time.
 
 Also check for a header indicating who the timetable is for:
 - If it says "TIMETABLE FOR LECTURER : <NAME>" or contains a name/email, set "target_type" to "Lecturer" and "target_name" to the extracted <NAME> or email.
@@ -276,8 +330,7 @@ Rules:
             messages: [
                 {
                     role: "user",
-                    content: PROMPT,
-                    images: [base64Image]
+                    content: PROMPT
                 }
             ]
         };
@@ -402,11 +455,11 @@ Rules:
 router.post('/api/assistant/suggest-supervisor', async (req, res) => {
     try {
         const { project, candidates } = req.body;
-        
+
         if (!project || !candidates || !Array.isArray(candidates)) {
             return res.status(400).json({ error: "Missing project or candidates data" });
         }
-        
+
         const candidatesFormatted = candidates.map(c => ({
             user_id: c.user_id,
             full_name: c.full_name,
@@ -492,16 +545,16 @@ Rules:
 
     } catch (error) {
         console.error("AI Backend Error (suggest-supervisor):", error.message);
-        
+
         // Robust fallback logic in case Ollama is offline or fails
         const projectTitle = (project.projectTitle || project.title || '').toLowerCase();
         const projectAbstract = (project.abstract || '').toLowerCase();
         const projectKeywords = (project.keywords || '').toLowerCase();
         const combinedText = `${projectTitle} ${projectAbstract} ${projectKeywords}`;
-        
+
         const examiners = (project.examiners || []).map(ex => Number(ex.user_id));
         const filtered = candidates.filter(c => !examiners.includes(Number(c.user_id)));
-        
+
         const scoredCandidates = filtered.map(cand => {
             const expertiseList = cand.expertise || [];
             let matchesCount = 0;
@@ -510,25 +563,25 @@ Rules:
                     matchesCount++;
                 }
             });
-            
+
             let candScore = 60 + (cand.user_id * 3) % 15;
             let reason = `Matches general supervision profile for ${project.projectType || 'System Development'} projects.`;
-            
+
             if (matchesCount > 0) {
                 candScore = Math.min(80 + matchesCount * 5, 95);
                 reason = `Matched due to alignment with expertise in ${expertiseList.slice(0, 2).join(', ')}.`;
             }
-            
+
             return {
                 suggested_user_id: cand.user_id,
                 score: candScore,
                 reason: reason
             };
         });
-        
+
         scoredCandidates.sort((a, b) => b.score - a.score);
         const top5 = scoredCandidates.slice(0, 5);
-        
+
         res.json({
             success: true,
             fallback: true,
