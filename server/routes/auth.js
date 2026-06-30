@@ -76,7 +76,7 @@ router.post("/signup", async (req, res) => {
               // Also add the student record into students table if they are a student
               if (isStudent) {
                 const metricNumber = affiliation;
-                db.query("INSERT IGNORE INTO students (student_id, metric_number) VALUES (?, ?)", [new_user_id, metricNumber], (studErr) => {
+                db.query("INSERT IGNORE INTO students (student_id, metric_number) VALUES (?, ?)", [new_user_id, metricNumber.toUpperCase()], (studErr) => {
                   if (studErr) console.error("Error setting up student record:", studErr);
                   res.json({ message: "User registered successfully", results });
                 });
