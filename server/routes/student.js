@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const mysql = require('mysql2');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const path = require('path');
 const dotenv = require('dotenv');
+const db = require("../db");
 
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
@@ -19,17 +19,6 @@ const storage = multer.diskStorage({
   }
 });
 const upload = multer({ storage });
-
-const db = mysql.createPool({
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT || 3306,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-});
 
 //verify the token before proceeding the backend search
 const verifyToken = (req, res, next) => {
@@ -62,15 +51,58 @@ router.get("/my-workflow", verifyToken, (req, res) => {
 // POST /api/projects
 router.post("/", verifyToken, (req, res) => {
   const studentId = req.user.user_id;
-  const { title, description, fyp_session_id } = req.body;
+  const { title, description } = req.body;
 
-  const targetSessionId = fyp_session_id || 1; // Default to 1 if not provided for now
+  // 1. Dynamically retrieve an active session to satisfy fyp_session FK constraint (projects_ibfk_4)
+  db.query("SELECT fyp_session_id FROM fyp_session WHERE is_active = 1 LIMIT 1", (sessErr, sessRows) => {
+    if (sessErr) return res.status(500).json({ error: sessErr.message });
 
-  db.query("INSERT INTO projects (title, description, status, student_id, supervisor_id, fyp_session_id, current_step) VALUES (?, ?, 'Draft', ?, 1, ?, 1)",
-    [title, description, studentId, targetSessionId], (err, result) => {
-      if (err) return res.status(500).json({ error: err.message });
-      res.json({ message: "Project created", project_id: result.insertId });
-    });
+    const proceedWithSession = (sessionId) => {
+      // 2. Fetch the real metric number from users table (stored in affiliation column during signup)
+      db.query("SELECT affiliation FROM users WHERE user_id = ?", [studentId], (userErr, userRows) => {
+        if (userErr) return res.status(500).json({ error: userErr.message });
+        
+        const metricNumber = (userRows.length > 0 && userRows[0].affiliation) ? userRows[0].affiliation : ('STU_' + studentId);
+
+        db.query(
+          "INSERT IGNORE INTO students (student_id, metric_number) VALUES (?, ?)",
+          [studentId, metricNumber],
+          (checkErr) => {
+            if (checkErr) return res.status(500).json({ error: "Failed to ensure student profile exists: " + checkErr.message });
+
+            // 3. Insert project
+            db.query(
+              "INSERT INTO projects (title, description, status, student_id, supervisor_id, fyp_session_id, current_step) VALUES (?, ?, 'Draft', ?, NULL, ?, 1)",
+              [title, description, studentId, sessionId],
+              (err, result) => {
+                if (err) return res.status(500).json({ error: err.message });
+                res.json({ message: "Project created", project_id: result.insertId });
+              }
+            );
+          }
+        );
+      });
+    };
+
+    if (sessRows.length > 0) {
+      proceedWithSession(sessRows[0].fyp_session_id);
+    } else {
+      // Try to find any session if no active one is set
+      db.query("SELECT fyp_session_id FROM fyp_session LIMIT 1", (anySessErr, anySessRows) => {
+        if (anySessErr) return res.status(500).json({ error: anySessErr.message });
+
+        if (anySessRows.length > 0) {
+          proceedWithSession(anySessRows[0].fyp_session_id);
+        } else {
+          // If the table is completely empty, seed a default active session (1)
+          db.query("INSERT INTO fyp_session (fyp_session_id, is_active) VALUES (1, 1)", (insSessErr) => {
+            if (insSessErr) return res.status(500).json({ error: "Failed to create default session: " + insSessErr.message });
+            proceedWithSession(1);
+          });
+        }
+      });
+    }
+  });
 });
 
 // PUT /api/projects/:id/nabc
