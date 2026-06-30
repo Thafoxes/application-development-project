@@ -15,10 +15,15 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use('/localData', express.static(path.join(__dirname, '..', 'localData')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Import and use the assistant router
 const assistantRouter = require("./routes/assistant");
 app.use(assistantRouter);
+
+// Import and use the student router
+const studentRouter = require("./routes/student");
+app.use("/api/projects", studentRouter);
 
 // Database Connection
 const db = mysql.createPool({
@@ -114,12 +119,25 @@ app.post("/api/signup", async (req, res) => {
           const new_user_id = newUserIdRow ? newUserIdRow.new_user_id : null;
 
           if (new_user_id) {
-            // Update the user's salutation_id
-            db.query("UPDATE users SET salutation_id = ? WHERE user_id = ?", [salutation_id, new_user_id], (updateErr) => {
+            const lowerEmail = email.toLowerCase();
+            const isStudent = lowerEmail.endsWith('@graduate.utm.my') ? 1 : 0;
+            const isStaff = lowerEmail.endsWith('@utm.my') ? 1 : 0;
+
+            // Update the user's salutation_id and role flags
+            db.query("UPDATE users SET salutation_id = ?, is_student = ?, is_utm_staff = ? WHERE user_id = ?", [salutation_id, isStudent, isStaff, new_user_id], (updateErr) => {
               if (updateErr) {
                 console.error("Error setting salutation_id after signup:", updateErr);
               }
-              res.json({ message: "User registered successfully", results });
+
+              // Also add the student record into students table if they are a student
+              if (isStudent) {
+                db.query("INSERT IGNORE INTO students (student_id, student_metric_no, cohort) VALUES (?, ?, '2026_S1')", [new_user_id, affiliation || ''], (studErr) => {
+                  if (studErr) console.error("Error setting up student record:", studErr);
+                  res.json({ message: "User registered successfully", results });
+                });
+              } else {
+                res.json({ message: "User registered successfully", results });
+              }
             });
           } else {
             res.json({ message: "User registered successfully", results });
@@ -168,8 +186,8 @@ app.post("/api/login", (req, res) => {
       delete user.password_hash;
 
       // Call sp_lookup_user_role
-      const roleSql = "CALL sp_lookup_user_role(?, ?)";
-      db.query(roleSql, [user.email, user.user_id], (roleErr, roleResults) => {
+      const roleSql = "CALL sp_lookup_user_role(?)";
+      db.query(roleSql, user.user_id, (roleErr, roleResults) => {
         if (roleErr) {
           console.error("Role lookup error:", roleErr);
           return res.status(500).json({ error: "Database error during role lookup" });
@@ -1381,7 +1399,7 @@ app.put("/api/user/profile", async (req, res) => {
 
   const token = authHeader.split(" ")[1];
   try {
-    const decoded = jwt.verify(token, JWT_SECRET || "ifamous-super-secret-key-2026");
+    const decoded = jwt.verify(token, JWT_SECRET);
     const userId = decoded.user_id;
 
     const { salutation_id, full_name, phone_number } = req.body;
