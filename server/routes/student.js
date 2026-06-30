@@ -51,7 +51,11 @@ router.get("/my-workflow", verifyToken, (req, res) => {
 // POST /api/projects
 router.post("/", verifyToken, (req, res) => {
   const studentId = req.user.user_id;
-  const { title, description } = req.body;
+  const { title } = req.body;
+
+  if (!title) {
+    return res.status(400).json({ error: "Project title is required." });
+  }
 
   // 1. Dynamically retrieve an active session to satisfy fyp_session FK constraint (projects_ibfk_4)
   db.query("SELECT fyp_session_id FROM fyp_session WHERE is_active = 1 LIMIT 1", (sessErr, sessRows) => {
@@ -70,10 +74,10 @@ router.post("/", verifyToken, (req, res) => {
           (checkErr) => {
             if (checkErr) return res.status(500).json({ error: "Failed to ensure student profile exists: " + checkErr.message });
 
-            // 3. Insert project
+            // 3. Insert project with title only, leaving description and proposal null
             db.query(
-              "INSERT INTO projects (title, description, status, student_id, supervisor_id, fyp_session_id, current_step) VALUES (?, ?, 'Draft', ?, NULL, ?, 1)",
-              [title, description, studentId, sessionId],
+              "INSERT INTO projects (title, description, status, student_id, supervisor_id, fyp_session_id, current_step) VALUES (?, NULL, 'Draft', ?, NULL, ?, 1)",
+              [title, studentId, sessionId],
               (err, result) => {
                 if (err) return res.status(500).json({ error: err.message });
                 res.json({ message: "Project created", project_id: result.insertId });
@@ -102,6 +106,49 @@ router.post("/", verifyToken, (req, res) => {
         }
       });
     }
+  });
+});
+
+// PUT /api/projects/:id/proposal
+router.put("/:id/proposal", verifyToken, (req, res) => {
+  const projectId = req.params.id;
+  const studentId = req.user.user_id;
+  const { initial_proposal_json } = req.body;
+
+  if (!initial_proposal_json) {
+    return res.status(400).json({ error: "Proposal data is required." });
+  }
+
+  const { student_meta, project_meta } = initial_proposal_json;
+  if (!student_meta || !project_meta) {
+    return res.status(400).json({ error: "Missing required meta blocks." });
+  }
+
+  const cgpa = parseFloat(student_meta.cgpa);
+  const projectType = project_meta.project_type;
+
+  // Enforce CGPA validation for Research projects (FR-1.3 & SDD 2.5)
+  if (projectType === 'Research' && cgpa < 3.3) {
+    return res.status(403).json({
+      error: "Research track requires a minimum CGPA of 3.3."
+    });
+  }
+
+  // Verify ownership
+  db.query("SELECT 1 FROM projects WHERE project_id = ? AND student_id = ?", [projectId, studentId], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (rows.length === 0) {
+      return res.status(403).json({ error: "Unauthorized or project not found." });
+    }
+
+    db.query(
+      "UPDATE projects SET initial_proposal_json = ?, title = ?, description = ? WHERE project_id = ? AND student_id = ?",
+      [JSON.stringify(initial_proposal_json), initial_proposal_json.title || 'Untitled Project', initial_proposal_json.text_content?.problem_background || '', projectId, studentId],
+      (updErr) => {
+        if (updErr) return res.status(500).json({ error: updErr.message });
+        res.json({ message: "Initial proposal updated successfully." });
+      }
+    );
   });
 });
 
