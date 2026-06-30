@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 
 const props = defineProps({
   project: {
@@ -14,9 +14,9 @@ const emit = defineEmits(['created'])
 const title = ref(props.project?.title || '')
 const course = ref('Software Engineering')
 const cgpa = ref(3.50)
-const projectType = ref('Development')
+const projectType = ref('System Development')
 const proposalNo = ref(1)
-const ideaSource = ref('Self-proposed')
+const ideaSource = ref('My own idea')
 
 // Text content
 const problemBackground = ref('')
@@ -36,6 +36,17 @@ const isSubmitting = ref(false)
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 
 // CGPA Validation Rule (FR-1.3 & SDD 2.5)
+const isResearchDisabled = computed(() => {
+  return parseFloat(cgpa.value) < 3.3
+})
+
+watch(cgpa, (newVal) => {
+  if (parseFloat(newVal) < 3.3 && projectType.value === 'Research') {
+    projectType.value = 'System Development'
+  }
+})
+
+// Keep dynamic warning check
 const isResearchCgpaInvalid = computed(() => {
   return projectType.value === 'Research' && parseFloat(cgpa.value) < 3.3
 })
@@ -140,6 +151,7 @@ const submitProposal = async () => {
           <h3 class="text-sm font-bold text-[#5c001f] uppercase tracking-wider border-b border-gray-100 pb-2">Section A: Student Details & Eligibility</h3>
           <div class="max-w-xs">
             <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Current CGPA</label>
+            <p class="text-[11px] text-gray-400 mb-2">Required minimum CGPA &ge; 3.3 for Research project type</p>
             <input 
               v-model="cgpa" 
               type="number" 
@@ -155,7 +167,7 @@ const submitProposal = async () => {
         <!-- Section 2: Project track -->
         <div class="space-y-4">
           <h3 class="text-sm font-bold text-[#5c001f] uppercase tracking-wider border-b border-gray-100 pb-2">Section B: Project Track & Parameters</h3>
-          <div class="space-y-4">
+          <div class="space-y-6">
             <div>
               <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Project Title</label>
               <input 
@@ -165,28 +177,68 @@ const submitProposal = async () => {
                 required
               />
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+              <!-- Project Idea -->
               <div>
-                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Project Type</label>
-                <select v-model="projectType" class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-1 focus:ring-[#5c001f] focus:border-[#5c001f]">
-                  <option value="Development">Development (System / Web / App)</option>
-                  <option value="Research">Research (Thesis / Algorithm / Study)</option>
-                </select>
+                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Project Idea</label>
+                <div class="space-y-2 mt-1">
+                  <label class="flex items-center gap-2 text-sm text-gray-800 cursor-pointer">
+                    <input 
+                      type="radio" 
+                      v-model="ideaSource" 
+                      value="My own idea" 
+                      class="w-4 h-4 text-[#5c001f] focus:ring-[#5c001f] border-gray-300"
+                    />
+                    My own idea
+                  </label>
+                  <label class="flex items-center gap-2 text-sm text-gray-800 cursor-pointer">
+                    <input 
+                      type="radio" 
+                      v-model="ideaSource" 
+                      value="Proposed by the supervisor" 
+                      class="w-4 h-4 text-[#5c001f] focus:ring-[#5c001f] border-gray-300"
+                    />
+                    Proposed by the supervisor
+                  </label>
+                </div>
               </div>
+
+              <!-- Project Type -->
+              <div>
+                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Project Type</label>
+                <div class="space-y-2 mt-1">
+                  <label 
+                    class="flex items-center gap-2 text-sm cursor-pointer"
+                    :class="isResearchDisabled ? 'text-gray-400 cursor-not-allowed opacity-50' : 'text-gray-800'"
+                  >
+                    <input 
+                      type="radio" 
+                      v-model="projectType" 
+                      value="Research" 
+                      :disabled="isResearchDisabled"
+                      class="w-4 h-4 text-[#5c001f] focus:ring-[#5c001f] border-gray-300 disabled:opacity-50"
+                    />
+                    Research
+                  </label>
+                  <label class="flex items-center gap-2 text-sm text-gray-800 cursor-pointer">
+                    <input 
+                      type="radio" 
+                      v-model="projectType" 
+                      value="System Development" 
+                      class="w-4 h-4 text-[#5c001f] focus:ring-[#5c001f] border-gray-300"
+                    />
+                    System Development
+                  </label>
+                </div>
+              </div>
+
+              <!-- Priority Choice -->
               <div>
                 <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Priority Choice</label>
                 <select v-model="proposalNo" class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-1 focus:ring-[#5c001f] focus:border-[#5c001f]">
                   <option :value="1">Choice 1 (Primary)</option>
                   <option :value="2">Choice 2 (Secondary)</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Project Source</label>
-                <select v-model="ideaSource" class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-1 focus:ring-[#5c001f] focus:border-[#5c001f]">
-                  <option value="Self-proposed">Self-proposed</option>
-                  <option value="Lecturer Project">Lecturer Allocated Project</option>
-                  <option value="Industry Grant">Industry Sponsored Grant</option>
-                  <option value="Faculty Industry Grant">Faculty Industry Grant</option>
                 </select>
               </div>
             </div>
