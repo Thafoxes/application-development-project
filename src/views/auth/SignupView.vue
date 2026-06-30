@@ -42,9 +42,6 @@ onMounted(async () => {
 const step2Data = ref({
   // Student
   metricNumber: '',
-  cgpa: '',
-  totalCreditHour: '',
-  creditHourProof: null,
 
   // Staff & Outsider shared
   expertise: '',
@@ -111,12 +108,6 @@ const onStepClick = (targetStep) => {
   }
 }
 
-const handleFileUpload = (event) => {
-  const file = event.target.files[0]
-  if (file) {
-    step2Data.value.creditHourProof = file
-  }
-}
 
 const expertiseTags = ref([])
 const expertiseInput = ref('')
@@ -451,55 +442,6 @@ const submitRegistration = async () => {
                     placeholder="Value"
                     class="px-4 py-3 rounded-lg border border-[#d9d9d9] focus:ring-1 focus:ring-[#5c001f] focus:border-[#5c001f] outline-none w-full text-sm text-gray-900 placeholder:text-gray-500"
                   />
-                </div>
-
-                <div class="flex gap-4">
-                  <div class="flex flex-col gap-1 flex-1">
-                    <label class="text-sm font-medium text-[#0d0b26]">Current CGPA</label>
-                    <input
-                      v-model="step2Data.cgpa"
-                      type="text"
-                      placeholder="Value"
-                      class="px-4 py-3 rounded-lg border border-[#d9d9d9] focus:ring-1 focus:ring-[#5c001f] focus:border-[#5c001f] outline-none w-full text-sm text-gray-900 placeholder:text-gray-500"
-                    />
-                  </div>
-                  <div class="flex flex-col gap-1 flex-1">
-                    <label class="text-sm font-medium text-[#0d0b26]">Total Credit Hour</label>
-                    <input
-                      v-model="step2Data.totalCreditHour"
-                      type="text"
-                      placeholder="Value"
-                      class="px-4 py-3 rounded-lg border border-[#d9d9d9] focus:ring-1 focus:ring-[#5c001f] focus:border-[#5c001f] outline-none w-full text-sm text-gray-900 placeholder:text-gray-500"
-                    />
-                  </div>
-                </div>
-
-                <div class="flex flex-col gap-1">
-                  <label class="text-sm font-medium text-[#0d0b26]">Upload credit Hour</label>
-                  <span class="text-xs text-gray-500 mb-1 leading-tight"
-                    >Upload the credit hour you have taken total in this semester</span
-                  >
-
-                  <div
-                    class="relative border border-[#d9d9d9] rounded-lg bg-white overflow-hidden group hover:border-[#5c001f] transition-colors cursor-pointer"
-                  >
-                    <input
-                      type="file"
-                      @change="handleFileUpload"
-                      class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                      accept=".jpeg,.jpg,.png,.pdf"
-                    />
-                    <div class="px-4 py-10 flex flex-col items-center justify-center text-center">
-                      <p class="text-sm text-[#0d0b26] font-medium truncate w-full px-4">
-                        {{
-                          step2Data.creditHourProof ? step2Data.creditHourProof.name : 'Proof.jpeg'
-                        }}
-                      </p>
-                      <p v-if="!step2Data.creditHourProof" class="text-xs text-gray-400 mt-2">
-                        Click to browse or drag file here
-                      </p>
-                    </div>
-                  </div>
                 </div>
               </template>
 
