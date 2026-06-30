@@ -136,7 +136,7 @@ const menuItems = computed(() => {
           <p
             class="capitalize font-bold text-[24px] lg:text-[16px] text-white whitespace-nowrap font-['Inter']"
           >
-            {{ user.full_name || 'Username' }}
+            {{ user.title_name ? user.title_name + ' ' + user.full_name : user.full_name || 'Username' }}
           </p>
         </button>
 
@@ -186,7 +186,7 @@ const menuItems = computed(() => {
           </div>
           <div>
             <p class="text-xs font-bold text-gray-900 capitalize">
-              {{ user.full_name || 'Username' }}
+              {{ user.title_name ? user.title_name + ' ' + user.full_name : user.full_name || 'Username' }}
             </p>
             <p class="text-[10px] text-gray-400 font-semibold">{{ user.email }}</p>
           </div>
