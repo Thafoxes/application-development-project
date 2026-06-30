@@ -220,6 +220,18 @@ const handleUpdatePassword = async () => {
               </label>
               <p class="text-sm font-medium text-gray-800">{{ user?.phone_number }}</p>
             </div>
+            <div v-if="Number(user?.is_student) === 1">
+              <label class="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5 mb-1">
+                <User class="w-3.5 h-3.5" /> Matric Number
+              </label>
+              <p class="text-sm font-medium text-gray-800 uppercase">{{ user?.metric_number || 'N/A' }}</p>
+            </div>
+            <div v-else-if="user?.affiliation">
+              <label class="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5 mb-1">
+                <Shield class="w-3.5 h-3.5" /> Affiliation
+              </label>
+              <p class="text-sm font-medium text-gray-800">{{ user?.affiliation }}</p>
+            </div>
           </div>
         </div>
       </div>

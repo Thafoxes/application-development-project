@@ -131,7 +131,8 @@ app.post("/api/signup", async (req, res) => {
 
               // Also add the student record into students table if they are a student
               if (isStudent) {
-                db.query("INSERT IGNORE INTO students (student_id, student_metric_no, cohort) VALUES (?, ?, '2026_S1')", [new_user_id, affiliation || ''], (studErr) => {
+                const metricNumber = affiliation;
+                db.query("INSERT IGNORE INTO students (student_id, metric_number) VALUES (?, ?)", [new_user_id, metricNumber], (studErr) => {
                   if (studErr) console.error("Error setting up student record:", studErr);
                   res.json({ message: "User registered successfully", results });
                 });
@@ -185,53 +186,89 @@ app.post("/api/login", (req, res) => {
       // Successful login
       delete user.password_hash;
 
-      // Call sp_lookup_user_role
-      const roleSql = "CALL sp_lookup_user_role(?)";
-      db.query(roleSql, user.user_id, (roleErr, roleResults) => {
-        if (roleErr) {
-          console.error("Role lookup error:", roleErr);
-          return res.status(500).json({ error: "Database error during role lookup" });
-        }
-        // Debug: Log what the database actually returned
-        console.log("Procedure Results:", JSON.stringify(roleResults));
+      const isStudent = user.email.toLowerCase().endsWith('@graduate.utm.my') || Number(user.is_student) === 1;
 
-        // Attach the role information directly to the user object
-        if (roleResults && roleResults[0] && roleResults[0].length > 0) {
-          const roles = roleResults[0][0];
-          user.is_student = roles.is_student;
-          user.is_supervisor = roles.is_supervisor;
-          user.is_examiner = roles.is_examiner;
-          user.is_coordinator = roles.is_coordinator;
-          user.role_info = roles; // Keep this just in case
-        } else {
-          console.warn("WARNING: sp_lookup_user_role returned 0 rows for email:", user.email);
-        }
+      const proceedLogin = () => {
+        // Call sp_lookup_user_role
+        const roleSql = "CALL sp_lookup_user_role(?)";
+        db.query(roleSql, [user.user_id], (roleErr, roleResults) => {
+          if (roleErr) {
+            console.error("Role lookup error:", roleErr);
+            return res.status(500).json({ error: "Database error during role lookup" });
+          }
+          // Debug: Log what the database actually returned
+          console.log("Procedure Results:", JSON.stringify(roleResults));
 
-        // Aggregate system-wide roles for token payload (FR-AUTH-04 & FR-auth-01)
-        const system_roles = [];
-        if (Number(user.is_student) === 1) system_roles.push("student");
-        if (Number(user.is_coordinator) === 1) system_roles.push("coordinator");
-        if (Number(user.is_superadmin) === 1) system_roles.push("superadmin");
-        if (Number(user.is_utm_staff) === 1) system_roles.push("staff");
+          // Attach the role information directly to the user object
+          if (roleResults && roleResults[0] && roleResults[0].length > 0) {
+            const roles = roleResults[0][0];
+            user.is_student = Number(roles.is_student) === 1 ? 1 : user.is_student;
+            user.is_supervisor = Number(roles.is_supervisor) === 1 ? 1 : user.is_supervisor;
+            user.is_examiner = Number(roles.is_examiner) === 1 ? 1 : user.is_examiner;
+            user.is_coordinator = Number(roles.is_coordinator) === 1 ? 1 : user.is_coordinator;
+            user.role_info = roles; // Keep this just in case
+          } else {
+            console.warn("WARNING: sp_lookup_user_role returned 0 rows for email:", user.email);
+          }
 
-        const tokenPayload = {
-          user_id: user.user_id,
-          email: user.email,
-          salutations: user.title_name || "",
-          title: user.title_name || "",
-          full_name: user.full_name,
-          is_utm_staff: Number(user.is_utm_staff) === 1 ? 1 : 0,
-          system_roles: system_roles
-        };
+          // Aggregate system-wide roles for token payload (FR-AUTH-04 & FR-auth-01)
+          const system_roles = [];
+          if (Number(user.is_student) === 1) system_roles.push("student");
+          if (Number(user.is_coordinator) === 1) system_roles.push("coordinator");
+          if (Number(user.is_superadmin) === 1) system_roles.push("superadmin");
+          if (Number(user.is_utm_staff) === 1) system_roles.push("staff");
 
-        const token = jwt.sign(
-          tokenPayload,
-          JWT_SECRET || "ifamous-super-secret-key-2026",
-          { expiresIn: "24h" }
-        );
+          const tokenPayload = {
+            user_id: user.user_id,
+            email: user.email,
+            salutations: user.title_name || "",
+            title: user.title_name || "",
+            full_name: user.full_name,
+            is_utm_staff: Number(user.is_utm_staff) === 1 ? 1 : 0,
+            system_roles: system_roles
+          };
 
-        res.json({ message: "Login successful", user, token });
-      });
+          const token = jwt.sign(
+            tokenPayload,
+            JWT_SECRET || "ifamous-super-secret-key-2026",
+            { expiresIn: "24h" }
+          );
+
+          res.json({ message: "Login successful", user, token });
+        });
+      };
+
+      if (isStudent) {
+        db.query("SELECT * FROM students WHERE student_id = ?", [user.user_id], (studErr, studRows) => {
+          if (!studErr && studRows.length > 0) {
+            const studentInfo = studRows[0];
+            // Merge student metrics into the user object
+            user.metric_number = studentInfo.metric_number ? studentInfo.metric_number.toUpperCase() : '';
+            user.class_id = studentInfo.class_id;
+            user.CGPA = studentInfo.CGPA;
+            user.GPA = studentInfo.GPA;
+            user.proof_of_credit_hours = studentInfo.proof_of_credit_hours;
+            user.credit_hours_completed = studentInfo.credit_hours_completed;
+            proceedLogin();
+          } else {
+            // Student record is missing! Seed it dynamically to fix older accounts
+            const metricNo = user.affiliation || ('STU_' + user.user_id);
+            db.query("INSERT IGNORE INTO students (student_id, metric_number) VALUES (?, ?)", [user.user_id, metricNo], (insErr) => {
+              if (insErr) console.error("Dynamic student seed failed:", insErr);
+
+              user.metric_number = metricNo.toUpperCase();
+              user.class_id = null;
+              user.CGPA = 0.0;
+              user.GPA = null;
+              user.proof_of_credit_hours = null;
+              user.credit_hours_completed = 0;
+              proceedLogin();
+            });
+          }
+        });
+      } else {
+        proceedLogin();
+      }
     } catch (compareError) {
       console.error("Password comparison error:", compareError);
       return res.status(500).json({ error: "Server error during login" });
