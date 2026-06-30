@@ -744,23 +744,15 @@ DELIMITER ;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_lookup_user_role`(
-	IN email_address VARCHAR(255),
-	IN user_id INT
-)
-BEGIN
-	SELECT
-		-- Check for presence in sub-tables
-		IF(s.student_id IS NOT NULL, 1, 0) AS is_student,
-		IF(sv.supervisor_id IS NOT NULL, 1, 0) AS is_supervisor,
-		IF(e.examiners_id IS NOT NULL, 1, 0) AS is_examiner,
-		IF(c.user_id IS NOT NULL, 1, 0) AS is_coordinator
-	FROM users u
-	LEFT JOIN students s ON u.user_id = s.student_id
-	LEFT JOIN supervisor sv ON u.user_id = sv.supervisor_id
-	LEFT JOIN examiners e ON u.user_id = e.examiners_id
-	LEFT JOIN coordinator c ON u.user_id = c.user_id
-	WHERE u.email = email_address AND u.user_id = user_id;
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_lookup_user_role`(IN in_email VARCHAR(255), IN in_user_id INT)
+BEGIN
+    SELECT 
+        u.is_student,
+        u.is_coordinator,
+        IF((SELECT COUNT(*) FROM projects WHERE supervisor_id = u.user_id) > 0, 1, 0) AS is_supervisor,
+        0 AS is_examiner 
+    FROM users u
+    WHERE u.user_id = in_user_id;
 END ;;
 DELIMITER ;
 /*!50003 SET sql_mode              = @saved_sql_mode */ ;
@@ -1043,4 +1035,4 @@ DELIMITER ;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-06-30 22:35:04
+-- Dump completed on 2026-06-30 23:01:41
