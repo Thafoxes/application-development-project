@@ -134,7 +134,7 @@ const menuItems = computed(() => {
             {{ user.full_name ? user.full_name.charAt(0).toUpperCase() : 'U' }}
           </div>
           <p
-            class="capitalize font-bold text-[24px] lg:text-[16px] text-white whitespace-nowrap font-['Inter']"
+            class="capitalize font-bold text-[24px] lg:text-[16px] text-white whitespace-nowrap font-['Inter'] truncate max-w-[150px] lg:max-w-[180px]"
           >
             {{ user.title_name ? user.title_name + ' ' + user.full_name : user.full_name || 'Username' }}
           </p>
@@ -143,9 +143,9 @@ const menuItems = computed(() => {
         <!-- Dropdown Menu -->
         <div
           v-if="showDropdown"
-          class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200"
+          class="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200"
         >
-          <div class="px-4 py-2 text-sm text-gray-500 border-b border-gray-100 font-medium">
+          <div class="px-4 py-2 text-sm text-gray-500 border-b border-gray-100 font-medium truncate" :title="user.email">
             {{ user.email }}
           </div>
           <router-link
