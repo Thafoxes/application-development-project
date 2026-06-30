@@ -10,6 +10,7 @@ import CreateSessionModal from '@/components/CreateSessionModal.vue'
 import AppSidebar from '@/components/common_components/AppSidebar.vue'
 import AppFooter from '@/components/common_components/AppFooter.vue'
 import { useCalendarStore } from '@/stores/calendarStore'
+import FypDashboardContainer from '@/views/Student/FypDashboardContainer.vue'
 
 const { user } = useAuth()
 const router = useRouter()
@@ -32,19 +33,33 @@ onMounted(() => {
     <!-- Header -->
     <AppHeader />
 
-    <!-- Access Denied View for Non-Coordinators -->
+    <!-- Access Denied View -->
     <div
-      v-if="!user || Number(user.is_coordinator) !== 1"
+      v-if="!user || (Number(user.is_coordinator) !== 1 && Number(user.is_student) !== 1)"
       class="flex-1 flex flex-col items-center justify-center text-center px-4"
     >
       <h1 class="text-4xl font-bold text-[#5c001f] mb-4">Access Restricted</h1>
       <p class="text-xl text-gray-700 mb-6">
-        You do not have coordinator permissions to view this dashboard.
+        You do not have permissions to view this dashboard.
       </p>
     </div>
 
+    <!-- Main Content Split Layout for Students -->
+    <div v-else-if="Number(user.is_student) === 1" class="flex flex-1 w-full relative">
+      <AppSidebar />
+      <main class="flex-1 flex flex-col px-4 md:px-10 py-8 gap-6 overflow-y-auto">
+        <div class="flex flex-col gap-4 w-full bg-white/40 p-6 rounded-2xl border border-white/20 backdrop-blur-sm shadow-sm">
+          <div>
+            <h1 class="font-['Inter'] font-extrabold text-3xl tracking-tight text-gray-900">Student Workspace</h1>
+            <p class="text-sm text-gray-600 mt-1">Manage your Final Year Project proposal, milestones, and deliverables.</p>
+          </div>
+        </div>
+        <FypDashboardContainer />
+      </main>
+    </div>
+
     <!-- Main Content Split Layout for Coordinators -->
-    <div v-else class="flex flex-1 w-full relative">
+    <div v-else-if="Number(user.is_coordinator) === 1" class="flex flex-1 w-full relative">
       <!-- Side Navigation -->
       <AppSidebar />
 
