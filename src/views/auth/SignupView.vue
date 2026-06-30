@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 import AppHeader from '@/components/common_components/AppHeader.vue'
@@ -13,12 +13,30 @@ const step = ref(1)
 const stepperSteps = [{ label: 'Basic Info' }, { label: 'More Info' }]
 
 const formData = ref({
+  salutationId: '',
   fullName: '',
   email: '',
   password: '',
   confirmPassword: '',
   phoneNumber: '',
   // affiliation: '',
+})
+
+const salutations = ref([])
+
+onMounted(async () => {
+  try {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+    const res = await fetch(`${apiUrl}/api/lookups/salutations`)
+    if (res.ok) {
+      salutations.value = await res.json()
+      if (salutations.value.length > 0) {
+        formData.value.salutationId = salutations.value[0].salutation_id
+      }
+    }
+  } catch (error) {
+    console.error('Failed to load salutations:', error)
+  }
 })
 
 const step2Data = ref({
@@ -63,6 +81,7 @@ const toggleConfirmPassword = () => {
 const validateStep1 = () => {
   errors.value = {}
 
+  if (!formData.value.salutationId) errors.value.salutationId = 'Salutation is required.'
   if (!formData.value.fullName.trim()) errors.value.fullName = 'Full name is required.'
   if (!formData.value.email.trim()) errors.value.email = 'Email is required.'
 
@@ -125,6 +144,7 @@ const submitRegistration = async () => {
       password: formData.value.password, // In a real app, hash this properly on the backend
       fullName: formData.value.fullName,
       phoneNumber: formData.value.phoneNumber,
+      salutation_id: formData.value.salutationId,
       // Pass null if the field doesn't apply to the user's role
       companyName: emailDomain.value === 'outsider' ? step2Data.value.companyName : null,
       expertise: ['staff', 'outsider'].includes(emailDomain.value)
@@ -197,6 +217,27 @@ const submitRegistration = async () => {
               @submit.prevent="handleNext"
               class="flex flex-col gap-[20px] w-full transition-opacity duration-300"
             >
+              <!-- Salutation -->
+              <div class="flex flex-col gap-1">
+                <label class="text-sm font-medium text-[#0d0b26]">Salutation</label>
+                <select
+                  v-model="formData.salutationId"
+                  class="px-4 py-3 rounded-lg border border-[#d9d9d9] focus:ring-1 focus:ring-[#5c001f] focus:border-[#5c001f] outline-none w-full text-sm text-gray-900 bg-white"
+                >
+                  <option value="" disabled>Select Salutation</option>
+                  <option
+                    v-for="sal in salutations"
+                    :key="sal.salutation_id"
+                    :value="sal.salutation_id"
+                  >
+                    {{ sal.title_name }}
+                  </option>
+                </select>
+                <span v-if="errors.salutationId" class="text-red-500 text-xs">{{
+                  errors.salutationId
+                }}</span>
+              </div>
+
               <!-- Full Name -->
               <div class="flex flex-col gap-1">
                 <label class="text-sm font-medium text-[#0d0b26]">Full Name</label>
