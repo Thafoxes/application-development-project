@@ -46,6 +46,17 @@ app.get("/api/status", (req, res) => {
   });
 });
 
+// GET lookups for salutations (academic and professional titles)
+app.get("/api/lookups/salutations", (req, res) => {
+  db.query("SELECT salutation_id, title_name FROM salutations ORDER BY salutation_id ASC", (err, results) => {
+    if (err) {
+      console.error("Error fetching salutations:", err);
+      return res.status(500).json({ error: "Failed to fetch salutations: " + err.message });
+    }
+    res.json(results);
+  });
+});
+
 // Signup API Endpoint
 app.post("/api/signup", async (req, res) => {
   const {
@@ -56,36 +67,72 @@ app.post("/api/signup", async (req, res) => {
     companyName,
     expertise,
     affiliation,
+    salutation_id,
   } = req.body;
 
+  if (!salutation_id) {
+    return res.status(400).json({ error: "Salutation is required." });
+  }
+
   try {
-    //pepper added to password for security
-    const pepper = process.env.SECRET_PEPPER;
-    const hashedPassword = await bcrypt.hash(password + pepper, 10);
-
-    const sql = "CALL sp_signup_normal_user(?, ?, ?, ?, ?, ?, ?)";
-    const values = [
-      email,
-      hashedPassword,
-      fullName,
-      phoneNumber,
-      companyName || null,
-      expertise || null,
-      affiliation || null,
-    ];
-
-    db.query(sql, values, (err, results) => {
-      if (err) {
-        console.error("Signup error:", err);
-        return res
-          .status(500)
-          .json({ error: "Registration failed", details: err.message });
+    // Validate salutation referential integrity (SRS-VAL-07)
+    db.query("SELECT 1 FROM salutations WHERE salutation_id = ?", [salutation_id], async (salCheckErr, salCheckResults) => {
+      if (salCheckErr) {
+        console.error("Salutation verification failed:", salCheckErr);
+        return res.status(500).json({ error: "Registration verification failed" });
       }
-      res.json({ message: "User registered successfully", results });
+      if (salCheckResults.length === 0) {
+        return res.status(400).json({ error: "Invalid salutation selection." });
+      }
+
+      try {
+        //pepper added to password for security
+        const pepper = process.env.SECRET_PEPPER;
+        const hashedPassword = await bcrypt.hash(password + pepper, 10);
+
+        const sql = "CALL sp_signup_normal_user(?, ?, ?, ?, ?, ?, ?)";
+        const values = [
+          email,
+          hashedPassword,
+          fullName,
+          phoneNumber,
+          companyName || null,
+          expertise || null,
+          affiliation || null,
+        ];
+
+        db.query(sql, values, (err, results) => {
+          if (err) {
+            console.error("Signup error:", err);
+            return res
+              .status(500)
+              .json({ error: "Registration failed", details: err.message });
+          }
+
+          // Stored procedure returns results as array of arrays. The SELECT statement is in results[0]
+          const newUserIdRow = results && results[0] && results[0][0];
+          const new_user_id = newUserIdRow ? newUserIdRow.new_user_id : null;
+
+          if (new_user_id) {
+            // Update the user's salutation_id
+            db.query("UPDATE users SET salutation_id = ? WHERE user_id = ?", [salutation_id, new_user_id], (updateErr) => {
+              if (updateErr) {
+                console.error("Error setting salutation_id after signup:", updateErr);
+              }
+              res.json({ message: "User registered successfully", results });
+            });
+          } else {
+            res.json({ message: "User registered successfully", results });
+          }
+        });
+      } catch (hashError) {
+        console.error("Password hashing error:", hashError);
+        return res.status(500).json({ error: "Server error during registration" });
+      }
     });
-  } catch (hashError) {
-    console.error("Password hashing error:", hashError);
-    return res.status(500).json({ error: "Server error during registration" });
+  } catch (err) {
+    console.error("Signup validation error:", err);
+    return res.status(500).json({ error: "Server error during signup validation" });
   }
 });
 
@@ -97,7 +144,7 @@ app.post("/api/login", (req, res) => {
     return res.status(400).json({ error: "Email and password are required" });
   }
 
-  const sql = "SELECT * FROM `ifamous_dbms`.`users` WHERE email = ?";
+  const sql = "SELECT u.*, s.title_name FROM `ifamous_dbms`.`users` u LEFT JOIN `ifamous_dbms`.`salutations` s ON u.salutation_id = s.salutation_id WHERE u.email = ?";
   db.query(sql, [email], async (err, results) => {
     if (err) {
       console.error("Login error:", err);
@@ -125,7 +172,6 @@ app.post("/api/login", (req, res) => {
       db.query(roleSql, [user.email, user.user_id], (roleErr, roleResults) => {
         if (roleErr) {
           console.error("Role lookup error:", roleErr);
-          // If the procedure fails, we still might want to let them login, or fail strictly
           return res.status(500).json({ error: "Database error during role lookup" });
         }
         // Debug: Log what the database actually returned
@@ -143,8 +189,25 @@ app.post("/api/login", (req, res) => {
           console.warn("WARNING: sp_lookup_user_role returned 0 rows for email:", user.email);
         }
 
+        // Aggregate system-wide roles for token payload (FR-AUTH-04 & FR-auth-01)
+        const system_roles = [];
+        if (Number(user.is_student) === 1) system_roles.push("student");
+        if (Number(user.is_coordinator) === 1) system_roles.push("coordinator");
+        if (Number(user.is_superadmin) === 1) system_roles.push("superadmin");
+        if (Number(user.is_utm_staff) === 1) system_roles.push("staff");
+
+        const tokenPayload = {
+          user_id: user.user_id,
+          email: user.email,
+          salutations: user.title_name || "",
+          title: user.title_name || "",
+          full_name: user.full_name,
+          is_utm_staff: Number(user.is_utm_staff) === 1 ? 1 : 0,
+          system_roles: system_roles
+        };
+
         const token = jwt.sign(
-          { user_id: user.user_id, is_coordinator: user.is_coordinator },
+          tokenPayload,
           JWT_SECRET || "ifamous-super-secret-key-2026",
           { expiresIn: "24h" }
         );
@@ -1281,20 +1344,131 @@ app.post("/api/users/update-password", async (req, res) => {
 
 // update user
 app.put("/api/users/:id", (req, res) => {
-  const { full_name, email, phone_number, expertise, affiliation } = req.body;
+  const { full_name, email, phone_number, expertise, affiliation, salutation_id } = req.body;
   const userId = req.params.id;
 
   if (!full_name || !email) {
     return res.status(400).json({ error: "Missing required fields" });
   }
 
-  db.query(
-    "CALL sp_UpdateUserProfile(?,?,?,?,?,?);",
-    [userId, full_name, email, phone_number || null, expertise || null, affiliation || null],
-    (err, results) => {
-      if (err) return res.status(500).json({ error: err.message });
-      res.json({ message: "User updated successfully" });
+  const target_salutation_id = salutation_id || 1;
+
+  db.query("SELECT 1 FROM salutations WHERE salutation_id = ?", [target_salutation_id], (salCheckErr, salCheckResults) => {
+    if (salCheckErr || salCheckResults.length === 0) {
+      return res.status(400).json({ error: "Invalid salutation selection." });
+    }
+
+    db.query(
+      "CALL sp_UpdateUserProfile(?,?,?,?,?,?);",
+      [userId, full_name, email, phone_number || null, expertise || null, affiliation || null],
+      (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+
+        db.query("UPDATE users SET salutation_id = ? WHERE user_id = ?", [target_salutation_id, userId], (updateErr) => {
+          if (updateErr) {
+            console.error("Failed to update salutation_id:", updateErr);
+          }
+          res.json({ message: "User updated successfully" });
+        });
+      });
+  });
+});
+
+// update logged-in user profile (PUT /api/user/profile - FR-UC103-01, FR-UC103-02, SDD 2.3 & 2.4)
+app.put("/api/user/profile", async (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return res.status(401).json({ error: "No token provided" });
+
+  const token = authHeader.split(" ")[1];
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET || "ifamous-super-secret-key-2026");
+    const userId = decoded.user_id;
+
+    const { salutation_id, full_name, phone_number } = req.body;
+
+    if (!salutation_id || !full_name) {
+      return res.status(400).json({ error: "Missing required fields." });
+    }
+
+    // 1. Verify salutation exists (SRS-VAL-07)
+    db.query("SELECT 1 FROM salutations WHERE salutation_id = ?", [salutation_id], (salCheckErr, salCheckResults) => {
+      if (salCheckErr || salCheckResults.length === 0) {
+        return res.status(400).json({ error: "Invalid salutation selection." });
+      }
+
+      // 2. Perform DB update
+      db.query(
+        "UPDATE users SET salutation_id = ?, full_name = ?, phone_number = ? WHERE user_id = ?",
+        [salutation_id, full_name, phone_number || null, userId],
+        (updateErr, updateResults) => {
+          if (updateErr) {
+            console.error("Profile update error:", updateErr);
+            return res.status(500).json({ error: "Failed to update profile: " + updateErr.message });
+          }
+
+          // 3. Re-fetch updated profile string names to compile a fresh token credential claim (SDD 2.4)
+          const refetchSql = `
+            SELECT u.user_id, u.email, u.full_name, u.phone_number, u.is_student, u.is_coordinator, u.is_superadmin, u.is_utm_staff, s.title_name 
+            FROM users u 
+            LEFT JOIN salutations s ON u.salutation_id = s.salutation_id 
+            WHERE u.user_id = ?
+          `;
+          db.query(refetchSql, [userId], (fetchErr, fetchResults) => {
+            if (fetchErr || fetchResults.length === 0) {
+              console.error("Refetch user failed:", fetchErr);
+              return res.status(200).json({ message: "Profile updated, but failed to re-generate session token." });
+            }
+
+            const updatedUser = fetchResults[0];
+
+            // Generate new lightweight JWT payload (similar to login)
+            const system_roles = [];
+            if (Number(updatedUser.is_student) === 1) system_roles.push("student");
+            if (Number(updatedUser.is_coordinator) === 1) system_roles.push("coordinator");
+            if (Number(updatedUser.is_superadmin) === 1) system_roles.push("superadmin");
+            if (Number(updatedUser.is_utm_staff) === 1) system_roles.push("staff");
+
+            const tokenPayload = {
+              user_id: updatedUser.user_id,
+              email: updatedUser.email,
+              salutations: updatedUser.title_name || "",
+              title: updatedUser.title_name || "",
+              full_name: updatedUser.full_name,
+              is_utm_staff: Number(updatedUser.is_utm_staff) === 1 ? 1 : 0,
+              system_roles: system_roles
+            };
+
+            const newToken = jwt.sign(
+              tokenPayload,
+              JWT_SECRET || "ifamous-super-secret-key-2026",
+              { expiresIn: "24h" }
+            );
+
+            // Attach the roles from sp_lookup_user_role as well
+            const roleSql = "CALL sp_lookup_user_role(?, ?)";
+            db.query(roleSql, [updatedUser.email, updatedUser.user_id], (roleErr, roleResults) => {
+              if (!roleErr && roleResults && roleResults[0] && roleResults[0].length > 0) {
+                const roles = roleResults[0][0];
+                updatedUser.is_student = roles.is_student;
+                updatedUser.is_supervisor = roles.is_supervisor;
+                updatedUser.is_examiner = roles.is_examiner;
+                updatedUser.is_coordinator = roles.is_coordinator;
+              }
+
+              // Send back the updated user object and the new token
+              res.json({
+                message: "Profile updated successfully",
+                user: updatedUser,
+                token: newToken
+              });
+            });
+          });
+        }
+      );
     });
+  } catch (jwtErr) {
+    return res.status(403).json({ error: "Invalid token" });
+  }
 });
 
 // Search API Endpoints for Autocomplete
