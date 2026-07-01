@@ -5,30 +5,38 @@ const props = defineProps({
   project: {
     type: Object,
     required: true
+  },
+  isEditing: {
+    type: Boolean,
+    default: false
   }
 })
 
 const emit = defineEmits(['created'])
 
 // Form fields
-const title = ref(props.project?.title || '')
+const parsed = props.project?.initial_proposal_json 
+  ? (typeof props.project.initial_proposal_json === 'string' ? JSON.parse(props.project.initial_proposal_json) : props.project.initial_proposal_json)
+  : null
+
+const title = ref(parsed?.proposal_content?.title || props.project?.title || '')
 const course = ref('Software Engineering')
-const cgpa = ref(3.50)
-const projectType = ref('System Development')
-const proposalNo = ref(1)
-const ideaSource = ref('My own idea')
+const cgpa = ref(parsed?.student_meta?.cgpa || 3.50)
+const projectType = ref(parsed?.project_meta?.project_type || 'System Development')
+const proposalNo = ref(parsed?.project_meta?.proposal_no || 1)
+const ideaSource = ref(parsed?.project_meta?.idea_source || 'My own idea')
 
 // Text content
-const problemBackground = ref('')
-const objectives = ref('')
-const scopes = ref('')
+const problemBackground = ref(parsed?.text_content?.problem_background || '')
+const objectives = ref(parsed?.text_content?.objectives || '')
+const scopes = ref(parsed?.text_content?.scopes || '')
 
 // Technical Matrix
-const software = ref('Vue 3, Tailwind CSS, Express.js, MySQL')
-const hardware = ref('Application Server, Database Server')
-const techniques = ref('JWT Token Claims, Bcrypt Password Hashing')
-const security = ref('HTTPS, HttpOnly Cookie Sessions')
-const network = ref('Localhost Development Environment')
+const software = ref(parsed?.technical_matrix?.software?.join(', ') || 'Vue 3, Tailwind CSS, Express.js, MySQL')
+const hardware = ref(parsed?.technical_matrix?.hardware?.join(', ') || 'Application Server, Database Server')
+const techniques = ref(parsed?.technical_matrix?.techniques_algorithms?.join(', ') || 'JWT Token Claims, Bcrypt Password Hashing')
+const security = ref(parsed?.technical_matrix?.security?.join(', ') || 'HTTPS, HttpOnly Cookie Sessions')
+const network = ref(parsed?.technical_matrix?.network?.join(', ') || 'Localhost Development Environment')
 
 const errorMsg = ref('')
 const isSubmitting = ref(false)
@@ -38,6 +46,14 @@ const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 // CGPA Validation Rule (FR-1.3 & SDD 2.5)
 const isResearchDisabled = computed(() => {
   return parseFloat(cgpa.value) < 3.3
+})
+
+const isLocked = computed(() => {
+  return props.project?.status === 'Accepted' || props.project?.status === 'Approved'
+})
+
+const isFormDisabled = computed(() => {
+  return !props.isEditing || isLocked.value
 })
 
 watch(cgpa, (newVal) => {
@@ -51,7 +67,7 @@ const isResearchCgpaInvalid = computed(() => {
   return projectType.value === 'Research' && parseFloat(cgpa.value) < 3.3
 })
 
-const submitProposal = async () => {
+const submitProposal = async (statusParam = 'Draft') => {
   errorMsg.value = ''
   
   if (!title.value.trim()) {
@@ -69,9 +85,17 @@ const submitProposal = async () => {
 
   const payload = {
     initial_proposal_json: {
-      title: title.value.trim(),
+      metadata: {
+        student_id: props.project.student_id,
+        session_id: props.project.fyp_session_id,
+        preference_order: parseInt(proposalNo.value),
+        preference_label: "Proposal No. " + proposalNo.value + " – " + (parseInt(proposalNo.value) === 1 ? "Highest Priority" : "Secondary Priority")
+      },
+      proposal_content: {
+        title: title.value.trim(),
+        abstract: problemBackground.value.trim()
+      },
       student_meta: {
-        course: course.value,
         cgpa: parseFloat(cgpa.value)
       },
       project_meta: {
@@ -91,7 +115,8 @@ const submitProposal = async () => {
         security: security.value.split(',').map(s => s.trim()).filter(Boolean),
         network: network.value.split(',').map(s => s.trim()).filter(Boolean)
       }
-    }
+    },
+    status: statusParam
   }
 
   try {
@@ -127,6 +152,14 @@ const submitProposal = async () => {
     </div>
     
     <div class="p-6 md:p-8">
+      <!-- Locked Proposal Alert -->
+      <div v-if="isLocked" class="mb-6 p-4 bg-green-50 text-green-800 rounded-lg text-sm border border-green-200 flex items-start gap-3">
+        <span class="text-base leading-none">🔒</span>
+        <div>
+          <span class="font-bold">Locked Document:</span> This proposal and NABC canvas framework has been formally accepted by your Coordinator and Supervisor. Modifications are locked.
+        </div>
+      </div>
+
       <!-- Error Alerts -->
       <div v-if="errorMsg" class="mb-6 p-4 bg-red-50 text-red-700 rounded-lg text-sm border border-red-200 flex items-start gap-2.5">
         <svg class="w-5 h-5 text-red-600 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
@@ -145,7 +178,8 @@ const submitProposal = async () => {
         </div>
       </div>
 
-      <form @submit.prevent="submitProposal" class="space-y-8 text-black">
+      <form @submit.prevent class="space-y-8 text-black">
+        <fieldset :disabled="isFormDisabled" class="space-y-8 border-none p-0 m-0">
         <!-- Section 1: Academic eligibility -->
         <div class="space-y-4">
           <h3 class="text-sm font-bold text-[#5c001f] uppercase tracking-wider border-b border-gray-100 pb-2">Section A: Student Details & Eligibility</h3>
@@ -336,14 +370,25 @@ const submitProposal = async () => {
           </div>
         </div>
 
+        </fieldset>
+
         <!-- Submission Buttons -->
-        <div class="flex items-center justify-end gap-3 pt-6 border-t border-gray-100">
+        <div v-if="isEditing && !isLocked" class="flex items-center justify-end gap-3 pt-6 border-t border-gray-100">
           <button 
-            type="submit" 
+            type="button"
+            @click="submitProposal('Draft')"
+            :disabled="isSubmitting || isResearchCgpaInvalid"
+            class="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold rounded-lg transition-colors focus:ring-4 focus:ring-gray-200 outline-none disabled:opacity-40 disabled:cursor-not-allowed shadow-sm uppercase tracking-wider"
+          >
+            Save Changes As Draft
+          </button>
+          <button 
+            type="button" 
+            @click="submitProposal('Pending Review')"
             :disabled="isSubmitting || isResearchCgpaInvalid"
             class="px-8 py-3 bg-[#5c001f] text-white text-sm font-semibold rounded-lg hover:bg-[#7a0029] transition-colors focus:ring-4 focus:ring-[#e7ded3] outline-none disabled:opacity-40 disabled:cursor-not-allowed shadow-sm uppercase tracking-wider"
           >
-            {{ isSubmitting ? 'Submitting...' : 'Save & Submit Proposal' }}
+            {{ isSubmitting ? 'Submitting...' : 'Formal Submit Review' }}
           </button>
         </div>
       </form>

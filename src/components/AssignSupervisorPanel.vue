@@ -35,7 +35,7 @@ const loadCandidates = async () => {
   isLoadingCandidates.value = true
   candidatesError.value = ''
   try {
-    const response = await fetch(`${API_BASE_URL}/api/coordinator/supervisor-candidates`)
+    const response = await fetch(`${API_BASE_URL}/api/lookups/supervisor-candidates`)
     const data = await response.json()
     if (response.ok && data.success) {
       candidates.value = data.candidates || []
