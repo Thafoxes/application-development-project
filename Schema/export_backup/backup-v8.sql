@@ -180,16 +180,17 @@ DROP TABLE IF EXISTS `projects`;
 CREATE TABLE `projects` (
   `project_id` int NOT NULL AUTO_INCREMENT,
   `title` varchar(255) NOT NULL,
-  `description` varchar(255) NOT NULL,
+  `description` varchar(255) DEFAULT NULL,
   `status` varchar(50) DEFAULT 'Draft',
   `github_link` varchar(255) DEFAULT NULL,
   `drive_link` varchar(255) DEFAULT NULL,
   `parent_project_id` int DEFAULT NULL,
-  `supervisor_id` int NOT NULL,
+  `supervisor_id` int DEFAULT NULL,
   `student_id` int NOT NULL,
   `fyp_session_id` int NOT NULL,
   `nabc_canvas_json` json DEFAULT NULL,
   `current_step` int DEFAULT '1',
+  `initial_proposal_json` json DEFAULT NULL,
   PRIMARY KEY (`project_id`),
   KEY `parent_project_id` (`parent_project_id`),
   KEY `supervisor_id` (`supervisor_id`),
@@ -199,7 +200,7 @@ CREATE TABLE `projects` (
   CONSTRAINT `projects_ibfk_2` FOREIGN KEY (`supervisor_id`) REFERENCES `supervisor` (`supervisor_id`),
   CONSTRAINT `projects_ibfk_3` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`),
   CONSTRAINT `projects_ibfk_4` FOREIGN KEY (`fyp_session_id`) REFERENCES `fyp_session` (`fyp_session_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -253,10 +254,10 @@ CREATE TABLE `students` (
   `metric_number` varchar(20) NOT NULL,
   `class_id` int DEFAULT NULL,
   `student_id` int NOT NULL,
-  `CGPA` float NOT NULL,
+  `CGPA` float DEFAULT NULL,
   `GPA` float DEFAULT NULL,
-  `proof_of_credit_hours` varchar(255) NOT NULL,
-  `credit_hours_completed` float NOT NULL DEFAULT '0',
+  `proof_of_credit_hours` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
+  `credit_hours_completed` float DEFAULT '0',
   PRIMARY KEY (`student_id`),
   UNIQUE KEY `student_id` (`student_id`),
   UNIQUE KEY `metric_number` (`metric_number`),
@@ -358,7 +359,7 @@ CREATE TABLE `users` (
   KEY `idx_system_privileges` (`is_student`,`is_coordinator`,`is_superadmin`),
   KEY `fk_users_salutations` (`salutation_id`),
   CONSTRAINT `fk_users_salutations` FOREIGN KEY (`salutation_id`) REFERENCES `salutations` (`salutation_id`) ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=4027 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=4028 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -744,7 +745,7 @@ DELIMITER ;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_lookup_user_role`(IN in_email VARCHAR(255), IN in_user_id INT)
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_lookup_user_role`(IN in_user_id INT)
 BEGIN
     SELECT 
         u.is_student,
@@ -1035,4 +1036,4 @@ DELIMITER ;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-06-30 23:01:41
+-- Dump completed on 2026-07-01 21:45:57
