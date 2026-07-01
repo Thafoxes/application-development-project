@@ -36,14 +36,14 @@ const verifyToken = (req, res, next) => {
 // GET /api/projects/my-workflow
 router.get("/my-workflow", verifyToken, (req, res) => {
   const studentId = req.user.user_id;
-  db.query("SELECT * FROM projects WHERE student_id = ? ORDER BY project_id DESC LIMIT 1", [studentId], (err, projects) => {
+  db.query("SELECT * FROM projects WHERE student_id = ? ORDER BY project_id ASC", [studentId], (err, projects) => {
     if (err) return res.status(500).json({ error: err.message });
 
-    const currentProject = projects.length > 0 ? projects[0] : null;
+    const currentProject = projects.length > 0 ? projects[projects.length - 1] : null;
 
     db.query("SELECT * FROM milestone_settings ORDER BY step_sequence ASC", [], (err, milestones) => {
       if (err) return res.status(500).json({ error: err.message });
-      res.json({ project: currentProject, milestones: milestones });
+      res.json({ project: currentProject, proposals: projects, milestones: milestones });
     });
   });
 });
@@ -57,11 +57,18 @@ router.post("/", verifyToken, (req, res) => {
     return res.status(400).json({ error: "Project title is required." });
   }
 
-  // 1. Dynamically retrieve an active session to satisfy fyp_session FK constraint (projects_ibfk_4)
-  db.query("SELECT fyp_session_id FROM fyp_session WHERE is_active = 1 LIMIT 1", (sessErr, sessRows) => {
-    if (sessErr) return res.status(500).json({ error: sessErr.message });
+  // Enforce max limit of 2 proposals per student
+  db.query("SELECT COUNT(*) as count FROM projects WHERE student_id = ?", [studentId], (countErr, countRows) => {
+    if (countErr) return res.status(500).json({ error: countErr.message });
+    if (countRows[0].count >= 2) {
+      return res.status(400).json({ error: "Maximum capacity threshold hit. You cannot submit more than 2 proposals for this session." });
+    }
 
-    const proceedWithSession = (sessionId) => {
+    // 1. Dynamically retrieve an active session to satisfy fyp_session FK constraint (projects_ibfk_4)
+    db.query("SELECT fyp_session_id FROM fyp_session WHERE is_active = 1 LIMIT 1", (sessErr, sessRows) => {
+      if (sessErr) return res.status(500).json({ error: sessErr.message });
+
+      const proceedWithSession = (sessionId) => {
       // 2. Fetch the real metric number from users table (stored in affiliation column during signup)
       db.query("SELECT affiliation FROM users WHERE user_id = ?", [studentId], (userErr, userRows) => {
         if (userErr) return res.status(500).json({ error: userErr.message });
@@ -106,17 +113,18 @@ router.post("/", verifyToken, (req, res) => {
         }
       });
     }
-  });
-});
+  }); // Closes db.query fyp_session
+  }); // Closes db.query COUNT(*)
+}); // Closes router.post
 
 // PUT /api/projects/:id/proposal
 router.put("/:id/proposal", verifyToken, (req, res) => {
   const projectId = req.params.id;
   const studentId = req.user.user_id;
-  const { initial_proposal_json } = req.body;
+  const { initial_proposal_json, status } = req.body;
 
   if (!initial_proposal_json) {
-    return res.status(400).json({ error: "Proposal data is required." });
+    return res.status(400).json({ error: "Missing initial_proposal_json payload." });
   }
 
   const { student_meta, project_meta } = initial_proposal_json;
@@ -142,8 +150,15 @@ router.put("/:id/proposal", verifyToken, (req, res) => {
     }
 
     db.query(
-      "UPDATE projects SET initial_proposal_json = ?, title = ?, description = ? WHERE project_id = ? AND student_id = ?",
-      [JSON.stringify(initial_proposal_json), initial_proposal_json.title || 'Untitled Project', initial_proposal_json.text_content?.problem_background || '', projectId, studentId],
+      "UPDATE projects SET initial_proposal_json = ?, title = ?, description = ?, status = ? WHERE project_id = ? AND student_id = ?",
+      [
+        JSON.stringify(initial_proposal_json), 
+        initial_proposal_json.proposal_content?.title || initial_proposal_json.title || 'Untitled Project', 
+        initial_proposal_json.text_content?.problem_background || '', 
+        status || 'Draft',
+        projectId, 
+        studentId
+      ],
       (updErr) => {
         if (updErr) return res.status(500).json({ error: updErr.message });
         res.json({ message: "Initial proposal updated successfully." });
@@ -155,15 +170,40 @@ router.put("/:id/proposal", verifyToken, (req, res) => {
 // PUT /api/projects/:id/nabc
 router.put("/:id/nabc", verifyToken, upload.single('use_case_image'), (req, res) => {
   const projectId = req.params.id;
-  const { need, approach, benefits, competition } = req.body;
-
+  const { need, approach, benefits, competition, matrix_rows, stakeholders, data_respondents, references, table_data } = req.body;
   const use_case_url = req.file ? `/uploads/${req.file.filename}` : null;
 
-  const nabcJson = JSON.stringify({ need, approach, benefits, competition, use_case_diagram_url: use_case_url });
-
-  db.query("UPDATE projects SET nabc_canvas_json = ?, current_step = current_step + 1 WHERE project_id = ?", [nabcJson, projectId], (err) => {
+  db.query("SELECT nabc_canvas_json FROM projects WHERE project_id = ?", [projectId], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
-    res.json({ message: "NABC Canvas updated" });
+
+    let existingNabc = {};
+    if (rows.length > 0 && rows[0].nabc_canvas_json) {
+      try {
+        existingNabc = typeof rows[0].nabc_canvas_json === 'string'
+          ? JSON.parse(rows[0].nabc_canvas_json)
+          : rows[0].nabc_canvas_json;
+      } catch (e) {
+        console.error("NABC parse error:", e);
+      }
+    }
+
+    const merged = {
+      need: need !== undefined ? need : existingNabc.need,
+      approach: approach !== undefined ? approach : existingNabc.approach,
+      benefits: benefits !== undefined ? benefits : existingNabc.benefits,
+      competition: competition !== undefined ? competition : existingNabc.competition,
+      stakeholders: stakeholders !== undefined ? stakeholders : existingNabc.stakeholders,
+      data_respondents: data_respondents !== undefined ? data_respondents : existingNabc.data_respondents,
+      references: references !== undefined ? references : existingNabc.references,
+      use_case_diagram_url: use_case_url || existingNabc.use_case_diagram_url,
+      matrix_rows: matrix_rows ? JSON.parse(matrix_rows) : existingNabc.matrix_rows,
+      table_data: table_data ? JSON.parse(table_data) : existingNabc.table_data
+    };
+
+    db.query("UPDATE projects SET nabc_canvas_json = ?, current_step = current_step + 1 WHERE project_id = ?", [JSON.stringify(merged), projectId], (err) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ message: "NABC Canvas updated" });
+    });
   });
 });
 
@@ -198,6 +238,57 @@ router.post("/:id/advance-step", verifyToken, (req, res) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json({ message: "Step advanced" });
   });
+});
+
+// PUT /api/projects/:id/credits
+router.put("/:id/credits", verifyToken, (req, res) => {
+  const projectId = req.params.id;
+  const studentId = req.user.user_id;
+  const { credits } = req.body;
+
+  db.query("SELECT initial_proposal_json FROM projects WHERE project_id = ? AND student_id = ?", [projectId, studentId], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (rows.length === 0) return res.status(404).json({ error: "Project not found." });
+
+    let parsed = {};
+    if (rows[0].initial_proposal_json) {
+      try {
+        parsed = typeof rows[0].initial_proposal_json === 'string'
+          ? JSON.parse(rows[0].initial_proposal_json)
+          : rows[0].initial_proposal_json;
+      } catch (e) {
+        console.error("Credits JSON parse error:", e);
+      }
+    }
+
+    if (!parsed.student_meta) {
+      parsed.student_meta = {};
+    }
+    parsed.student_meta.credits_obtained = parseInt(credits) || 0;
+
+    db.query("UPDATE projects SET initial_proposal_json = ? WHERE project_id = ? AND student_id = ?",
+      [JSON.stringify(parsed), projectId, studentId],
+      (updErr) => {
+        if (updErr) return res.status(500).json({ error: updErr.message });
+        res.json({ success: true, message: "Credits updated successfully." });
+      }
+    );
+  });
+});
+
+// PUT /api/projects/:id/nominate-supervisor
+router.put("/:id/nominate-supervisor", verifyToken, (req, res) => {
+  const projectId = req.params.id;
+  const studentId = req.user.user_id;
+  const { supervisor_id } = req.body;
+
+  db.query("UPDATE projects SET supervisor_id = ? WHERE project_id = ? AND student_id = ?",
+    [supervisor_id || null, projectId, studentId],
+    (err) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ success: true, message: "Supervisor nominated successfully." });
+    }
+  );
 });
 
 module.exports = router;

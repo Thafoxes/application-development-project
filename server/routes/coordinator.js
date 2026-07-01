@@ -375,37 +375,7 @@ router.patch("/coordinator/fyp-status/:id", (req, res) => {
 
 // --- SUPERVISOR MATCHING ---
 router.get("/coordinator/supervisor-candidates", (req, res) => {
-  try {
-    if (fs.existsSync(userDataFilePath)) {
-      const raw = fs.readFileSync(userDataFilePath, 'utf8');
-      const users = JSON.parse(raw);
-      const candidates = users.filter(u => u.is_utm_staff || u.affiliation === 'Industry');
-      const enriched = candidates.map((u) => {
-        let max_capacity = u.sv_capacity !== undefined ? u.sv_capacity : (u.sv_vapacity !== undefined ? u.sv_vapacity : 5);
-        let current_capacity = u.current_sv_capacity !== undefined ? u.current_sv_capacity : 0;
-        return {
-          user_id: u.user_id,
-          email: u.email,
-          full_name: u.full_name,
-          phone_number: u.phone_number || u["Phone number"] || "",
-          is_utm_staff: u.is_utm_staff,
-          affiliation: u.affiliation || (u.is_utm_staff ? "UTM" : "External"),
-          co_org_name: u.co_org_name || null,
-          expertise: u.expertise || [],
-          max_capacity,
-          current_capacity,
-          sv_capacity: u.sv_capacity !== undefined ? u.sv_capacity : u.sv_vapacity,
-          sv_vapacity: u.sv_vapacity !== undefined ? u.sv_vapacity : u.sv_capacity
-        };
-      });
-      res.json({ success: true, candidates: enriched });
-    } else {
-      res.json({ success: true, candidates: [] });
-    }
-  } catch (err) {
-    console.error("Failed to load candidates:", err);
-    res.status(500).json({ success: false, error: err.message });
-  }
+  res.redirect("/api/lookups/supervisor-candidates");
 });
 
 router.get("/supervisor-matching/projects", (req, res) => {
