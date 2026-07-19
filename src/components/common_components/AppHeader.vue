@@ -8,17 +8,19 @@ import NotificationCenter from './NotificationCenter.vue'
 
 const router = useRouter()
 const route = useRoute()
-const { user, logout } = useAuth()
+const { user, logout, activeRole, switchRole } = useAuth()
 const showDropdown = ref(false)
 const showMobileMenu = ref(false)
 
-// Define activeRole early
-const activeRole = computed(() => {
-  if (!user.value) return 'student'
-  if (Number(user.value.is_coordinator) === 1) return 'coordinator'
-  if (Number(user.value.is_supervisor) === 1) return 'supervisor'
-  if (Number(user.value.is_examiner) === 1) return 'examiner'
-  return 'student'
+// Determine all roles the user is authorized for
+const availableRoles = computed(() => {
+  const roles = []
+  if (!user.value) return roles
+  if (Number(user.value.is_coordinator) === 1) roles.push({ id: 'coordinator', name: 'Coordinator' })
+  if (Number(user.value.is_supervisor) === 1) roles.push({ id: 'supervisor', name: 'Supervisor' })
+  if (Number(user.value.is_examiner) === 1) roles.push({ id: 'examiner', name: 'Examiner' })
+  if (Number(user.value.is_student) === 1) roles.push({ id: 'student', name: 'Student' })
+  return roles
 })
 
 const toggleUserDropdown = () => {
@@ -47,6 +49,13 @@ const handleLogout = () => {
   router.push('/')
 }
 
+const handleRoleChange = (roleId) => {
+  switchRole(roleId)
+  showDropdown.value = false
+  showMobileMenu.value = false
+  router.push('/dashboard')
+}
+
 const isActive = (path) => {
   return route.path === path || route.path.startsWith(path + '/')
 }
@@ -58,7 +67,7 @@ const handleMobileNavigate = (path) => {
   }
 }
 
-// Navigation links config
+// Navigation links config based on activeRole
 const menuItems = computed(() => {
   return navigationConfig[activeRole.value] || navigationConfig.student
 })
@@ -148,6 +157,26 @@ const menuItems = computed(() => {
           <div class="px-4 py-2 text-sm text-gray-500 border-b border-gray-100 font-medium truncate" :title="user.email">
             {{ user.email }}
           </div>
+
+          <!-- Role Selector for Desktop Dropdown -->
+          <div v-if="availableRoles.length > 1" class="px-4 py-2 border-b border-gray-100 bg-gray-50/50">
+            <span class="block text-[9px] font-extrabold text-gray-400 uppercase tracking-widest mb-1.5">Switch Workspace</span>
+            <div class="flex flex-col gap-1">
+              <button
+                v-for="role in availableRoles"
+                :key="role.id"
+                @click="handleRoleChange(role.id)"
+                :class="[
+                  'w-full text-left px-2.5 py-1.5 rounded text-xs font-bold flex items-center justify-between border-none transition-colors cursor-pointer',
+                  activeRole === role.id ? 'bg-[#5c001f] text-white' : 'text-gray-750 hover:bg-gray-100 hover:text-gray-900 bg-transparent'
+                ]"
+              >
+                <span>{{ role.name }}</span>
+                <span v-if="activeRole === role.id" class="text-[10px]">✓</span>
+              </button>
+            </div>
+          </div>
+
           <router-link
             to="/profile"
             class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 font-bold no-underline"
@@ -189,6 +218,26 @@ const menuItems = computed(() => {
               {{ user.title_name ? user.title_name + ' ' + user.full_name : user.full_name || 'Username' }}
             </p>
             <p class="text-[10px] text-gray-400 font-semibold">{{ user.email }}</p>
+          </div>
+        </div>
+
+        <!-- Mobile Active Workspace Role Switcher -->
+        <div v-if="availableRoles.length > 1" class="px-4 py-2 border-b border-gray-150 mb-2">
+          <span class="block text-[9px] font-extrabold text-gray-400 uppercase tracking-widest mb-2">Active Workspace</span>
+          <div class="flex flex-wrap gap-1.5">
+            <button
+              v-for="role in availableRoles"
+              :key="role.id"
+              @click="handleRoleChange(role.id)"
+              :class="[
+                'px-3 py-1.5 rounded-lg text-xs font-bold transition-all border outline-none cursor-pointer',
+                activeRole === role.id
+                  ? 'bg-[#5c001f] text-white border-[#5c001f] shadow-sm'
+                  : 'bg-gray-50 text-gray-600 border-gray-250 hover:bg-gray-100 hover:border-gray-300'
+              ]"
+            >
+              {{ role.name }}
+            </button>
           </div>
         </div>
 
