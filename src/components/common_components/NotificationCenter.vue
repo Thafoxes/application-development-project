@@ -5,7 +5,7 @@ import { useAuth } from '@/composables/useAuth'
 import mockNotifications from '@/../localData/mock_notifications.json'
 
 const router = useRouter()
-const { user } = useAuth()
+const { user, activeRole } = useAuth()
 
 const showNotifications = ref(false)
 const notifications = ref([])
@@ -14,14 +14,6 @@ const notificationError = ref('')
 const isDemoMode = ref(true)
 const showSeeAllModal = ref(false)
 let notificationTimer = null
-
-const activeRole = computed(() => {
-  if (!user.value) return 'student'
-  if (Number(user.value.is_coordinator) === 1) return 'coordinator'
-  if (Number(user.value.is_supervisor) === 1) return 'supervisor'
-  if (Number(user.value.is_examiner) === 1) return 'examiner'
-  return 'student'
-})
 
 const unreadCount = computed(() => {
   return notifications.value.filter((item) => !item.isRead).length
