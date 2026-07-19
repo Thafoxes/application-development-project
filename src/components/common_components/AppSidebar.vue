@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 
@@ -14,18 +14,31 @@ const props = defineProps({
 
 const router = useRouter()
 const route = useRoute()
-const { user } = useAuth()
+const { user, activeRole, switchRole } = useAuth()
 
-// Auto-detect user role from session
-const detectedRole = computed(() => {
-  if (!user.value) return 'student'
-  if (Number(user.value.is_coordinator) === 1) return 'coordinator'
-  if (Number(user.value.is_supervisor) === 1) return 'supervisor'
-  if (Number(user.value.is_examiner) === 1) return 'examiner'
-  return 'student'
+// Determine all roles the user is authorized for
+const availableRoles = computed(() => {
+  const roles = []
+  if (!user.value) return roles
+  if (Number(user.value.is_coordinator) === 1) roles.push({ id: 'coordinator', name: 'Coordinator' })
+  if (Number(user.value.is_supervisor) === 1) roles.push({ id: 'supervisor', name: 'Supervisor' })
+  if (Number(user.value.is_examiner) === 1) roles.push({ id: 'examiner', name: 'Examiner' })
+  if (Number(user.value.is_student) === 1) roles.push({ id: 'student', name: 'Student' })
+  return roles
 })
 
-const activeRole = computed(() => props.role || detectedRole.value)
+const selectedRoleVal = ref(activeRole.value)
+
+// Keep selectedRoleVal in sync with activeRole global state
+watch(activeRole, (newRole) => {
+  selectedRoleVal.value = newRole
+})
+
+const handleRoleChange = () => {
+  switchRole(selectedRoleVal.value)
+  // Redirect to dashboard on workspace switch to avoid rendering mismatch pages
+  router.push('/dashboard')
+}
 
 const isActive = (path) => {
   return route.path === path || route.path.startsWith(path + '/')
@@ -33,7 +46,8 @@ const isActive = (path) => {
 
 // Sidebar links configuration per role
 const menuItems = computed(() => {
-  return navigationConfig[activeRole.value] || navigationConfig.student
+  const roleKey = props.role || activeRole.value
+  return navigationConfig[roleKey] || navigationConfig.student
 })
 </script>
 
@@ -41,6 +55,30 @@ const menuItems = computed(() => {
   <aside
     class="hidden lg:flex w-[280px] bg-white shrink-0 flex-col py-6 border-r border-gray-200 shadow-sm"
   >
+    <!-- Workspace Selector (if user has multiple roles) -->
+    <div v-if="availableRoles.length > 1" class="px-4 mb-6 pb-6 border-b border-gray-150">
+      <label class="block text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mb-2">
+        Active Workspace
+      </label>
+      <div class="relative">
+        <select
+          v-model="selectedRoleVal"
+          @change="handleRoleChange"
+          class="w-full pl-3 pr-8 py-2.5 bg-gray-50 border border-gray-250 rounded-lg text-sm font-bold text-gray-800 hover:bg-gray-100 hover:border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#5c001f] focus:border-[#5c001f] transition-all cursor-pointer appearance-none"
+        >
+          <option v-for="role in availableRoles" :key="role.id" :value="role.id">
+            {{ role.name }} View
+          </option>
+        </select>
+        <!-- Custom Dropdown Arrow -->
+        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
+          <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+            <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
     <!-- Nav List -->
     <nav class="flex-1 px-4 space-y-1">
       <button
