@@ -1,4 +1,17 @@
 import { createRouter, createWebHistory } from 'vue-router'
+
+// Sub-paths that dynamically resolve to the main workspace container
+const workspaceDashboardPaths = [
+  '/student/dashboard', '/student/proposal', '/student/logbook',
+  '/supervisor/dashboard', '/supervisor/students', '/supervisor/logs',
+  '/examiner/dashboard', '/examiner/projects', '/examiner/evaluations', '/examiner/slots'
+]
+
+// Sub-paths that resolve to the calendar view
+const workspaceCalendarPaths = [
+  '/student/schedule', '/supervisor/schedule'
+]
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -84,6 +97,17 @@ const router = createRouter({
       component: () => import('../views/coordinator/fyp_module/ViewFYPProposalView.vue'),
       meta: { requiresAuth: true },
     },
+    // Programmatically map other workspace views
+    ...workspaceDashboardPaths.map(path => ({
+      path,
+      component: () => import('../views/coordinator/DashboardView.vue'),
+      meta: { requiresAuth: true }
+    })),
+    ...workspaceCalendarPaths.map(path => ({
+      path,
+      component: () => import('../views/coordinator/CalendarView.vue'),
+      meta: { requiresAuth: true }
+    }))
   ],
 })
 
