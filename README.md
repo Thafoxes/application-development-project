@@ -52,7 +52,9 @@
   </tr>
   <tr>
     <td><strong>Hee Wah Hin</strong></td>
-    <td></td>
+    <td>
+      <a href="https://github.com/Thafoxes/application-development-project/blob/student-module/src/views/student/CreateFypView.vue">Create FYP view</a> <br>
+    </td>
     <td></td>
     <td></td>
     <td></td>
