@@ -53,7 +53,10 @@
   <tr>
     <td><strong>Hee Wah Hin</strong></td>
     <td>
+      <a href="https://github.com/Thafoxes/application-development-project/tree/student-module/src/views/student">Student Module</a> <br>
+      <a href="https://github.com/Thafoxes/application-development-project/blob/student-module/src/views/student/StudDashboardView.vue">Empty student dashboard view</a> <br>
       <a href="https://github.com/Thafoxes/application-development-project/blob/student-module/src/views/student/CreateFypView.vue">Create FYP view</a> <br>
+      <a href="https://github.com/Thafoxes/application-development-project/blob/student-module/src/views/student/StudDashboardFilledView.vue">Filled student dashboard view</a> <br>
     </td>
     <td></td>
     <td></td>
