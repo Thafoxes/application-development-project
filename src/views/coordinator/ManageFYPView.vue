@@ -58,10 +58,9 @@ const lastAssignment = ref(null)
 const sendAssignmentEmail = ref(true)
 
 const proposalForm = ref({
-  members: [],
-  memberText: '',
   studentName: '',
   matricNo: '',
+  studentEmail: '',
   projectTitle: '',
   projectType: 'Development',
   abstract: '',
@@ -125,15 +124,9 @@ const openSubmittedProposal = (project) => {
   lastAssignment.value = null
 
   proposalForm.value = {
-    members: [
-      {
-        name: project.studentName || 'Student',
-        matricNo: project.matricNo || '',
-      },
-    ],
-    memberText: `${project.studentName || 'Student'} (${project.matricNo || '-'})`,
     studentName: project.studentName || 'Student',
     matricNo: project.matricNo || '',
+    studentEmail: project.studentEmail || project.email || '',
     projectTitle: project.projectTitle || '',
     projectType: project.projectType || 'Development',
     abstract: project.abstract || '',
@@ -157,33 +150,6 @@ const setActiveTab = async (tabName) => {
   if (tabName === 'records') {
     await loadProjectRecords()
   }
-}
-
-const updateMemberText = () => {
-  proposalForm.value.memberText = proposalForm.value.members
-    .filter((member) => member.name || member.matricNo)
-    .map(
-      (member, index) =>
-        `${index + 1}. ${member.name || 'Unnamed'} (${member.matricNo || 'No matric'})`,
-    )
-    .join('\n')
-
-  proposalForm.value.studentName = proposalForm.value.members[0]?.name || ''
-  proposalForm.value.matricNo = proposalForm.value.members[0]?.matricNo || ''
-}
-
-const addMember = () => {
-  proposalForm.value.members.push({
-    name: '',
-    matricNo: '',
-  })
-
-  updateMemberText()
-}
-
-const removeMember = (index) => {
-  proposalForm.value.members.splice(index, 1)
-  updateMemberText()
 }
 
 const handleFileUpload = async (event) => {
@@ -241,29 +207,7 @@ const handleFileUpload = async (event) => {
   }
 }
 
-const fillSampleProposal = () => {
-  proposalForm.value = {
-    members: [
-      { name: 'Shaikh Amir Husaini Bin Sh.Mohd Saifuddeen', matricNo: 'A24MJ5068' },
-      { name: 'Ahmad Fadzril Bin Ahmad Badril', matricNo: 'A24MJ5050' },
-      { name: 'Sample Student Three', matricNo: 'A24XX0003' },
-      { name: 'Adlan Hazim Bin Abdul Rahman', matricNo: 'A24MJ5056' },
-    ],
-    memberText:
-      '1. Shaikh Amir Husaini Bin Sh.Mohd Saifuddeen (A24MJ5068)\n2. Ahmad Fadzril Bin Ahmad Badril (A24MJ5050)\n3. Sample Student Three (A24XX0003)\n4. Adlan Hazim Bin Abdul Rahman (A24MJ5056)',
-    studentName: 'Shaikh Amir Husaini Bin Sh.Mohd Saifuddeen',
-    matricNo: 'A24MJ5068',
-    projectTitle: 'Software Engineering Smart Academic Advisor (AA) Audit System',
-    projectType: 'Development',
-    abstract:
-      'Managing academic progression is a significant challenge for students who must navigate complex course structures while tracking failed or missed subjects. Traditional methods of checking graduation eligibility are manual and prone to human error, often leading to delayed graduations due to missing credit hours. The system addresses this by implementing a Vue.js-based Credit Audit Dashboard that identifies failed or missed subjects and calculates remaining credit hours in real time.',
-    keywords:
-      'Vue.js, Academic Advisor, Credit Audit Dashboard, Reactive State Management, Pinia, Academic Progression, Graduation Eligibility',
-  }
 
-  extractSuccess.value = 'Sample proposal data filled.'
-  extractError.value = ''
-}
 
 
 const updateProjectStatus = async (status, matchScore = null) => {
@@ -465,16 +409,8 @@ onMounted(async () => {
 
             <div class="flex flex-col sm:flex-row gap-3">
               <button
-                @click="loadSubmittedProposalQueue"
-                class="bg-[#f8be17] text-[#5c001f] px-6 py-3 rounded-full font-bold hover:bg-[#ffd45a] transition-colors shadow-md border-none flex items-center gap-2"
-              >
-                <Sparkles class="w-5 h-5" />
-                Fill Demo Data
-              </button>
-
-              <button
                 @click="goToDashboard"
-                class="bg-white/10 text-white px-6 py-3 rounded-full font-bold hover:bg-white/20 transition-colors border border-white/20 flex items-center gap-2"
+                class="bg-white/10 text-white px-6 py-3 rounded-full font-bold hover:bg-white/20 transition-colors border border-white/20 flex items-center gap-2 cursor-pointer"
               >
                 Back Dashboard
                 <ArrowRight class="w-5 h-5" />
@@ -634,7 +570,7 @@ onMounted(async () => {
               <table class="w-full text-sm bg-white">
                 <thead class="bg-[#5c001f] text-white">
                   <tr class="text-left">
-                    <th class="px-5 py-4">Student / Members</th>
+                    <th class="px-5 py-4">Student Info</th>
                     <th class="px-5 py-4">Project Title</th>
                     <th class="px-5 py-4">Proposal Status</th>
                     <th class="px-5 py-4">AI Status</th>
@@ -668,10 +604,10 @@ onMounted(async () => {
                   class="border-t border-[#e1d5cc]"
                   :class="String(selectedQueueProjectId) === String(project.project_id) ? 'bg-[#fff3c4]' : ''"
                 >
-                  <td class="px-5 py-4 font-bold">
-                    {{ project.studentName }}
-                    <br />
-                    <span class="text-xs text-gray-500 font-medium">{{ project.matricNo }}</span>
+                  <td class="px-5 py-4">
+                    <div class="font-bold text-slate-900 text-base">{{ project.studentName }}</div>
+                    <div class="text-xs text-slate-600 font-medium">{{ project.matricNo }}</div>
+                    <div v-if="project.studentEmail || project.email" class="text-xs text-slate-500 font-normal">{{ project.studentEmail || project.email }}</div>
                   </td>
 
                   <td class="px-5 py-4 font-bold max-w-[240px]">
@@ -757,9 +693,12 @@ onMounted(async () => {
                     </div>
 
                     <div class="bg-white/10 rounded-[18px] p-4 border border-white/10">
-                      <p class="text-xs text-[#f8be17] font-bold uppercase">Project Members</p>
+                      <p class="text-xs text-[#f8be17] font-bold uppercase">Student Details</p>
                       <p class="font-semibold mt-1">
-                        {{ proposalForm.members.length }} member(s)
+                        {{ proposalForm.studentName || 'Student' }}
+                      </p>
+                      <p class="text-xs text-white/80 mt-1">
+                        {{ proposalForm.matricNo || 'No matric' }} <span v-if="proposalForm.studentEmail">· {{ proposalForm.studentEmail }}</span>
                       </p>
                     </div>
 
@@ -1202,7 +1141,7 @@ onMounted(async () => {
                 <thead class="bg-[#5c001f] text-white">
                   <tr>
                     <th class="px-5 py-4 text-sm font-bold">No.</th>
-                    <th class="px-5 py-4 text-sm font-bold">Members</th>
+                    <th class="px-5 py-4 text-sm font-bold">Student Info</th>
                     <th class="px-5 py-4 text-sm font-bold">Project Title</th>
                     <th class="px-5 py-4 text-sm font-bold">Supervisor</th>
                     <th class="px-5 py-4 text-sm font-bold">Score</th>
@@ -1221,17 +1160,9 @@ onMounted(async () => {
                     </td>
 
                     <td class="px-5 py-4">
-                      <p class="font-bold">{{ project.memberCount }} member(s)</p>
-                      <p
-                        v-for="member in project.members.slice(0, 2)"
-                        :key="member.member_id"
-                        class="text-xs text-gray-500 mt-1"
-                      >
-                        {{ member.name }} ({{ member.matricNo }})
-                      </p>
-                      <p v-if="project.members.length > 2" class="text-xs text-gray-500 mt-1">
-                        +{{ project.members.length - 2 }} more
-                      </p>
+                      <p class="font-bold text-slate-900">{{ project.studentName || project.members?.[0]?.name || 'Student' }}</p>
+                      <p class="text-xs text-slate-600 font-medium mt-0.5">{{ project.matricNo || project.members?.[0]?.matricNo || '' }}</p>
+                      <p v-if="project.studentEmail || project.email || project.members?.[0]?.email" class="text-xs text-slate-500 mt-0.5">{{ project.studentEmail || project.email || project.members?.[0]?.email }}</p>
                     </td>
 
                     <td class="px-5 py-4 text-gray-700 max-w-[360px]">
@@ -1303,19 +1234,19 @@ onMounted(async () => {
               </p>
 
               <p>
-                <span class="font-bold">Members:</span>
-                {{ proposalForm.members.length }} member(s)
+                <span class="font-bold">Student Name:</span>
+                {{ proposalForm.studentName }}
               </p>
 
-              <div class="pt-2">
-                <p
-                  v-for="member in proposalForm.members"
-                  :key="member.matricNo"
-                  class="text-xs text-gray-600 mt-1"
-                >
-                  {{ member.name }} ({{ member.matricNo }})
-                </p>
-              </div>
+              <p>
+                <span class="font-bold">Matric No:</span>
+                {{ proposalForm.matricNo || '-' }}
+              </p>
+
+              <p v-if="proposalForm.studentEmail">
+                <span class="font-bold">Email:</span>
+                {{ proposalForm.studentEmail }}
+              </p>
             </div>
           </div>
 
