@@ -14,18 +14,19 @@ const error = ref('')
 const form = reactive({
   fullName: '', phoneNumber: '', companyName: '', expertise: '', affiliation: '',
   department: '', organisation: '', biography: '', profilePhotoUrl: '', professionalLink: '',
-  isAvailable: true, supervisorSpecialisation: '', examinerSpecialisation: '',
+  isAvailable: true, specialisation: '', supervisorSpecialisation: '', examinerSpecialisation: '',
 })
 
 onMounted(async () => {
   try {
     const profile = (await api.get('/profile')).data.profile || {}
+    const spec = profile.specialisation || profile.supervisor_specialisation || profile.examiner_specialisation || ''
     Object.assign(form, {
       fullName: profile.full_name || '', phoneNumber: profile.phone_number || '', companyName: profile.company_name || '',
       expertise: profile.expertise || '', affiliation: profile.affiliation || '', department: profile.department || '',
       organisation: profile.organisation || '', biography: profile.biography || '', profilePhotoUrl: profile.profile_photo_url || '',
       professionalLink: profile.professional_link || '', isAvailable: Number(profile.is_available ?? 1) === 1,
-      supervisorSpecialisation: profile.supervisor_specialisation || '', examinerSpecialisation: profile.examiner_specialisation || '',
+      specialisation: spec, supervisorSpecialisation: spec, examinerSpecialisation: spec,
     })
   } catch (err) { error.value = err.response?.data?.error || err.message }
   finally { loading.value = false }
@@ -33,7 +34,11 @@ onMounted(async () => {
 
 async function save() {
   saving.value = true; error.value = ''; message.value = ''
-  try { await api.patch('/profile', form); message.value = 'Profile updated successfully.' }
+  try {
+    form.supervisorSpecialisation = form.specialisation
+    form.examinerSpecialisation = form.specialisation
+    await api.patch('/profile', form); message.value = 'Profile updated successfully.'
+  }
   catch (err) { error.value = err.response?.data?.error || err.message }
   finally { saving.value = false }
 }
@@ -96,14 +101,9 @@ async function save() {
               <input v-model="form.expertise" class="w-full border-2 border-slate-300 rounded-xl px-4 py-3 text-slate-900 bg-slate-50/50 font-medium placeholder:text-slate-400 focus:bg-white focus:border-[#5c001f] focus:outline-none focus:ring-4 focus:ring-[#5c001f]/15 transition-all" placeholder="AI, software engineering, IoT..." />
             </label>
 
-            <label v-if="roles.isSupervisor" class="space-y-1.5 block">
-              <span class="text-slate-900 font-bold text-sm sm:text-base block">Supervisor specialisation</span>
-              <input v-model="form.supervisorSpecialisation" class="w-full border-2 border-slate-300 rounded-xl px-4 py-3 text-slate-900 bg-slate-50/50 font-medium placeholder:text-slate-400 focus:bg-white focus:border-[#5c001f] focus:outline-none focus:ring-4 focus:ring-[#5c001f]/15 transition-all" />
-            </label>
-
-            <label v-if="roles.isExaminer" class="space-y-1.5 block">
-              <span class="text-slate-900 font-bold text-sm sm:text-base block">Examiner specialisation</span>
-              <input v-model="form.examinerSpecialisation" class="w-full border-2 border-slate-300 rounded-xl px-4 py-3 text-slate-900 bg-slate-50/50 font-medium placeholder:text-slate-400 focus:bg-white focus:border-[#5c001f] focus:outline-none focus:ring-4 focus:ring-[#5c001f]/15 transition-all" />
+            <label v-if="roles.isSupervisor || roles.isExaminer || roles.isStaff" class="space-y-1.5 block lg:col-span-2">
+              <span class="text-slate-900 font-bold text-sm sm:text-base block">Specialisation</span>
+              <input v-model="form.specialisation" class="w-full border-2 border-slate-300 rounded-xl px-4 py-3 text-slate-900 bg-slate-50/50 font-medium placeholder:text-slate-400 focus:bg-white focus:border-[#5c001f] focus:outline-none focus:ring-4 focus:ring-[#5c001f]/15 transition-all" placeholder="Artificial Intelligence, Software Engineering, Mobile Development..." />
             </label>
 
             <label class="space-y-1.5 block lg:col-span-2">
