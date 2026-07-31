@@ -26,12 +26,12 @@ onMounted(async () => {
 <template>
   <div class="min-h-screen bg-[#e7ded3]">
     <AppHeader />
-    <div class="flex">
+    <div class="flex flex-col md:flex-row flex-1 w-full min-w-0">
       <RoleSidebar role="Staff" />
-      <main class="flex-1 p-8 space-y-7">
-        <section class="rounded-[30px] bg-[#5c001f] text-white p-8 shadow-xl">
-          <p class="text-[#f8be17] uppercase tracking-[0.2em] font-bold">Combined Staff Workspace</p>
-          <h1 class="text-4xl font-bold mt-2">Supervision and Examination</h1>
+      <main class="flex-1 p-4 sm:p-6 lg:p-8 space-y-6 min-w-0 overflow-x-hidden">
+        <section class="rounded-2xl sm:rounded-[30px] bg-[#5c001f] text-white p-5 sm:p-8 shadow-xl">
+          <p class="text-[#f8be17] uppercase tracking-[0.2em] font-bold text-xs sm:text-sm">Combined Staff Workspace</p>
+          <h1 class="text-2xl sm:text-3xl lg:text-4xl font-bold mt-2">Supervision and Examination</h1>
           <p class="text-white/75 mt-2">One account can supervise and examine different FYP projects without exposing unrelated projects.</p>
         </section>
 

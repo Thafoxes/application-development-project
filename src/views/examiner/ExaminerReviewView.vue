@@ -61,7 +61,7 @@ onMounted(load)
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#e7ded3]"><AppHeader /><div class="flex"><RoleSidebar role="Staff" /><main class="flex-1 p-8 space-y-6 min-w-0">
+  <div class="min-h-screen bg-[#e7ded3]"><AppHeader /><div class="flex flex-col md:flex-row flex-1 w-full min-w-0"><RoleSidebar role="Staff" /><main class="flex-1 p-4 sm:p-6 lg:p-8 space-y-6 min-w-0 overflow-x-hidden">
     <button @click="router.push('/examiner-projects')" class="font-bold text-[#5c001f] inline-flex items-center gap-2"><ArrowLeft class="w-5 h-5" /> Assigned Grading FYP</button>
     <div v-if="loading" class="bg-white rounded-2xl p-10"><Loader2 class="animate-spin mx-auto text-[#5c001f]" /></div><div v-else-if="error && !payload.project.project_id" class="bg-red-50 text-red-800 rounded-2xl p-5 font-bold">{{ error }}</div>
     <template v-else>

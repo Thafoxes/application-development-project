@@ -175,15 +175,15 @@ onMounted(loadDashboard)
   <div class="min-h-screen bg-[#e7ded3] text-black font-['Inter']">
     <AppHeader />
 
-    <div class="flex">
+    <div class="flex flex-col md:flex-row flex-1 w-full min-w-0">
       <RoleSidebar role="Student" />
 
-      <main class="flex-1 p-8 space-y-7">
-        <section class="rounded-[32px] bg-[#5c001f] text-white p-8 shadow-xl relative overflow-hidden">
+      <main class="flex-1 p-4 sm:p-6 lg:p-8 space-y-6 min-w-0 overflow-x-hidden">
+        <section class="rounded-2xl sm:rounded-[32px] bg-[#5c001f] text-white p-5 sm:p-8 shadow-xl relative overflow-hidden">
           <div class="absolute -right-16 -top-16 w-56 h-56 rounded-full bg-[#f8be17]/20"></div>
-          <p class="text-[#f8be17] font-bold uppercase tracking-[0.2em]">I-FAMOUS Student</p>
-          <h1 class="text-[36px] font-bold mt-2">Welcome, {{ displayName }}</h1>
-          <p class="text-white/80 mt-2">Track your FYP progress, proposal status, supervisor assignment, logbook and feedback.</p>
+          <p class="text-[#f8be17] font-bold uppercase tracking-[0.2em] text-xs sm:text-sm">I-FAMOUS Student</p>
+          <h1 class="text-2xl sm:text-3xl lg:text-[36px] font-bold mt-2">Welcome, {{ displayName }}</h1>
+          <p class="text-white/80 mt-2 text-sm sm:text-base">Track your FYP progress, proposal status, supervisor assignment, logbook and feedback.</p>
         </section>
 
         <section v-if="errorMessage" class="bg-red-50 border border-red-200 rounded-[24px] p-5 text-red-700 font-bold">

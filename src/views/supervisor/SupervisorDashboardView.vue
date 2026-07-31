@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import AppHeader from '@/components/AppHeader.vue'
+import RoleSidebar from '@/components/RoleSidebar.vue'
 import { openSupervisorProject } from '@/utils/supervisorProjectNavigation'
 import {
   Bell,
@@ -136,31 +137,15 @@ onMounted(loadDashboard)
 <template>
   <div class="min-h-screen bg-[#e7ded3] text-black font-['Inter']">
     <AppHeader />
-    <div class="flex">
-      <aside class="w-[240px] bg-[#f7f1ea] border-r border-[#d8c9bd] min-h-[calc(100vh-70px)] p-4">
-        <div class="bg-white/80 border border-[#e1d5cc] rounded-[18px] p-4 mb-4">
-          <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-[#5c001f]">Supervisor</p>
-          <p class="text-sm text-gray-600 mt-1">Review Workspace</p>
-        </div>
-        <nav class="space-y-2">
-          <button class="w-full bg-[#5c001f] text-white rounded-[14px] px-4 py-3 flex items-center gap-3 font-bold">
-            <LayoutDashboard class="w-5 h-5 text-[#f8be17]" /> Dashboard
-          </button>
-          <button @click="router.push('/supervisor-projects')" class="w-full hover:bg-white rounded-[14px] px-4 py-3 flex items-center gap-3 font-bold">
-            <FileSearch class="w-5 h-5 text-[#5c001f]" /> Assigned Projects
-          </button>
-          <button @click="router.push('/supervisor-logbook')" class="w-full hover:bg-white rounded-[14px] px-4 py-3 flex items-center gap-3 font-bold">
-            <BookOpenCheck class="w-5 h-5 text-[#5c001f]" /> Logbook
-          </button>
-        </nav>
-      </aside>
+    <div class="flex flex-col md:flex-row flex-1 w-full min-w-0">
+      <RoleSidebar role="Staff" />
 
-      <main class="flex-1 p-8 space-y-7">
-        <section class="rounded-[32px] bg-[#5c001f] text-white p-8 shadow-xl relative overflow-hidden">
+      <main class="flex-1 p-4 sm:p-6 lg:p-8 space-y-6 min-w-0 overflow-x-hidden">
+        <section class="rounded-2xl sm:rounded-[32px] bg-[#5c001f] text-white p-5 sm:p-8 shadow-xl relative overflow-hidden">
           <div class="absolute -right-16 -top-16 w-56 h-56 rounded-full bg-[#f8be17]/20"></div>
-          <p class="text-[#f8be17] font-bold uppercase tracking-[0.2em]">I-FAMOUS Supervisor</p>
-          <h1 class="text-[36px] font-bold mt-2">Welcome, {{ displayName }}</h1>
-          <p class="text-white/80 mt-2">Review assigned projects, approve/reject submissions, give feedback and check logbooks.</p>
+          <p class="text-[#f8be17] font-bold uppercase tracking-[0.2em] text-xs sm:text-sm">I-FAMOUS Supervisor</p>
+          <h1 class="text-2xl sm:text-3xl lg:text-[36px] font-bold mt-2">Welcome, {{ displayName }}</h1>
+          <p class="text-white/80 mt-2 text-sm sm:text-base">Review assigned projects, approve/reject submissions, give feedback and check logbooks.</p>
         </section>
 
         <section v-if="errorMessage" class="bg-red-50 border border-red-200 rounded-[24px] p-5 text-red-700 font-bold">

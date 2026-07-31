@@ -69,9 +69,9 @@ const items = computed(() => {
 </script>
 
 <template>
-  <div>
+  <div class="w-full md:w-auto shrink-0">
     <!-- Mobile & Tablet Sticky Toggle Trigger -->
-    <div class="md:hidden p-3 bg-[#f5efe6] border-b border-[#d8c9bd] flex items-center shrink-0">
+    <div class="md:hidden w-full p-3 bg-[#f5efe6] border-b border-[#d8c9bd] flex items-center shrink-0">
       <button
         type="button"
         @click="toggleMobileSidebar"

@@ -224,10 +224,10 @@ onMounted(async () => {
   <div class="min-h-screen bg-[#e7ded3] text-black font-['Inter']">
     <AppHeader />
 
-    <div class="flex">
+    <div class="flex flex-col md:flex-row flex-1 w-full min-w-0">
       <RoleSidebar role="Student" />
 
-      <main class="flex-1 p-8 space-y-7">
+      <main class="flex-1 p-4 sm:p-6 lg:p-8 space-y-6 min-w-0 overflow-x-hidden">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <button
             @click="router.push('/student-fyp')"

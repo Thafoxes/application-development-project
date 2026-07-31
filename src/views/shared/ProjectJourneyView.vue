@@ -230,9 +230,9 @@ onMounted(loadJourney)
 <template>
   <div class="min-h-screen bg-[#e7ded3] text-[#241616]">
     <AppHeader />
-    <div class="flex">
+    <div class="flex flex-col md:flex-row flex-1 w-full min-w-0">
       <RoleSidebar :role="project.accessRole === 'student' ? 'Student' : project.accessRole === 'coordinator' ? 'Coordinator' : 'Staff'" />
-      <main class="flex-1 p-7 lg:p-9 space-y-7 min-w-0">
+      <main class="flex-1 p-4 sm:p-6 lg:p-9 space-y-6 min-w-0 overflow-x-hidden">
         <section class="rounded-[30px] bg-[#5c001f] text-white p-8 shadow-xl relative overflow-hidden">
           <div class="absolute -right-20 -top-20 w-72 h-72 rounded-full bg-[#f8be17]/20" />
           <div class="relative">

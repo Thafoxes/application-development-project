@@ -115,9 +115,9 @@ onMounted(loadProject)
 <template>
   <div class="min-h-screen bg-[#e7ded3] text-[#241616]">
     <AppHeader />
-    <div class="flex">
+    <div class="flex flex-col md:flex-row flex-1 w-full min-w-0">
       <AppSidebar />
-      <main class="flex-1 p-7 lg:p-9 space-y-7 min-w-0">
+      <main class="flex-1 p-4 sm:p-6 lg:p-9 space-y-6 min-w-0 overflow-x-hidden">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <button
             @click="router.push('/manage-fyp')"

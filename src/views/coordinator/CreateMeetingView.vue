@@ -397,12 +397,12 @@ const autoScheduleAll = async () => {
     <AppHeader />
 
     <!-- Main Content Split Layout -->
-    <div class="flex flex-1 w-full relative">
+    <div class="flex flex-col md:flex-row flex-1 w-full min-w-0 relative">
       <!-- Side Navigation -->
       <AppSidebar />
 
       <!-- Main Dashboard Content -->
-      <main class="flex-1 flex flex-col px-[50px] py-[30px] gap-6 overflow-y-auto">
+      <main class="flex-1 flex flex-col px-4 sm:px-6 lg:px-[50px] py-4 sm:py-6 lg:py-[30px] gap-6 overflow-y-auto min-w-0">
         <!-- Breadcrumbs -->
         <div class="text-[#5c001f] text-sm mb-4">
           <span class="hover:underline cursor-pointer" @click="$router.push('/calendar')"

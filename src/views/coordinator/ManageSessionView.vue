@@ -137,18 +137,18 @@ const setActiveSession = async (id) => {
     </div>
 
     <!-- Main Content -->
-    <div v-else class="flex flex-1 w-full relative">
+    <div v-else class="flex flex-col md:flex-row flex-1 w-full min-w-0 relative">
       <!-- Side Navigation -->
       <AppSidebar />
 
       <!-- Main Dashboard Content -->
-      <main class="flex-1 flex flex-col px-[50px] py-[30px] gap-8 overflow-y-auto">
+      <main class="flex-1 flex flex-col px-4 sm:px-6 lg:px-[50px] py-4 sm:py-6 lg:py-[30px] gap-6 sm:gap-8 overflow-y-auto min-w-0">
         <!-- Heading -->
-        <div class="flex items-center justify-between w-full">
-          <h1 class="font-['Inter'] font-bold text-[40px] text-black uppercase">Manage Sessions</h1>
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 w-full">
+          <h1 class="font-['Inter'] font-bold text-2xl sm:text-3xl lg:text-[40px] text-black uppercase">Manage Sessions</h1>
           <button
             @click="isModalOpen = true"
-            class="bg-[#5c001f] text-white px-[24px] py-[16px] rounded-[8px] font-medium text-[16px] hover:bg-[#4a0019] transition-colors shadow-lg border-none"
+            class="bg-[#5c001f] text-white px-5 py-3 rounded-xl font-bold text-sm sm:text-base hover:bg-[#4a0019] transition-colors shadow-lg border-none cursor-pointer"
           >
             Create New Session
           </button>
@@ -159,9 +159,9 @@ const setActiveSession = async (id) => {
 
         <!-- Data Table Container -->
         <div
-          class="bg-white rounded-[25px] p-[30px] flex flex-col gap-[15px] shadow-lg w-full mb-10"
+          class="bg-white rounded-2xl sm:rounded-[25px] p-4 sm:p-[30px] flex flex-col gap-[15px] shadow-lg w-full mb-10 overflow-x-auto"
         >
-          <h2 class="font-['Inter'] font-bold text-[32px] text-black">All Sessions</h2>
+          <h2 class="font-['Inter'] font-bold text-xl sm:text-2xl lg:text-[32px] text-black">All Sessions</h2>
 
           <div v-if="isLoading" class="text-gray-500 py-4 font-medium">Loading sessions...</div>
           <div v-else-if="error" class="text-red-500 py-4 font-medium">{{ error }}</div>

@@ -66,35 +66,35 @@ onMounted(() => {
     </div>
 
     <!-- Main Content Split Layout for Coordinators -->
-    <div v-else class="flex flex-1 w-full relative">
+    <div v-else class="flex flex-col md:flex-row flex-1 w-full min-w-0 relative">
       <AppSidebar />
 
       <!-- Main Dashboard Content -->
-      <main class="flex-1 flex flex-col px-[50px] py-[30px] gap-8 overflow-y-auto">
+      <main class="flex-1 flex flex-col px-4 sm:px-6 lg:px-[50px] py-4 sm:py-6 lg:py-[30px] gap-6 sm:gap-8 overflow-y-auto min-w-0">
         <!-- Hero / Dashboard Header -->
         <section
-          class="relative overflow-hidden rounded-[32px] bg-[#5c001f] text-white shadow-xl border border-black/10"
+          class="relative overflow-hidden rounded-2xl sm:rounded-[32px] bg-[#5c001f] text-white shadow-xl border border-black/10"
         >
           <div class="absolute -right-16 -top-16 w-56 h-56 rounded-full bg-[#f8be17]/20"></div>
           <div class="absolute right-20 bottom-[-70px] w-40 h-40 rounded-full bg-white/10"></div>
 
-          <div class="relative p-8 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-6">
+          <div class="relative p-5 sm:p-8 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-6">
             <div>
-              <div class="flex items-center gap-3 mb-4">
+              <div class="flex items-center gap-3 mb-3 sm:mb-4">
                 <div
-                  class="w-12 h-12 rounded-2xl bg-[#f8be17] flex items-center justify-center shadow-md"
+                  class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-[#f8be17] flex items-center justify-center shadow-md shrink-0"
                 >
-                  <BarChart3 class="w-7 h-7 text-[#5c001f]" />
+                  <BarChart3 class="w-6 h-6 sm:w-7 sm:h-7 text-[#5c001f]" />
                 </div>
                 <div>
-                  <p class="text-[#f8be17] font-bold text-sm uppercase tracking-[0.2em]">
+                  <p class="text-[#f8be17] font-bold text-xs sm:text-sm uppercase tracking-[0.2em]">
                     I-FAMOUS Coordinator
                   </p>
-                  <h1 class="font-bold text-[36px] leading-tight">Dashboard Overview</h1>
+                  <h1 class="font-bold text-2xl sm:text-3xl lg:text-[36px] leading-tight">Dashboard Overview</h1>
                 </div>
               </div>
 
-              <p class="text-white/80 max-w-3xl text-[16px] leading-relaxed">
+              <p class="text-white/80 max-w-3xl text-sm sm:text-base leading-relaxed">
                 Monitor FYP sessions, proposal progress, user data, timetable readiness, and AI
                 assisted coordination from one centralized workspace.
               </p>
@@ -103,7 +103,7 @@ onMounted(() => {
             <div class="flex flex-col sm:flex-row gap-3">
               <button
                 @click="isModalOpen = true"
-                class="bg-[#f8be17] text-[#5c001f] px-6 py-3 rounded-full font-bold hover:bg-[#ffd45a] transition-colors shadow-md border-none flex items-center gap-2"
+                class="bg-[#f8be17] text-[#5c001f] px-6 py-3 rounded-full font-bold hover:bg-[#ffd45a] transition-colors shadow-md border-none flex items-center justify-center gap-2 text-sm sm:text-base cursor-pointer"
               >
                 <CalendarDays class="w-5 h-5" />
                 Create Session
@@ -111,7 +111,7 @@ onMounted(() => {
 
               <button
                 @click="goTo('/manage-fyp')"
-                class="bg-white/10 text-white px-6 py-3 rounded-full font-bold hover:bg-white/20 transition-colors border border-white/20 flex items-center gap-2"
+                class="bg-white/10 text-white px-6 py-3 rounded-full font-bold hover:bg-white/20 transition-colors border border-white/20 flex items-center justify-center gap-2 text-sm sm:text-base cursor-pointer"
               >
                 <Sparkles class="w-5 h-5 text-[#f8be17]" />
                 Manage FYP
@@ -122,13 +122,13 @@ onMounted(() => {
 
         <!-- Current Session + AI Status -->
         <section class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-          <div class="xl:col-span-2 bg-white rounded-[28px] p-7 shadow-lg border border-black/10">
+          <div class="xl:col-span-2 bg-white rounded-2xl sm:rounded-[28px] p-5 sm:p-7 shadow-lg border border-black/10">
             <div class="flex items-start justify-between gap-4">
               <div>
-                <p class="text-sm font-bold text-[#5c001f] uppercase tracking-[0.18em]">
+                <p class="text-xs sm:text-sm font-bold text-[#5c001f] uppercase tracking-[0.18em]">
                   Active Session
                 </p>
-                <h2 class="text-[34px] font-bold mt-2">
+                <h2 class="text-xl sm:text-2xl lg:text-[34px] font-bold mt-1.5">
                   {{
                     calendarStore.isLoading
                       ? 'Loading session...'
@@ -137,34 +137,34 @@ onMounted(() => {
                         : 'No active session'
                   }}
                 </h2>
-                <p class="text-gray-600 mt-2">
+                <p class="text-gray-600 mt-2 text-xs sm:text-base">
                   Active session controls the calendar, timetable, FYP project assignment, and
                   coordinator monitoring workflow.
                 </p>
               </div>
 
               <div
-                class="w-16 h-16 rounded-2xl bg-[#e7ded3] flex items-center justify-center shrink-0"
+                class="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-[#e7ded3] flex items-center justify-center shrink-0"
               >
-                <Clock class="w-8 h-8 text-[#5c001f]" />
+                <Clock class="w-6 h-6 sm:w-8 sm:h-8 text-[#5c001f]" />
               </div>
             </div>
 
-            <div class="mt-6 flex flex-wrap gap-3">
+            <div class="mt-6 flex flex-wrap gap-2.5 sm:gap-3">
               <span
-                class="px-4 py-2 rounded-full bg-green-100 text-green-700 font-bold text-sm flex items-center gap-2"
+                class="px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full bg-green-100 text-green-700 font-bold text-xs sm:text-sm flex items-center gap-2"
               >
                 <CheckCircle2 class="w-4 h-4" />
                 System Online
               </span>
               <span
-                class="px-4 py-2 rounded-full bg-[#fff3c4] text-[#5c001f] font-bold text-sm flex items-center gap-2"
+                class="px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full bg-[#fff3c4] text-[#5c001f] font-bold text-xs sm:text-sm flex items-center gap-2"
               >
                 <Sparkles class="w-4 h-4" />
                 AI Assistant Ready
               </span>
               <span
-                class="px-4 py-2 rounded-full bg-[#e7ded3] text-gray-700 font-bold text-sm flex items-center gap-2"
+                class="px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full bg-[#e7ded3] text-gray-700 font-bold text-xs sm:text-sm flex items-center gap-2"
               >
                 <ShieldCheck class="w-4 h-4" />
                 Coordinator Access
@@ -172,23 +172,23 @@ onMounted(() => {
             </div>
           </div>
 
-          <div class="bg-[#f8be17] rounded-[28px] p-7 shadow-lg border border-black/10">
+          <div class="bg-[#f8be17] rounded-2xl sm:rounded-[28px] p-5 sm:p-7 shadow-lg border border-black/10">
             <div class="flex items-center justify-between">
               <div>
-                <p class="text-sm font-bold text-[#5c001f] uppercase tracking-[0.18em]">
+                <p class="text-xs sm:text-sm font-bold text-[#5c001f] uppercase tracking-[0.18em]">
                   AI Workflow
                 </p>
-                <h3 class="text-[28px] font-bold text-[#5c001f] mt-2">Supervisor Matching</h3>
+                <h3 class="text-xl sm:text-[28px] font-bold text-[#5c001f] mt-1">Supervisor Matching</h3>
               </div>
-              <Sparkles class="w-12 h-12 text-[#5c001f]" />
+              <Sparkles class="w-10 h-10 sm:w-12 sm:h-12 text-[#5c001f]" />
             </div>
-            <p class="text-[#5c001f]/80 mt-4 text-sm leading-relaxed">
+            <p class="text-[#5c001f]/80 mt-3 text-xs sm:text-sm leading-relaxed">
               Next prototype module: upload or enter proposal details, compare with lecturer
               expertise, and recommend the best supervisor.
             </p>
             <button
               @click="goTo('/manage-fyp')"
-              class="mt-5 bg-[#5c001f] text-white px-5 py-3 rounded-full font-bold hover:bg-[#4a0019] transition-colors border-none flex items-center gap-2"
+              class="mt-4 sm:mt-5 bg-[#5c001f] text-white px-5 py-2.5 sm:py-3 rounded-full font-bold hover:bg-[#4a0019] transition-colors border-none flex items-center gap-2 text-xs sm:text-sm cursor-pointer"
             >
               Open Manage FYP
               <ArrowRight class="w-4 h-4" />
@@ -276,7 +276,7 @@ onMounted(() => {
               </button>
             </div>
 
-            <div class="overflow-hidden rounded-[20px] border border-gray-200">
+            <div class="overflow-x-auto rounded-[20px] border border-gray-200">
               <table class="w-full text-left">
                 <thead class="bg-[#5c001f] text-white">
                   <tr>

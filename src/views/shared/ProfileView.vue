@@ -42,7 +42,7 @@ async function save() {
 <template>
   <div class="min-h-screen bg-[#f5efe6] flex flex-col">
     <AppHeader />
-    <div class="flex flex-1">
+    <div class="flex flex-col md:flex-row flex-1 w-full min-w-0">
       <AppSidebar v-if="roles.isCoordinator" />
       <RoleSidebar v-else :role="roles.isStudent ? 'Student' : 'Staff'" />
       <main class="flex-1 p-4 sm:p-6 lg:p-8 space-y-6 max-w-6xl w-full">

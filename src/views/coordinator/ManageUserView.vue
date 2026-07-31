@@ -104,12 +104,12 @@ const onUserUpdatedOrCreated = () => {
       </p>
     </div>
 
-    <div v-else class="flex flex-1 w-full relative">
+    <div v-else class="flex flex-col md:flex-row flex-1 w-full min-w-0 relative">
       <AppSidebar />
 
-      <main class="flex-1 flex flex-col px-[50px] py-[30px] gap-8 overflow-y-auto">
+      <main class="flex-1 flex flex-col px-4 sm:px-6 lg:px-[50px] py-4 sm:py-6 lg:py-[30px] gap-6 sm:gap-8 overflow-y-auto min-w-0">
         <div>
-          <h1 class="font-['Inter'] font-bold text-[40px] text-[#5c001f] uppercase">Manage User</h1>
+          <h1 class="font-['Inter'] font-bold text-2xl sm:text-3xl lg:text-[40px] text-[#5c001f] uppercase">Manage User</h1>
           <p class="text-gray-700 mt-2">
             Create new internal or external users, and view recently joined users.
           </p>

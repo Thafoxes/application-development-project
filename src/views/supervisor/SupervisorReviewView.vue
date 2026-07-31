@@ -203,9 +203,9 @@ onMounted(loadProject);
   <div class="min-h-screen bg-[#e7ded3] text-black font-['Inter']">
     <AppHeader />
 
-    <div class="flex">
+    <div class="flex flex-col md:flex-row flex-1 w-full min-w-0">
       <RoleSidebar role="Staff" />
-      <main class="flex-1 max-w-6xl mx-auto p-8 space-y-7 min-w-0">
+      <main class="flex-1 max-w-6xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6 min-w-0 overflow-x-hidden">
       <button
         @click="router.push('/supervisor-projects')"
         class="inline-flex items-center gap-2 text-[#5c001f] font-bold"

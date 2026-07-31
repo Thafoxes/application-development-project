@@ -509,10 +509,10 @@ const updateFromJson = () => {
   <div class="min-h-screen flex flex-col bg-[#e7ded3] w-full font-['Inter'] text-black">
     <AppHeader />
 
-    <div class="flex flex-1 w-full relative">
+    <div class="flex flex-col md:flex-row flex-1 w-full min-w-0 relative">
       <AppSidebar />
 
-      <main class="flex-1 flex flex-col px-[50px] py-[30px] overflow-y-auto">
+      <main class="flex-1 flex flex-col px-4 sm:px-6 lg:px-[50px] py-4 sm:py-6 lg:py-[30px] overflow-y-auto min-w-0">
         <!-- Breadcrumbs -->
         <div class="text-[#5c001f] text-sm mb-4">
           <span class="hover:underline cursor-pointer" @click="router.push('/calendar')">

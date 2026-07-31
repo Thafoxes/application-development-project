@@ -20,15 +20,15 @@ onMounted(() => {
     <AppHeader />
 
     <!-- Main Content Split Layout -->
-    <div class="flex flex-1 w-full relative">
+    <div class="flex flex-col md:flex-row flex-1 w-full min-w-0 relative">
       <!-- Side Navigation -->
       <AppSidebar />
 
       <!-- Main Dashboard Content -->
-      <main class="flex-1 flex flex-col px-[50px] py-[30px] gap-8 overflow-y-auto">
+      <main class="flex-1 flex flex-col px-4 sm:px-6 lg:px-[50px] py-4 sm:py-6 lg:py-[30px] gap-6 sm:gap-8 overflow-y-auto min-w-0">
         <!-- Heading -->
         <div class="flex items-center justify-between w-full">
-          <h1 class="font-['Inter'] font-bold text-[40px] text-black uppercase">CALENDAR</h1>
+          <h1 class="font-['Inter'] font-bold text-2xl sm:text-3xl lg:text-[40px] text-black uppercase">CALENDAR</h1>
         </div>
 
         <!-- Divider -->

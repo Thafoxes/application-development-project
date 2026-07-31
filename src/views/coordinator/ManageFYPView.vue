@@ -430,35 +430,35 @@ onMounted(async () => {
   <div class="min-h-screen flex flex-col bg-[#e7ded3] w-full font-['Inter'] text-black">
     <AppHeader />
 
-    <div class="flex flex-1 w-full relative">
+    <div class="flex flex-col md:flex-row flex-1 w-full min-w-0 relative">
       <AppSidebar />
 
-      <main class="flex-1 flex flex-col px-[50px] py-[30px] gap-8 overflow-y-auto">
+      <main class="flex-1 flex flex-col px-4 sm:px-6 lg:px-[50px] py-4 sm:py-6 lg:py-[30px] gap-6 sm:gap-8 overflow-y-auto min-w-0">
         <!-- Page Header -->
         <section
-          class="relative overflow-hidden rounded-[32px] bg-[#5c001f] text-white shadow-xl border border-black/10"
+          class="relative overflow-hidden rounded-2xl sm:rounded-[32px] bg-[#5c001f] text-white shadow-xl border border-black/10"
         >
           <div class="absolute -right-16 -top-16 w-56 h-56 rounded-full bg-[#f8be17]/20"></div>
           <div class="absolute right-20 bottom-[-70px] w-40 h-40 rounded-full bg-white/10"></div>
 
-          <div class="relative p-8 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-6">
+          <div class="relative p-5 sm:p-8 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-6">
             <div>
-              <div class="flex items-center gap-3 mb-4">
+              <div class="flex items-center gap-3 mb-3 sm:mb-4">
                 <div
-                  class="w-12 h-12 rounded-2xl bg-[#f8be17] flex items-center justify-center shadow-md"
+                  class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-[#f8be17] flex items-center justify-center shadow-md shrink-0"
                 >
-                  <FolderKanban class="w-7 h-7 text-[#5c001f]" />
+                  <FolderKanban class="w-6 h-6 sm:w-7 sm:h-7 text-[#5c001f]" />
                 </div>
 
                 <div>
-                  <p class="text-[#f8be17] font-bold text-sm uppercase tracking-[0.2em]">
+                  <p class="text-[#f8be17] font-bold text-xs sm:text-sm uppercase tracking-[0.2em]">
                     Coordinator Module
                   </p>
-                  <h1 class="font-bold text-[36px] leading-tight">Manage FYP Proposals</h1>
+                  <h1 class="font-bold text-2xl sm:text-3xl lg:text-[36px] leading-tight">Manage FYP Proposals</h1>
                 </div>
               </div>
 
-              <p class="text-white/80 max-w-3xl text-[16px] leading-relaxed">
+              <p class="text-white/80 max-w-3xl text-sm sm:text-base leading-relaxed">
                 Review student-submitted proposal records, run AI supervisor matching, assign supervisors and examiners, and monitor project status.
               </p>
             </div>

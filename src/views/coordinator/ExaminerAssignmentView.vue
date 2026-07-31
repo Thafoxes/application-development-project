@@ -137,11 +137,11 @@ onMounted(loadQueue)
 <template>
   <div class="min-h-screen bg-[#e7ded3]">
     <AppHeader />
-    <div class="flex">
+    <div class="flex flex-col md:flex-row flex-1 w-full min-w-0">
       <AppSidebar />
-      <main class="flex-1 p-8 space-y-6 min-w-0">
-        <section class="bg-[#5c001f] text-white rounded-[30px] p-8 shadow-xl">
-          <p class="text-[#f8be17] font-bold uppercase tracking-[0.2em] flex gap-2">
+      <main class="flex-1 p-4 sm:p-6 lg:p-8 space-y-6 min-w-0 overflow-x-hidden">
+        <section class="bg-[#5c001f] text-white rounded-2xl sm:rounded-[30px] p-5 sm:p-8 shadow-xl">
+          <p class="text-[#f8be17] font-bold uppercase tracking-[0.2em] text-xs sm:text-sm flex items-center gap-2">
             <Sparkles class="w-5 h-5" /> Coordinator AI Matching
           </p>
           <h1 class="text-4xl font-bold mt-2">Assign Examiner</h1>

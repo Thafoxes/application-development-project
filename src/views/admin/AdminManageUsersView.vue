@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import AppHeader from '@/components/AppHeader.vue'
+import RoleSidebar from '@/components/RoleSidebar.vue'
 import { Users,
 LayoutDashboard, ShieldCheck, KeyRound, Save, X } from 'lucide-vue-next'
 
@@ -144,25 +145,13 @@ onMounted(loadUsers)
   <div class="min-h-screen bg-[#e7ded3] text-black font-sans">
     <AppHeader />
 
-    <div class="flex">
-      <aside class="w-[240px] bg-[#f7f1ea] border-r border-[#d8c9bd] min-h-[calc(100vh-70px)] p-4">
-        <div class="bg-white/70 border border-[#e1d5cc] rounded-[18px] p-4 mb-4">
-          <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-[#5c001f]">Admin</p>
-          <p class="text-sm text-gray-600 mt-1">System Control</p>
-        </div>
+    <div class="flex flex-col md:flex-row flex-1 w-full min-w-0">
+      <RoleSidebar role="Coordinator" />
 
-        <button @click="router.push('/admin-dashboard')" class="w-full flex items-center gap-3 px-4 py-3 rounded-[14px] hover:bg-white font-bold text-[#2b1b1b] mb-2">
-          <LayoutDashboard class="w-5 h-5 text-[#5c001f]" /> Dashboard
-        </button>
-        <button class="w-full flex items-center gap-3 px-4 py-3 rounded-[14px] bg-[#5c001f] text-white font-bold">
-          <Users class="w-5 h-5" /> Manage Users
-        </button>
-      </aside>
-
-      <main class="flex-1 px-10 py-8 space-y-6">
-        <section class="rounded-[28px] bg-[#5c001f] text-white p-8 shadow-lg">
-          <p class="uppercase tracking-[0.25em] text-[#f8be17] text-sm font-bold">Admin Module</p>
-          <h1 class="text-4xl font-extrabold mt-2">Manage Users & Roles</h1>
+      <main class="flex-1 p-4 sm:p-6 lg:p-8 space-y-6 min-w-0 overflow-x-hidden">
+        <section class="rounded-2xl sm:rounded-[28px] bg-[#5c001f] text-white p-5 sm:p-8 shadow-lg">
+          <p class="uppercase tracking-[0.25em] text-[#f8be17] text-xs sm:text-sm font-bold">Admin Module</p>
+          <h1 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold mt-2">Manage Users & Roles</h1>
           <p class="mt-3 text-white/80">Edit account roles, student details, supervisor capacity, examiner data and reset passwords.</p>
         </section>
 

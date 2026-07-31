@@ -10,13 +10,13 @@ const router = useRouter()
 <template>
   <div class="min-h-screen bg-[#e7ded3] text-black font-['Inter']">
     <AppHeader />
-    <div class="flex">
+    <div class="flex flex-col md:flex-row flex-1 w-full min-w-0">
       <RoleSidebar role="Student" />
 
-      <main class="flex-1 p-8 space-y-7">
-        <section class="rounded-[32px] bg-[#5c001f] text-white p-8 shadow-xl">
-          <p class="text-[#f8be17] font-bold uppercase tracking-[0.2em]">Student Logbook</p>
-          <h1 class="text-[36px] font-bold mt-2">Digital Logbook</h1>
+      <main class="flex-1 p-4 sm:p-6 lg:p-8 space-y-6 min-w-0 overflow-x-hidden">
+        <section class="rounded-2xl sm:rounded-[32px] bg-[#5c001f] text-white p-5 sm:p-8 shadow-xl">
+          <p class="text-[#f8be17] font-bold uppercase tracking-[0.2em] text-xs sm:text-sm">Student Logbook</p>
+          <h1 class="text-2xl sm:text-3xl lg:text-[36px] font-bold mt-2">Digital Logbook</h1>
           <p class="text-white/80 mt-2">This module will allow students to submit weekly progress logs after FYP supervision starts.</p>
         </section>
 
