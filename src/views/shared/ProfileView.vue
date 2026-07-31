@@ -1,6 +1,6 @@
 <script setup>
 import { onMounted, reactive, ref } from 'vue'
-import { Loader2, Save, UserRound } from 'lucide-vue-next'
+import { Loader2, Save, UserRound, X } from 'lucide-vue-next'
 import AppHeader from '@/components/AppHeader.vue'
 import RoleSidebar from '@/components/RoleSidebar.vue'
 import AppSidebar from '@/components/AppSidebar.vue'
@@ -11,16 +11,51 @@ const loading = ref(true)
 const saving = ref(false)
 const message = ref('')
 const error = ref('')
+
+const specialisationTags = ref([])
+const tagInput = ref('')
+
 const form = reactive({
   fullName: '', phoneNumber: '', companyName: '', expertise: '', affiliation: '',
   department: '', organisation: '', biography: '', profilePhotoUrl: '', professionalLink: '',
   isAvailable: true, specialisation: '', supervisorSpecialisation: '', examinerSpecialisation: '',
 })
 
+function parseTags(rawString) {
+  if (!rawString) return []
+  return rawString
+    .split(/[,;\n]+/)
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0)
+}
+
+function addTag() {
+  const val = tagInput.value.trim().replace(/^[,\s]+|[,\s]+$/g, '')
+  if (val && !specialisationTags.value.includes(val)) {
+    specialisationTags.value.push(val)
+  }
+  tagInput.value = ''
+}
+
+function removeTag(index) {
+  specialisationTags.value.splice(index, 1)
+}
+
+function handleKeydown(event) {
+  if (event.key === 'Enter' || event.key === ',') {
+    event.preventDefault()
+    addTag()
+  } else if (event.key === 'Backspace' && tagInput.value === '' && specialisationTags.value.length > 0) {
+    specialisationTags.value.pop()
+  }
+}
+
 onMounted(async () => {
   try {
     const profile = (await api.get('/profile')).data.profile || {}
     const spec = profile.specialisation || profile.supervisor_specialisation || profile.examiner_specialisation || ''
+    specialisationTags.value = parseTags(spec)
+
     Object.assign(form, {
       fullName: profile.full_name || '', phoneNumber: profile.phone_number || '', companyName: profile.company_name || '',
       expertise: profile.expertise || '', affiliation: profile.affiliation || '', department: profile.department || '',
@@ -35,8 +70,14 @@ onMounted(async () => {
 async function save() {
   saving.value = true; error.value = ''; message.value = ''
   try {
-    form.supervisorSpecialisation = form.specialisation
-    form.examinerSpecialisation = form.specialisation
+    if (tagInput.value.trim()) {
+      addTag()
+    }
+    const joinedSpec = specialisationTags.value.join(', ')
+    form.specialisation = joinedSpec
+    form.supervisorSpecialisation = joinedSpec
+    form.examinerSpecialisation = joinedSpec
+
     await api.patch('/profile', form); message.value = 'Profile updated successfully.'
   }
   catch (err) { error.value = err.response?.data?.error || err.message }
@@ -101,10 +142,36 @@ async function save() {
               <input v-model="form.expertise" class="w-full border-2 border-slate-300 rounded-xl px-4 py-3 text-slate-900 bg-slate-50/50 font-medium placeholder:text-slate-400 focus:bg-white focus:border-[#5c001f] focus:outline-none focus:ring-4 focus:ring-[#5c001f]/15 transition-all" placeholder="AI, software engineering, IoT..." />
             </label>
 
-            <label v-if="roles.isSupervisor || roles.isExaminer || roles.isStaff" class="space-y-1.5 block lg:col-span-2">
-              <span class="text-slate-900 font-bold text-sm sm:text-base block">Specialisation</span>
-              <input v-model="form.specialisation" class="w-full border-2 border-slate-300 rounded-xl px-4 py-3 text-slate-900 bg-slate-50/50 font-medium placeholder:text-slate-400 focus:bg-white focus:border-[#5c001f] focus:outline-none focus:ring-4 focus:ring-[#5c001f]/15 transition-all" placeholder="Artificial Intelligence, Software Engineering, Mobile Development..." />
-            </label>
+            <div v-if="roles.isSupervisor || roles.isExaminer || roles.isStaff" class="space-y-1.5 block lg:col-span-2">
+              <span class="text-slate-900 font-bold text-sm sm:text-base block">Specialisation <span class="text-xs text-slate-500 font-normal ml-1">(Press Enter or comma to add tag)</span></span>
+              
+              <div class="w-full border-2 border-slate-300 rounded-xl p-2.5 bg-slate-50/50 focus-within:bg-white focus-within:border-[#5c001f] focus-within:ring-4 focus-within:ring-[#5c001f]/15 transition-all flex flex-wrap items-center gap-2 min-h-[52px]">
+                <span
+                  v-for="(tag, index) in specialisationTags"
+                  :key="index"
+                  class="inline-flex items-center gap-1.5 bg-[#5c001f] text-white px-3 py-1.5 rounded-lg text-sm font-bold shadow-xs transition-all hover:bg-[#430016]"
+                >
+                  <span>{{ tag }}</span>
+                  <button
+                    type="button"
+                    @click.prevent="removeTag(index)"
+                    class="hover:bg-white/20 rounded-full p-0.5 transition-colors cursor-pointer inline-flex items-center justify-center w-4 h-4 text-xs font-extrabold"
+                    title="Remove tag"
+                  >
+                    ✕
+                  </button>
+                </span>
+
+                <input
+                  v-model="tagInput"
+                  @keydown="handleKeydown"
+                  @blur="addTag"
+                  type="text"
+                  class="flex-1 bg-transparent border-none outline-none text-slate-900 font-medium text-base min-w-[200px] placeholder:text-slate-400 py-1 px-1"
+                  placeholder="Type specialisation and press Enter or comma..."
+                />
+              </div>
+            </div>
 
             <label class="space-y-1.5 block lg:col-span-2">
               <span class="text-slate-900 font-bold text-sm sm:text-base block">Biography</span>
