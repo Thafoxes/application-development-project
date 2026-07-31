@@ -153,18 +153,102 @@ router.get("/projects/:projectId/journey", async (req, res) => {
 router.get(
   "/projects/:projectId/supervisor-candidates",
   requireProjectRole("student", "coordinator", "admin"),
-  async (_req, res) => {
+  async (req, res) => {
     try {
-      const rows = await query(
-        `SELECT u.user_id, u.full_name, u.email, u.expertise, u.affiliation,
-                s.research_expertise, s.sv_capacity, s.current_capacity
-         FROM supervisor s JOIN users u ON u.user_id = s.supervisor_id
-         ORDER BY (s.current_capacity >= s.sv_capacity), s.current_capacity, u.full_name`
+      const projectId = req.params.projectId;
+
+      // 1. Fetch Project details for AI matching
+      const projectRows = await query(
+        `SELECT project_id, project_title, abstract, keywords, project_type
+         FROM fyp_projects WHERE project_id = ?`,
+        [projectId]
       );
-      res.json({ success: true, candidates: rows.map((row) => ({
-        ...row,
-        available: Number(row.current_capacity || 0) < Number(row.sv_capacity || 0),
-      })) });
+      const project = projectRows[0] || {};
+      const projectText = `${project.project_title || ''} ${project.abstract || ''} ${project.keywords || ''} ${project.project_type || ''}`.toLowerCase();
+      const projectTokens = projectText.split(/[\s,.;:-]+/).filter((t) => t.length > 2);
+
+      // 2. Query all non-student users from users table directly displaying full_name, email, expertise, and capacity
+      const rows = await query(
+        `SELECT u.user_id, u.full_name, u.email, u.expertise,
+                COALESCE(s.sv_capacity, 5) AS sv_capacity,
+                COALESCE(s.current_capacity, 0) AS current_capacity
+         FROM users u
+         LEFT JOIN students st ON st.student_id = u.user_id
+         LEFT JOIN supervisor s ON s.supervisor_id = u.user_id
+         WHERE st.student_id IS NULL AND LOWER(u.email) NOT LIKE '%@graduate.utm.my'
+         ORDER BY u.full_name`
+      );
+
+      // 3. Process & score each candidate with AI matching logic
+      const scoredCandidates = rows.map((row) => {
+        const capacity = Number(row.sv_capacity || 5);
+        const currentCap = Number(row.current_capacity || 0);
+        const isAvailable = currentCap < capacity;
+
+        const expertiseSources = [
+          row.expertise,
+          row.research_expertise,
+          row.specialisation,
+          row.supervisor_specialisation,
+          row.department,
+          row.affiliation,
+          row.organisation,
+        ].filter(Boolean);
+
+        const expText = expertiseSources.join(' ').toLowerCase();
+
+        let matchScore = 0;
+        let isFallbackExpertise = false;
+
+        if (!expText.trim()) {
+          // USER REQUIREMENT: When there is no expertise set on the user, treat it as similar to the FYP expertise
+          matchScore = 70;
+          isFallbackExpertise = true;
+        } else {
+          // Calculate keyword overlap
+          let matches = 0;
+          projectTokens.forEach((token) => {
+            if (expText.includes(token)) matches++;
+          });
+
+          if (projectTokens.length > 0) {
+            const ratio = matches / Math.min(projectTokens.length, 10);
+            matchScore = Math.min(98, Math.max(55, Math.round(55 + ratio * 43)));
+          } else {
+            matchScore = 70;
+          }
+        }
+
+        // Apply capacity penalty if full, or slight boost if available
+        if (!isAvailable) {
+          matchScore = Math.max(40, matchScore - 20);
+        }
+
+        return {
+          ...row,
+          expertise: expertiseSources.join(', ') || project.project_type || 'General FYP Supervision',
+          isFallbackExpertise,
+          sv_capacity: capacity,
+          current_capacity: currentCap,
+          available: isAvailable,
+          matchScore,
+        };
+      });
+
+      // 4. Sort candidates by matchScore descending (with available candidates prioritized)
+      scoredCandidates.sort((a, b) => {
+        if (a.available !== b.available) return b.available ? 1 : -1;
+        return b.matchScore - a.matchScore;
+      });
+
+      // 5. Extract top 5 AI recommendations
+      const aiTop5 = scoredCandidates.slice(0, 5);
+
+      res.json({
+        success: true,
+        candidates: scoredCandidates,
+        aiTop5,
+      });
     } catch (error) {
       return migrationError(res, error);
     }
