@@ -12,14 +12,11 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 
 const showDropdown = ref(false)
 const showNotifications = ref(false)
+const showMobileMenu = ref(false)
 const notifications = ref([])
 const isLoadingNotifications = ref(false)
 const notificationError = ref('')
 
-// Build notification roles from the logged-in user.
-// One account may have several staff capabilities, so combine every effective role.
-// Coordinator notifications are shown generally.
-// Supervisor notifications are shown only when recipient_email matches user.email.
 const currentUser = computed(() => {
   return user?.value || user || {}
 })
@@ -44,7 +41,6 @@ const notificationRoles = computed(() => {
     roles.push('Student')
   }
 
-  // Fallback because this header is mainly used inside coordinator pages
   if (roles.length === 0) {
     roles.push('Coordinator')
   }
@@ -106,6 +102,7 @@ const roleHomePath = computed(() => {
 })
 
 const goToDashboard = () => {
+  showMobileMenu.value = false
   router.push(dashboardPath.value)
 }
 
@@ -223,12 +220,14 @@ const openNotification = async (item) => {
   await markNotificationAsRead(item.notification_id)
 
   showNotifications.value = false
+  showMobileMenu.value = false
   router.push(getNotificationTarget(item))
 }
 
 const toggleNotifications = async () => {
   showNotifications.value = !showNotifications.value
   showDropdown.value = false
+  showMobileMenu.value = false
 
   if (showNotifications.value) {
     await loadNotifications()
@@ -238,11 +237,19 @@ const toggleNotifications = async () => {
 const toggleUserDropdown = () => {
   showDropdown.value = !showDropdown.value
   showNotifications.value = false
+  showMobileMenu.value = false
+}
+
+const toggleMobileMenu = () => {
+  showMobileMenu.value = !showMobileMenu.value
+  showNotifications.value = false
+  showDropdown.value = false
 }
 
 const goToProfile = () => {
   showDropdown.value = false
   showNotifications.value = false
+  showMobileMenu.value = false
   router.push('/profile')
 }
 
@@ -250,11 +257,13 @@ const handleLogout = () => {
   logout()
   showDropdown.value = false
   showNotifications.value = false
+  showMobileMenu.value = false
   router.push('/')
 }
 
 const goToManageFYP = () => {
   showNotifications.value = false
+  showMobileMenu.value = false
   router.push({ path: roleHomePath.value })
 }
 
@@ -267,6 +276,10 @@ const handleClickOutside = (event) => {
 
   if (!target.closest?.('.header-user-area')) {
     showDropdown.value = false
+  }
+
+  if (!target.closest?.('.header-mobile-menu-area')) {
+    showMobileMenu.value = false
   }
 }
 
@@ -288,46 +301,44 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div
-    class="bg-[#5C001F] w-full h-[100px] lg:h-[70px] px-[20px] py-[8px] flex items-center justify-between shrink-0 shadow-sm relative z-50"
+  <header
+    class="bg-[#5C001F] w-full min-h-[64px] lg:h-[70px] px-3 sm:px-6 lg:px-8 py-2.5 flex items-center justify-between shrink-0 shadow-md relative z-50 select-none"
   >
-    <!-- Left side -->
+    <!-- Left side: Brand logo & title -->
     <div
-      class="flex items-center gap-[15px] shrink-0 cursor-pointer "
+      class="flex items-center gap-2 sm:gap-3 shrink-0 cursor-pointer hover:opacity-95 transition-opacity"
       @click="goToDashboard"
       title="Go to Dashboard"
     >
-      <div
-        class="h-[71.186px] lg:h-[45px] overflow-clip relative shrink-0 w-[210px] lg:w-[133px] flex items-center"
-      >
+      <div class="h-8 sm:h-10 lg:h-[45px] flex items-center shrink-0 max-w-[120px] sm:max-w-[150px] lg:max-w-[180px]">
         <img
           :src="imgLogoUtmReversePutih1"
           alt="UTM Logo"
-          class="max-h-full max-w-full object-contain pointer-events-none"
+          class="max-h-full w-auto object-contain pointer-events-none"
         />
       </div>
 
-      <div class="h-[70px] lg:h-[40px] w-px bg-white/40 shrink-0 mx-2"></div>
+      <div class="h-6 sm:h-8 lg:h-[40px] w-px bg-white/40 shrink-0 mx-1 sm:mx-2"></div>
 
       <p
-        class="capitalize font-bold text-[48px] lg:text-[28px] text-white whitespace-nowrap tracking-wide leading-none pt-0.5 font-['Inter']"
+        class="capitalize font-bold text-lg sm:text-2xl lg:text-[28px] text-white whitespace-nowrap tracking-wide leading-none font-['Inter']"
       >
         I-FAMOUS
       </p>
     </div>
 
-    <!-- Right side -->
-    <div v-if="user" class="flex items-center gap-[15px] shrink-0 relative">
-      <!-- Notifications -->
+    <!-- Right side: Notifications, Desktop Profile & Mobile Hamburger Menu -->
+    <div v-if="user" class="flex items-center gap-2 sm:gap-4 shrink-0 relative">
+      <!-- Notifications Button & Dropdown -->
       <div class="relative header-notification-area">
         <button
           @click.stop="toggleNotifications"
-          class="relative p-2 text-white hover:bg-white/10 rounded-full transition-colors"
+          class="relative p-2 text-white hover:bg-white/10 active:bg-white/20 rounded-full transition-colors cursor-pointer"
           title="Notifications"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            class="h-8 w-8 lg:h-6 lg:w-6"
+            class="h-6 w-6 sm:h-7 sm:w-7"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -342,7 +353,7 @@ onBeforeUnmount(() => {
 
           <span
             v-if="unreadCount > 0"
-            class="absolute -top-1 -right-1 min-w-[22px] h-[22px] px-1 bg-red-500 text-white text-[11px] font-bold rounded-full border-2 border-[#800000] flex items-center justify-center"
+            class="absolute -top-1 -right-1 min-w-[20px] h-[20px] px-1 bg-red-500 text-white text-[10px] font-bold rounded-full border-2 border-[#5c001f] flex items-center justify-center shadow-sm"
           >
             {{ unreadCount > 9 ? '9+' : unreadCount }}
           </span>
@@ -351,49 +362,49 @@ onBeforeUnmount(() => {
         <!-- Notification Dropdown -->
         <div
           v-if="showNotifications"
-          class="absolute right-0 mt-3 w-[420px] max-w-[90vw] bg-white rounded-[18px] shadow-2xl border border-gray-200 overflow-hidden z-[9999]"
+          class="absolute right-0 mt-3 w-[360px] sm:w-[420px] max-w-[calc(100vw-1.5rem)] bg-white rounded-[20px] shadow-2xl border border-gray-200 overflow-hidden z-[9999]"
         >
           <div class="bg-[#5c001f] text-white px-5 py-4 flex items-center justify-between">
             <div>
-              <p class="font-bold text-lg">{{ notificationTitle }}</p>
-              <p class="text-xs text-white/70">
+              <p class="font-bold text-base sm:text-lg">{{ notificationTitle }}</p>
+              <p class="text-xs text-white/80">
                 {{ unreadCount }} unread notification(s)
               </p>
             </div>
 
             <button
               @click.stop="loadNotifications"
-              class="bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-full text-xs font-bold"
+              class="bg-white/15 hover:bg-white/25 text-white px-3 py-1.5 rounded-full text-xs font-bold transition-colors cursor-pointer"
             >
               Refresh
             </button>
           </div>
 
-          <div v-if="isLoadingNotifications" class="p-6 text-center text-sm text-gray-600">
+          <div v-if="isLoadingNotifications" class="p-6 text-center text-sm font-medium text-gray-600">
             Loading notifications...
           </div>
 
-          <div v-else-if="notificationError" class="p-5 bg-red-50 text-red-700 text-sm">
+          <div v-else-if="notificationError" class="p-5 bg-red-50 text-red-700 text-sm font-medium">
             {{ notificationError }}
           </div>
 
           <div v-else-if="latestNotifications.length === 0" class="p-6 text-center">
-            <p class="font-bold text-gray-700">No notifications yet</p>
-            <p class="text-sm text-gray-500 mt-1">
+            <p class="font-bold text-gray-800">No notifications yet</p>
+            <p class="text-xs sm:text-sm text-gray-500 mt-1">
               Coordinator and supervisor assignment records will appear here.
             </p>
           </div>
 
-          <div v-else class="max-h-[420px] overflow-y-auto">
+          <div v-else class="max-h-[380px] overflow-y-auto">
             <button
               v-for="item in latestNotifications"
               :key="item.notification_id"
               @click="openNotification(item)"
-              class="w-full text-left px-5 py-4 border-b border-gray-100 hover:bg-[#fff8df] transition-colors"
+              class="w-full text-left px-4 sm:px-5 py-3.5 border-b border-gray-100 hover:bg-amber-50/60 transition-colors cursor-pointer"
             >
               <div class="flex gap-3">
                 <div
-                  class="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-[#fff3c4] text-[#5c001f]"
+                  class="w-9 h-9 rounded-full flex items-center justify-center shrink-0 bg-amber-100 text-[#5c001f]"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -412,8 +423,8 @@ onBeforeUnmount(() => {
                 </div>
 
                 <div class="min-w-0 flex-1">
-                  <div class="flex items-start justify-between gap-3">
-                    <p class="font-bold text-sm text-[#5c001f]">
+                  <div class="flex items-start justify-between gap-2">
+                    <p class="font-bold text-xs sm:text-sm text-[#5c001f] truncate">
                       {{ item.title }}
                     </p>
 
@@ -423,26 +434,26 @@ onBeforeUnmount(() => {
                     ></span>
                   </div>
 
-                  <p class="text-xs text-gray-500 mt-1">
+                  <p class="text-[11px] text-gray-500 mt-0.5">
                     {{ item.recipientType }} · {{ formatMalaysiaDateTime(item.createdAt) }}
                   </p>
 
-                  <p class="text-sm text-gray-700 mt-2 leading-relaxed">
+                  <p class="text-xs text-gray-700 mt-1.5 leading-relaxed line-clamp-2">
                     {{ item.message }}
                   </p>
 
-                  <p class="text-xs text-[#5c001f] font-bold mt-2">
-                    Click to open related project
+                  <p class="text-[11px] text-[#5c001f] font-bold mt-1.5">
+                    Click to open related project →
                   </p>
                 </div>
               </div>
             </button>
           </div>
 
-          <div class="p-4 bg-[#f7f1ea]">
+          <div class="p-3.5 bg-slate-50 border-t border-slate-100">
             <button
               @click="goToManageFYP"
-              class="w-full bg-[#5c001f] text-white px-4 py-3 rounded-full font-bold hover:bg-[#4a0019] transition-colors"
+              class="w-full bg-[#5c001f] text-white px-4 py-2.5 rounded-xl font-bold hover:bg-[#470018] active:scale-[0.99] transition-all text-xs sm:text-sm cursor-pointer"
             >
               {{ notificationOpenLabel }}
             </button>
@@ -450,48 +461,120 @@ onBeforeUnmount(() => {
         </div>
       </div>
 
-      <!-- User Profile Dropdown -->
-      <div class="relative header-user-area">
+      <!-- Desktop User Profile Button & Dropdown (hidden on small screens) -->
+      <div class="relative header-user-area hidden md:block">
         <button
           @click.stop="toggleUserDropdown"
-          class="bg-[rgba(255,255,255,0.5)] flex items-center justify-center gap-[12px] lg:gap-[8px] px-[12px] py-[8px] lg:py-[4px] lg:px-[10px] rounded-[15px] hover:bg-white/60 transition-colors"
+          class="bg-white/15 hover:bg-white/25 active:bg-white/30 text-white flex items-center gap-2.5 px-3 py-1.5 rounded-xl transition-all cursor-pointer border border-white/20"
         >
           <div
-            class="w-[35px] h-[35px] lg:w-[28px] lg:h-[28px] rounded-full bg-[#5c001f] flex items-center justify-center text-white font-bold text-lg lg:text-sm"
+            class="w-7 h-7 rounded-full bg-white text-[#5c001f] flex items-center justify-center font-bold text-xs shadow-sm"
           >
             {{ user.full_name ? user.full_name.charAt(0).toUpperCase() : 'U' }}
           </div>
 
-          <p
-            class="capitalize font-bold text-[24px] lg:text-[16px] text-white whitespace-nowrap font-['Inter']"
-          >
-            {{ user.full_name || 'Username' }}
+          <p class="capitalize font-bold text-sm text-white whitespace-nowrap font-['Inter']">
+            {{ user.full_name || 'User' }}
           </p>
+
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </svg>
         </button>
 
         <div
           v-if="showDropdown"
-          class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200"
+          class="absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-xl py-2 z-50 border border-gray-200"
         >
-          <div class="px-4 py-2 text-sm text-gray-500 border-b border-gray-100">
+          <div class="px-4 py-2 text-xs text-gray-500 border-b border-gray-100 truncate font-medium">
             {{ user.email }}
           </div>
 
           <button
-            @click="goToProfile"
-            class="block w-full text-left px-4 py-2 text-sm text-[#5c001f] hover:bg-[#f7f1ea] font-semibold"
+            @click="goToDashboard"
+            class="w-full text-left px-4 py-2 text-xs sm:text-sm text-gray-800 hover:bg-slate-50 font-semibold flex items-center gap-2 cursor-pointer"
           >
-            Edit Profile
+            <span>📊</span> Dashboard
+          </button>
+
+          <button
+            @click="goToProfile"
+            class="w-full text-left px-4 py-2 text-xs sm:text-sm text-[#5c001f] hover:bg-slate-50 font-semibold flex items-center gap-2 cursor-pointer"
+          >
+            <span>👤</span> Edit Profile
           </button>
 
           <button
             @click="handleLogout"
-            class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 font-medium border-t border-gray-100"
+            class="w-full text-left px-4 py-2 text-xs sm:text-sm text-red-600 hover:bg-red-50 font-semibold border-t border-gray-100 flex items-center gap-2 cursor-pointer"
           >
-            Logout
+            <span>🚪</span> Logout
           </button>
         </div>
       </div>
+
+      <!-- Mobile & Tablet Hamburger Toggle Button -->
+      <div class="relative header-mobile-menu-area md:hidden">
+        <button
+          @click.stop="toggleMobileMenu"
+          class="p-2 text-white hover:bg-white/10 active:bg-white/20 rounded-xl transition-colors cursor-pointer flex items-center justify-center"
+          title="Mobile Navigation Menu"
+          aria-label="Toggle Navigation Menu"
+        >
+          <svg v-if="!showMobileMenu" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+          <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+
+        <!-- Mobile & Tablet Drawer Menu -->
+        <div
+          v-if="showMobileMenu"
+          class="absolute right-0 mt-3 w-64 max-w-[calc(100vw-1.5rem)] bg-white rounded-2xl shadow-2xl py-3 border border-gray-200 z-[9999] space-y-1"
+        >
+          <div class="px-4 py-2.5 bg-[#5c001f] text-white rounded-t-xl -mt-3 mb-2 flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full bg-white text-[#5c001f] font-bold flex items-center justify-center text-sm shrink-0">
+              {{ user.full_name ? user.full_name.charAt(0).toUpperCase() : 'U' }}
+            </div>
+            <div class="min-w-0 flex-1">
+              <p class="font-bold text-sm text-white truncate">{{ user.full_name || 'User' }}</p>
+              <p class="text-[11px] text-white/80 truncate">{{ user.email }}</p>
+            </div>
+          </div>
+
+          <button
+            @click="goToDashboard"
+            class="w-full text-left px-4 py-2.5 text-sm text-slate-800 hover:bg-slate-100 font-semibold flex items-center gap-2.5 cursor-pointer"
+          >
+            <span class="text-base">📊</span> Dashboard
+          </button>
+
+          <button
+            @click="goToManageFYP"
+            class="w-full text-left px-4 py-2.5 text-sm text-slate-800 hover:bg-slate-100 font-semibold flex items-center gap-2.5 cursor-pointer"
+          >
+            <span class="text-base">📁</span> {{ notificationOpenLabel }}
+          </button>
+
+          <button
+            @click="goToProfile"
+            class="w-full text-left px-4 py-2.5 text-sm text-[#5c001f] hover:bg-amber-50 font-semibold flex items-center gap-2.5 cursor-pointer"
+          >
+            <span class="text-base">👤</span> Edit Profile
+          </button>
+
+          <div class="pt-2 border-t border-slate-100 px-3">
+            <button
+              @click="handleLogout"
+              class="w-full bg-rose-50 text-rose-700 hover:bg-rose-100 px-3 py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors"
+            >
+              <span>🚪</span> Logout
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
-  </div>
+  </header>
 </template>
