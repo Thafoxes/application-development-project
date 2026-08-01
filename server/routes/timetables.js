@@ -161,6 +161,20 @@ router.post("/timetables/my-schedule", authenticateToken, (req, res) => {
   });
 });
 
+// DELETE /api/timetables/my-schedule - delete user's personal timetable schedule
+router.delete("/timetables/my-schedule", authenticateToken, (req, res) => {
+  const userId = req.user?.user_id;
+  if (!userId) {
+    return res.status(401).json({ error: "User ID missing from authentication token." });
+  }
+
+  const deleteSql = "DELETE FROM time_table WHERE user_id = ?";
+  db.query(deleteSql, [userId], (err) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ success: true, message: "Personal schedule deleted successfully." });
+  });
+});
+
 // POST /api/timetables - create new timetable schedule in SQL database
 router.post("/timetables", (req, res) => {
   const { fyp_session_id, user_id, class_id, schedule_json } = req.body;

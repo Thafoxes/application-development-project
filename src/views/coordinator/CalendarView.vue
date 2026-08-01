@@ -7,6 +7,8 @@ import AppHeader from '@/components/AppHeader.vue'
 import AppSidebar from '@/components/AppSidebar.vue'
 import AppFooter from '@/components/AppFooter.vue'
 
+import { PlusCircle } from 'lucide-vue-next'
+
 const calendarStore = useCalendarStore()
 
 onMounted(() => {
@@ -27,8 +29,15 @@ onMounted(() => {
       <!-- Main Dashboard Content -->
       <main class="flex-1 flex flex-col px-4 sm:px-6 lg:px-[50px] py-4 sm:py-6 lg:py-[30px] gap-6 sm:gap-8 overflow-y-auto min-w-0">
         <!-- Heading -->
-        <div class="flex items-center justify-between w-full">
+        <div class="flex flex-wrap items-center justify-between gap-4 w-full">
           <h1 class="font-['Inter'] font-bold text-2xl sm:text-3xl lg:text-[40px] text-black uppercase">CALENDAR</h1>
+
+          <router-link
+            to="/add-time-table"
+            class="bg-[#5c001f] text-[#f8be17] hover:bg-[#4a0019] px-5 py-2.5 rounded-2xl font-bold text-sm shadow-md transition-all flex items-center gap-2"
+          >
+            <PlusCircle class="w-4 h-4" /> + Create / Manage Time Table
+          </router-link>
         </div>
 
         <!-- Divider -->

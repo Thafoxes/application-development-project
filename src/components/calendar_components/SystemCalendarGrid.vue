@@ -294,31 +294,39 @@ const normalizedWeekly = computed(() => {
     map[d.id] = []
   })
 
+  const seenKeys = new Set()
+
+  const addSlotToMap = (dayId, s) => {
+    if (!dayId || !map[dayId] || (!s.start_time && !s.time)) return
+    const startTime = s.start_time || s.time
+    const label = s.label || s.title || s.subject || 'Weekly Slot'
+    const uniqueKey = `${dayId}_${startTime}_${label}`
+
+    if (!seenKeys.has(uniqueKey)) {
+      seenKeys.add(uniqueKey)
+      map[dayId].push({
+        ...s,
+        type: s.type || 'class',
+        label,
+        start_time: startTime,
+        end_time: s.end_time || `${parseInt(startTime.split(':')[0], 10) + 1}:00`,
+      })
+    }
+  }
+
   const raw = props.weeklyRecurring || []
   if (Array.isArray(raw)) {
     raw.forEach((entry) => {
       const dayId = entry.day_of_week || entry.dayOfWeek
-      if (dayId && map[dayId]) {
-        const slots = entry.slots || [entry]
-        slots.forEach((s) => {
-          if (s.start_time || s.time) {
-            map[dayId].push({
-              ...s,
-              type: s.type || 'class',
-              label: s.label || s.title || s.subject || 'Weekly Slot',
-              start_time: s.start_time || s.time,
-              end_time: s.end_time || `${parseInt((s.start_time || s.time).split(':')[0]) + 1}:00`,
-            })
-          }
-        })
-      }
+      const slots = entry.slots || [entry]
+      slots.forEach((s) => addSlotToMap(dayId || s.day_of_week || s.dayOfWeek, s))
     })
   }
 
-  // Include locally added custom slots
+  // Include locally added custom slots if not already in prop
   localCustomSlots.value.forEach((cs) => {
-    if (cs.dayOfWeek && map[cs.dayOfWeek]) {
-      map[cs.dayOfWeek].push(cs)
+    if (cs.isRecurring !== false) {
+      addSlotToMap(cs.dayOfWeek || cs.day_of_week, cs)
     }
   })
 

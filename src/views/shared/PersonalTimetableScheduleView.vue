@@ -28,6 +28,7 @@ const api = {
   get: (url) => axios.get(`${API_BASE_URL}/api${url}`, { headers: getAuthHeader() }),
   post: (url, data, config = {}) =>
     axios.post(`${API_BASE_URL}/api${url}`, data, { headers: { ...getAuthHeader(), ...(config.headers || {}) } }),
+  delete: (url) => axios.delete(`${API_BASE_URL}/api${url}`, { headers: getAuthHeader() }),
 }
 
 const router = useRouter()
@@ -51,6 +52,16 @@ const selectedTemplateId = ref('')
 
 // scheduleGrid map: { 'Monday_09:00': { type, label, code, start_time, end_time } }
 const scheduleGrid = ref({})
+
+const isConfigured = computed(() => {
+  if (Object.keys(scheduleGrid.value).length > 0) return true
+  if (userScheduleData.value && userScheduleData.value.schedule) {
+    const s = userScheduleData.value.schedule
+    if (Array.isArray(s)) return s.length > 0
+    if (typeof s === 'object') return Object.keys(s).length > 0
+  }
+  return false
+})
 
 // Helper to parse any schedule JSON format (flat array, nested slots, etc.) to grid map
 const parseScheduleToGrid = (scheduleData, defaultCode = '') => {
@@ -287,6 +298,27 @@ const saveScheduleToBackend = async () => {
   }
 }
 
+const deleteScheduleFromBackend = async () => {
+  if (!confirm('Are you sure you want to completely delete your personal timetable?')) return
+  saving.value = true
+  error.value = ''
+  successMessage.value = ''
+  try {
+    const res = await api.delete('/timetables/my-schedule')
+    if (res.data.success) {
+      scheduleGrid.value = {}
+      userScheduleData.value = null
+      successMessage.value = 'Your personal timetable has been deleted successfully.'
+    } else {
+      error.value = res.data.error || 'Failed to delete timetable.'
+    }
+  } catch (err) {
+    error.value = err.response?.data?.error || err.message
+  } finally {
+    saving.value = false
+  }
+}
+
 const goToAddTimeTable = () => {
   router.push('/add-time-table')
 }
@@ -482,17 +514,24 @@ onMounted(loadScheduleData)
                 </p>
               </div>
 
-              <div class="flex gap-2">
+              <div class="flex flex-wrap items-center gap-2">
                 <button
                   @click="clearSchedule"
-                  class="rounded-xl border border-gray-300 px-3.5 py-2 font-bold text-gray-700 hover:bg-gray-50 inline-flex items-center gap-1.5 cursor-pointer"
+                  class="rounded-xl border border-gray-300 px-3.5 py-2 font-bold text-gray-700 hover:bg-gray-50 text-xs sm:text-sm inline-flex items-center gap-1.5 cursor-pointer"
                 >
-                  <RotateCcw class="w-4 h-4" /> Reset
+                  <RotateCcw class="w-4 h-4" /> Reset Grid
+                </button>
+                <button
+                  @click="deleteScheduleFromBackend"
+                  :disabled="saving"
+                  class="rounded-xl bg-red-600 hover:bg-red-700 text-white px-3.5 py-2 font-bold text-xs sm:text-sm shadow inline-flex items-center gap-1.5 cursor-pointer"
+                >
+                  <AlertCircle class="w-4 h-4" /> Delete Timetable
                 </button>
                 <button
                   @click="saveScheduleToBackend"
                   :disabled="saving"
-                  class="rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white px-5 py-2 font-bold shadow disabled:opacity-50 inline-flex items-center gap-1.5 cursor-pointer"
+                  class="rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white px-5 py-2 font-bold text-xs sm:text-sm shadow disabled:opacity-50 inline-flex items-center gap-1.5 cursor-pointer"
                 >
                   <Loader2 v-if="saving" class="w-4 h-4 animate-spin" />
                   <Save v-else class="w-4 h-4" />

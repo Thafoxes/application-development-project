@@ -53,12 +53,6 @@ const navItems = [
     enabled: true,
   },
   {
-    label: 'Add Time Table',
-    path: '/add-time-table',
-    icon: Table2,
-    enabled: true,
-  },
-  {
     label: 'My Timetable',
     path: '/personal-timetable',
     icon: Table2,
