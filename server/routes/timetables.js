@@ -7,10 +7,130 @@ const express = require("express");
 const fs = require("fs");
 const path = require("path");
 const db = require("../config/db");
+const { authenticateToken } = require("../middleware/auth");
 
 const router = express.Router();
 
 const tempFilePath = path.join(__dirname, "..", "..", "localData", "temp_meeting.json");
+
+// GET /api/timetables/my-schedule - get personal schedule & available section templates
+router.get("/timetables/my-schedule", authenticateToken, (req, res) => {
+  const userId = req.user?.user_id;
+
+  if (!userId) {
+    return res.status(401).json({ error: "User ID missing from authentication token." });
+  }
+
+  // 1. Query active session
+  db.query("SELECT fyp_session_id, session_name FROM fyp_session WHERE status = 'Active' LIMIT 1", (sessErr, sessRows) => {
+    const activeSession = (sessRows && sessRows[0]) || null;
+    const sessionId = activeSession?.fyp_session_id || 1;
+
+    // 2. Query user's personal timetable
+    const userSql = `
+      SELECT time_table_id, fyp_session_id, user_id, schedule_json, created_at, updated_at
+      FROM time_table
+      WHERE user_id = ?
+      ORDER BY time_table_id DESC LIMIT 1
+    `;
+
+    db.query(userSql, [userId], (userErr, userRows) => {
+      if (userErr) {
+        return res.status(500).json({ error: userErr.message });
+      }
+
+      let userSchedule = null;
+      if (userRows && userRows.length > 0) {
+        const row = userRows[0];
+        let parsed = [];
+        try {
+          parsed = typeof row.schedule_json === 'string' ? JSON.parse(row.schedule_json) : (row.schedule_json || []);
+        } catch (e) {
+          parsed = [];
+        }
+        userSchedule = {
+          time_table_id: row.time_table_id,
+          fyp_session_id: row.fyp_session_id,
+          user_id: row.user_id,
+          schedule: parsed,
+          updated_at: row.updated_at,
+        };
+      }
+
+      // 3. Query Master Section Timetables (created by Coordinator)
+      const templatesSql = `
+        SELECT tt.time_table_id, tt.fyp_session_id, tt.class_id, fc.section_name, fc.course_code, tt.schedule_json
+        FROM time_table tt
+        LEFT JOIN fyp_classes fc ON fc.class_id = tt.class_id
+        WHERE tt.class_id IS NOT NULL
+        ORDER BY fc.section_name, tt.time_table_id DESC
+      `;
+
+      db.query(templatesSql, (tmplErr, tmplRows) => {
+        const templates = (tmplRows || []).map((row) => {
+          let parsed = [];
+          try {
+            parsed = typeof row.schedule_json === 'string' ? JSON.parse(row.schedule_json) : (row.schedule_json || []);
+          } catch (e) {
+            parsed = [];
+          }
+          return {
+            time_table_id: row.time_table_id,
+            class_id: row.class_id,
+            section_name: row.section_name || `Section ${row.class_id}`,
+            course_code: row.course_code || 'General',
+            schedule: parsed,
+          };
+        });
+
+        res.json({
+          success: true,
+          activeSession,
+          userSchedule,
+          sectionTemplates: templates,
+        });
+      });
+    });
+  });
+});
+
+// POST /api/timetables/my-schedule - save/upsert user's personal customized schedule
+router.post("/timetables/my-schedule", authenticateToken, (req, res) => {
+  const userId = req.user?.user_id;
+  const { schedule_json, fyp_session_id } = req.body || {};
+
+  if (!userId) {
+    return res.status(401).json({ error: "User ID missing from authentication token." });
+  }
+
+  if (!schedule_json) {
+    return res.status(400).json({ error: "schedule_json is required." });
+  }
+
+  const jsonStr = typeof schedule_json === 'string' ? schedule_json : JSON.stringify(schedule_json);
+  const sessionId = fyp_session_id ? parseInt(fyp_session_id) : 1;
+
+  // Upsert personal user schedule in SQL database
+  const checkSql = "SELECT time_table_id FROM time_table WHERE user_id = ? LIMIT 1";
+  db.query(checkSql, [userId], (checkErr, rows) => {
+    if (checkErr) return res.status(500).json({ error: checkErr.message });
+
+    if (rows && rows.length > 0) {
+      const timeTableId = rows[0].time_table_id;
+      const updateSql = "UPDATE time_table SET schedule_json = ?, fyp_session_id = ? WHERE time_table_id = ?";
+      db.query(updateSql, [jsonStr, sessionId, timeTableId], (upErr) => {
+        if (upErr) return res.status(500).json({ error: upErr.message });
+        res.json({ success: true, message: "Personal schedule updated successfully.", time_table_id: timeTableId });
+      });
+    } else {
+      const insertSql = "INSERT INTO time_table (fyp_session_id, user_id, class_id, schedule_json) VALUES (?, ?, NULL, ?)";
+      db.query(insertSql, [sessionId, userId, jsonStr], (inErr, result) => {
+        if (inErr) return res.status(500).json({ error: inErr.message });
+        res.json({ success: true, message: "Personal schedule saved successfully.", time_table_id: result.insertId });
+      });
+    }
+  });
+});
 
 // POST /api/timetables - create new timetable schedule in SQL database
 router.post("/timetables", (req, res) => {

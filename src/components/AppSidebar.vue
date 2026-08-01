@@ -59,6 +59,12 @@ const navItems = [
     enabled: true,
   },
   {
+    label: 'My Timetable',
+    path: '/personal-timetable',
+    icon: Table2,
+    enabled: true,
+  },
+  {
     label: 'Manage User',
     path: '/manage-user',
     icon: Users,

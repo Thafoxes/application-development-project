@@ -535,13 +535,13 @@ router.post("/student/my-fyp-submit", savedProposalUpload.single("proposal"), as
       }
       const uniqueNominees = [];
       const seenNominees = new Set();
-      for (const item of parsedNominations.slice(0, 3)) {
+      for (const item of parsedNominations.slice(0, 2)) {
         const supervisorUserId = Number(item.supervisorUserId || item.user_id);
         if (!supervisorUserId || seenNominees.has(supervisorUserId)) continue;
         seenNominees.add(supervisorUserId);
         uniqueNominees.push({
           supervisorUserId,
-          preferenceRank: Math.max(1, Math.min(3, Number(item.preferenceRank || uniqueNominees.length + 1))),
+          preferenceRank: Math.max(1, Math.min(2, Number(item.preferenceRank || uniqueNominees.length + 1))),
           note: String(item.note || "AI-assisted student nomination").slice(0, 500),
         });
       }

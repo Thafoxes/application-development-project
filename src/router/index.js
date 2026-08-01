@@ -149,6 +149,12 @@ const router = createRouter({
       meta: { requiresAuth: true, roles: ['student', 'supervisor', 'examiner', 'coordinator', 'admin'] },
     },
     {
+      path: '/personal-timetable',
+      name: 'personal-timetable',
+      component: () => import('../views/shared/PersonalTimetableScheduleView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/examiner-projects',
       name: 'examiner-projects',
       component: () => import('../views/examiner/ExaminerProjectsView.vue'),
