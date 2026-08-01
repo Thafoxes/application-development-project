@@ -59,6 +59,72 @@ const imageInputRef = ref(null)
 
 const isConfigured = computed(() => Object.keys(scheduleGrid.value).length > 0)
 
+const extractGridFromSchedule = (scheduleData, defaultLabel = 'Class') => {
+  const grid = {}
+  if (!scheduleData) return grid
+
+  // Flat array format [ { day, time, type, label, code } ]
+  if (Array.isArray(scheduleData)) {
+    let hasFlat = false
+    scheduleData.forEach((item) => {
+      if (item.day && item.time) {
+        hasFlat = true
+        grid[`${item.day}_${item.time}`] = {
+          type: item.type || 'class',
+          label: item.label || item.subject || defaultLabel,
+          code: item.code || '',
+        }
+      }
+    })
+    if (hasFlat) return grid
+  }
+
+  // AI / ManageTimeTable nested format { weekly_recurring: [...], specific_events: [...] }
+  let recurringList = []
+  if (Array.isArray(scheduleData)) {
+    recurringList = scheduleData
+  } else if (typeof scheduleData === 'object') {
+    recurringList = scheduleData.weekly_recurring || scheduleData.weekly_recurring_occupancy || []
+  }
+
+  const dayNameMap = {
+    1: 'Monday',
+    2: 'Tuesday',
+    3: 'Wednesday',
+    4: 'Thursday',
+    5: 'Friday',
+    6: 'Saturday',
+    7: 'Sunday',
+  }
+
+  if (Array.isArray(recurringList)) {
+    recurringList.forEach((dayEntry) => {
+      const day = dayEntry.day_name || dayNameMap[dayEntry.day_of_week]
+      if (!day) return
+
+      const slots = dayEntry.slots || []
+      slots.forEach((slot) => {
+        const startTime = slot.start_time || slot.time
+        if (!startTime) return
+
+        const startHour = parseInt(startTime.split(':')[0], 10)
+        const endHour = slot.end_time ? parseInt(slot.end_time.split(':')[0], 10) : startHour + 1
+
+        for (let h = startHour; h < endHour; h++) {
+          const timeSlot = `${String(h).padStart(2, '0')}:00`
+          grid[`${day}_${timeSlot}`] = {
+            type: slot.type || 'class',
+            label: slot.label || slot.subject || defaultLabel,
+            code: slot.code || '',
+          }
+        }
+      })
+    })
+  }
+
+  return grid
+}
+
 const loadScheduleData = async () => {
   loading.value = true
   error.value = ''
@@ -69,20 +135,8 @@ const loadScheduleData = async () => {
     sectionTemplates.value = res.data.sectionTemplates || []
 
     // Populate scheduleGrid if existing
-    const existing = res.data.userSchedule?.schedule || []
-    const newGrid = {}
-    if (Array.isArray(existing)) {
-      existing.forEach((item) => {
-        if (item.day && item.time) {
-          newGrid[`${item.day}_${item.time}`] = {
-            type: item.type || 'class',
-            label: item.label || item.subject || '',
-            code: item.code || '',
-          }
-        }
-      })
-    }
-    scheduleGrid.value = newGrid
+    const existing = res.data.userSchedule?.schedule
+    scheduleGrid.value = extractGridFromSchedule(existing, 'Personal Slot')
   } catch (err) {
     error.value = err.response?.data?.error || err.message
   } finally {
@@ -94,26 +148,13 @@ const loadScheduleData = async () => {
 const copySectionTemplate = () => {
   if (!selectedTemplateId.value) return
   const tmpl = sectionTemplates.value.find(
-    (t) => String(t.time_table_id) === String(selectedTemplateId.value),
+    (t) => String(t.time_table_id) === String(selectedTemplateId.value) || String(t.class_id) === String(selectedTemplateId.value),
   )
   if (!tmpl) return
 
-  const newGrid = {}
-  const rawList = tmpl.schedule || []
-  rawList.forEach((item) => {
-    const day = item.day || item.day_name
-    const time = item.time || item.start_time
-    if (day && time) {
-      newGrid[`${day}_${time}`] = {
-        type: 'class',
-        label: item.label || item.subject || tmpl.section_name || 'Official Class',
-        code: tmpl.course_code || '',
-      }
-    }
-  })
-
+  const newGrid = extractGridFromSchedule(tmpl.schedule, tmpl.section_name || 'Official Class')
   scheduleGrid.value = newGrid
-  successMessage.value = `Copied schedule from ${tmpl.section_name} (${tmpl.course_code}). Customize replacement subjects or non-availability as needed.`
+  successMessage.value = `Copied schedule from ${tmpl.section_name}. Customize replacement subjects or non-availability as needed.`
 }
 
 // AI Image Upload & Auto-Rearrange
@@ -336,8 +377,8 @@ onMounted(loadScheduleData)
                     class="flex-1 rounded-xl border border-gray-300 p-2.5 text-sm font-medium focus:border-[#5c001f] focus:outline-none"
                   >
                     <option value="">-- Select Section Timetable --</option>
-                    <option v-for="t in sectionTemplates" :key="t.time_table_id" :value="t.time_table_id">
-                      {{ t.section_name }} ({{ t.course_code }})
+                    <option v-for="t in sectionTemplates" :key="t.time_table_id || t.class_id" :value="t.time_table_id || t.class_id">
+                      {{ t.section_name }}
                     </option>
                   </select>
                   <button

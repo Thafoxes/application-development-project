@@ -57,29 +57,45 @@ router.get("/timetables/my-schedule", authenticateToken, (req, res) => {
       }
 
       // 3. Query Master Section Timetables (created by Coordinator)
+      // 3. Query Master Section Timetables (created by Coordinator)
       const templatesSql = `
-        SELECT tt.time_table_id, tt.fyp_session_id, tt.class_id, fc.section_name, fc.course_code, tt.schedule_json
-        FROM time_table tt
-        LEFT JOIN fyp_classes fc ON fc.class_id = tt.class_id
-        WHERE tt.class_id IS NOT NULL
-        ORDER BY fc.section_name, tt.time_table_id DESC
+        SELECT 
+          fc.class_id,
+          fc.section_name,
+          fc.fyp_session_id,
+          tt.time_table_id,
+          tt.schedule_json
+        FROM fyp_classes fc
+        LEFT JOIN time_table tt ON tt.class_id = fc.class_id
+        ORDER BY fc.section_name ASC, tt.time_table_id DESC
       `;
 
       db.query(templatesSql, (tmplErr, tmplRows) => {
-        const templates = (tmplRows || []).map((row) => {
-          let parsed = [];
-          try {
-            parsed = typeof row.schedule_json === 'string' ? JSON.parse(row.schedule_json) : (row.schedule_json || []);
-          } catch (e) {
-            parsed = [];
+        if (tmplErr) {
+          console.error("Fetch section templates error:", tmplErr);
+        }
+
+        const seenClassIds = new Set();
+        const templates = [];
+        (tmplRows || []).forEach((row) => {
+          if (!seenClassIds.has(row.class_id)) {
+            seenClassIds.add(row.class_id);
+            let parsed = [];
+            if (row.schedule_json) {
+              try {
+                parsed = typeof row.schedule_json === 'string' ? JSON.parse(row.schedule_json) : (row.schedule_json || []);
+              } catch (e) {
+                parsed = [];
+              }
+            }
+            templates.push({
+              time_table_id: row.time_table_id || row.class_id,
+              class_id: row.class_id,
+              section_name: row.section_name || `Section ${row.class_id}`,
+              course_code: "Official Section",
+              schedule: parsed,
+            });
           }
-          return {
-            time_table_id: row.time_table_id,
-            class_id: row.class_id,
-            section_name: row.section_name || `Section ${row.class_id}`,
-            course_code: row.course_code || 'General',
-            schedule: parsed,
-          };
         });
 
         res.json({
