@@ -60,8 +60,32 @@ const handleFileUpload = async (event) => {
     const result = await response.json()
 
     if (response.ok && result.success) {
-      if (result.data.target_type) targetType.value = result.data.target_type
-      if (result.data.target_name) targetName.value = result.data.target_name
+      if (result.data.target_type) {
+        const typeStr = String(result.data.target_type).toLowerCase()
+        if (
+          typeStr.includes('section') ||
+          typeStr.includes('class') ||
+          typeStr.includes('group') ||
+          typeStr.includes('student')
+        ) {
+          targetType.value = 'Section Class'
+        } else if (
+          typeStr.includes('lecturer') ||
+          typeStr.includes('staff') ||
+          typeStr.includes('sv') ||
+          typeStr.includes('dr') ||
+          typeStr.includes('prof')
+        ) {
+          targetType.value = 'Lecturer'
+        } else {
+          targetType.value = result.data.target_type
+        }
+      }
+
+      if (result.data.target_name) {
+        selectedTargetId.value = null
+        targetName.value = String(result.data.target_name).trim()
+      }
 
       calendarData.value.weekly_recurring_occupancy = []
       calendarData.value.specific_calendar_events = []
@@ -126,7 +150,9 @@ watch(targetName, (newVal) => {
     selectedTargetId.value = null
   }
 
-  if (newVal.length >= 3 && !selectedTargetId.value) {
+  const minLen = targetType.value === 'Section Class' ? 1 : 3
+
+  if (newVal && newVal.length >= minLen && !selectedTargetId.value) {
     clearTimeout(searchTimeout)
 
     searchTimeout = setTimeout(async () => {
@@ -149,6 +175,14 @@ watch(targetName, (newVal) => {
             label: c.section_name,
             value: c.section_name,
           }))
+
+          // Auto-select if an exact match exists
+          const exact = searchResults.value.find(
+            (r) => String(r.value).trim().toLowerCase() === String(newVal).trim().toLowerCase()
+          )
+          if (exact) {
+            selectedTargetId.value = exact.id
+          }
         }
 
         showDropdown.value = true
@@ -816,7 +850,7 @@ const updateFromJson = () => {
                   {{
                     targetType === 'Lecturer'
                       ? 'Search Lecturer or Staff name/email (min 3 chars)'
-                      : 'Search Section number (min 3 chars)'
+                      : 'Search Section number'
                   }}
                 </label>
 
@@ -824,7 +858,7 @@ const updateFromJson = () => {
                   <input
                     v-model="targetName"
                     type="text"
-                    @focus="targetName.length >= 3 && !selectedTargetId && (showDropdown = true)"
+                    @focus="(targetName.length >= (targetType === 'Section Class' ? 1 : 3)) && !selectedTargetId && (showDropdown = true)"
                     class="border border-gray-400 p-2 w-64 outline-none focus:border-[#5c001f] rounded shadow-sm"
                     :placeholder="targetType === 'Lecturer' ? 'e.g. john@utm.my' : 'e.g. 01'"
                   />
