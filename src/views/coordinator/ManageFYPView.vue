@@ -623,9 +623,15 @@ onMounted(async () => {
                   <td class="px-5 py-4">
                     <span
                       class="px-3 py-1 rounded-full font-bold text-xs"
-                      :class="project.matchScore ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'"
+                      :class="
+                        project.aiStatus === 'Supervisor Assigned'
+                          ? 'bg-green-100 text-green-800'
+                          : project.aiStatus === 'AI Completed'
+                          ? 'bg-purple-100 text-purple-700'
+                          : 'bg-yellow-100 text-yellow-800'
+                      "
                     >
-                      {{ project.aiStatus }}
+                      {{ project.aiStatus || 'Pending' }}
                     </span>
                   </td>
 

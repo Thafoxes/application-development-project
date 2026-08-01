@@ -160,4 +160,12 @@ export const apiService = {
     })
     return response.data
   },
+
+  createClass: async (fypSessionId, sectionName) => {
+    const response = await axios.post(`${API_BASE_URL}/api/classes`, {
+      fyp_session_id: fypSessionId,
+      section_name: sectionName,
+    })
+    return response.data
+  },
 }

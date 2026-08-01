@@ -5,6 +5,7 @@ import {
   AlertTriangle,
   ArrowLeft,
   Award,
+  Calendar,
   CheckCircle2,
   Clock,
   Download,
@@ -112,15 +113,28 @@ function statusClass(status) {
   return "bg-gray-100 text-gray-700 border-gray-200";
 }
 
-const journeyAvailable = computed(() => canOpenJourney(project.value?.status));
-const rejectedProject = computed(() => isRejected(project.value?.status));
-const resultReleased = computed(() => String(project.value?.status || '') === 'Result Released');
-const revisionRequired = computed(() => String(project.value?.status || '') === 'Revision Required');
-const revisedProposalSubmitted = computed(() => String(project.value?.status || '') === 'Revised Proposal Submitted');
+const effectiveStatus = computed(() => {
+  const rawStatus = project.value?.status || "Pending Review";
+  const hasSv = Boolean(project.value?.supervisor && project.value?.supervisor !== "Not Assigned");
+  if (hasSv && (rawStatus === "Pending AI Matching" || rawStatus === "Pending Review" || rawStatus === "Pending Coordinator Review")) {
+    return "Pending Supervisor Approval";
+  }
+  return rawStatus;
+});
+
+const journeyAvailable = computed(() => canOpenJourney(effectiveStatus.value));
+const rejectedProject = computed(() => isRejected(effectiveStatus.value));
+const resultReleased = computed(() => String(effectiveStatus.value || '') === 'Result Released');
+const revisionRequired = computed(() => String(effectiveStatus.value || '') === 'Revision Required');
+const revisedProposalSubmitted = computed(() => String(effectiveStatus.value || '') === 'Revised Proposal Submitted');
 const supervisorFeedback = computed(() =>
   (project.value?.feedback || []).filter((item) => String(item.author_role || '') === 'Supervisor')
 );
-const nextAction = computed(() => nextActionForStatus(project.value?.status));
+const nextAction = computed(() => nextActionForStatus(effectiveStatus.value));
+
+const openTimetable = () => {
+  router.push({ path: '/personal-timetable', query: { projectId: projectId.value } });
+};
 
 const timeline = computed(() => {
   const currentStep = workflowStep(project.value?.status);
@@ -244,10 +258,18 @@ onMounted(async () => {
             >
               <Award class="w-4 h-4" /> Results & Feedback
             </button>
+
+            <button
+              @click="openTimetable"
+              class="bg-[#f7f1ea] border border-[#e1d5cc] text-[#5c001f] hover:bg-[#efe4d9] rounded-xl px-5 py-2.5 font-bold inline-flex items-center gap-2 shadow-sm"
+            >
+              <Calendar class="w-4 h-4" /> My Timetable Schedule
+            </button>
+
             <button
               v-if="projectId && journeyAvailable"
               @click="openJourney"
-              class="bg-[#5c001f] text-white rounded-xl px-5 py-2.5 font-bold"
+              class="bg-[#5c001f] text-white rounded-xl px-5 py-2.5 font-bold shadow-sm"
             >
               Open FYP Journey
             </button>
@@ -299,10 +321,10 @@ onMounted(async () => {
                   Current Status
                 </p>
                 <span
-                  :class="statusClass(project.status)"
-                  class="inline-flex mt-2 px-3 py-1 rounded-full border font-bold text-sm"
+                  :class="statusClass(effectiveStatus)"
+                  class="inline-flex mt-2 px-3 py-1 rounded-full border font-bold text-sm shadow-sm"
                 >
-                  {{ project.status || "-" }}
+                  {{ effectiveStatus || "-" }}
                 </span>
               </div>
 
@@ -325,6 +347,39 @@ onMounted(async () => {
                   {{ project.examinerEmail }}
                 </p>
               </div>
+            </div>
+
+            <!-- FYP Timetable Schedule Attachment Card -->
+            <div class="rounded-[22px] border border-[#e1d5cc] bg-gradient-to-r from-[#f7f1ea] to-amber-50/50 p-6 mt-5 space-y-3">
+              <div class="flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                  <div class="rounded-full bg-[#5c001f] text-white p-3 shadow-sm">
+                    <Calendar class="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 class="text-lg font-bold text-gray-900">FYP Timetable & Schedule Attachment</h3>
+                    <p class="text-xs text-gray-600 mt-0.5">
+                      Informs supervisors and coordinators of your class replacement subjects and non-availability.
+                    </p>
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-3">
+                  <span
+                    class="px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider border shadow-sm"
+                    :class="project.timetableAttached ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-amber-100 text-amber-800 border-amber-300'"
+                  >
+                    {{ project.timetableAttached ? 'Attached & Configured' : 'Unassigned / Not Attached' }}
+                  </span>
+
+                  <button
+                    @click="openTimetable"
+                    class="rounded-xl bg-[#5c001f] hover:bg-[#4a0019] text-white px-5 py-2.5 text-sm font-bold shadow transition-all inline-flex items-center gap-2"
+                  >
+                    <Calendar class="w-4 h-4 text-[#f8be17]" />
+                    {{ project.timetableAttached ? 'Manage / Edit Timetable' : 'Attach My Timetable' }}
+                  </button>
+                </div>
             </div>
 
             <div class="rounded-[18px] border border-[#e1d5cc] p-5 mt-5">

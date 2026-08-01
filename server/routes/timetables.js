@@ -28,7 +28,7 @@ router.get("/timetables/my-schedule", authenticateToken, (req, res) => {
 
     // 2. Query user's personal timetable
     const userSql = `
-      SELECT time_table_id, fyp_session_id, user_id, schedule_json, created_at, updated_at
+      SELECT time_table_id, fyp_session_id, user_id, schedule_json
       FROM time_table
       WHERE user_id = ?
       ORDER BY time_table_id DESC LIMIT 1
@@ -53,7 +53,6 @@ router.get("/timetables/my-schedule", authenticateToken, (req, res) => {
           fyp_session_id: row.fyp_session_id,
           user_id: row.user_id,
           schedule: parsed,
-          updated_at: row.updated_at,
         };
       }
 

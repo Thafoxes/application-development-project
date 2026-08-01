@@ -220,6 +220,45 @@ router.get("/classes/search", (req, res) => {
   });
 });
 
+// POST /api/classes - create new section in fyp_classes
+router.post("/classes", (req, res) => {
+  const { fyp_session_id, section_name } = req.body || {};
+
+  if (!fyp_session_id || !section_name || !String(section_name).trim()) {
+    return res.status(400).json({ error: "fyp_session_id and section_name are required." });
+  }
+
+  const sessionId = parseInt(fyp_session_id);
+  const name = String(section_name).trim();
+
+  // Check if section already exists for this session
+  const checkSql = "SELECT class_id, section_name FROM fyp_classes WHERE fyp_session_id = ? AND LOWER(section_name) = LOWER(?) LIMIT 1";
+  db.query(checkSql, [sessionId, name], (checkErr, checkRows) => {
+    if (checkErr) return res.status(500).json({ error: checkErr.message });
+
+    if (checkRows && checkRows.length > 0) {
+      return res.json({
+        success: true,
+        message: "Section already exists",
+        class_id: checkRows[0].class_id,
+        section_name: checkRows[0].section_name,
+      });
+    }
+
+    const insertSql = "INSERT INTO fyp_classes (fyp_session_id, section_name) VALUES (?, ?)";
+    db.query(insertSql, [sessionId, name], (inErr, result) => {
+      if (inErr) return res.status(500).json({ error: "Failed to create section: " + inErr.message });
+
+      res.json({
+        success: true,
+        message: "Section created successfully",
+        class_id: result.insertId,
+        section_name: name,
+      });
+    });
+  });
+});
+
 // GET /api/admin/users - get all users with admin role information from SQL database
 router.get("/admin/users", verifyAdmin, (req, res) => {
   const sql = `

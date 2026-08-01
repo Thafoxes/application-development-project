@@ -193,12 +193,29 @@ router.get("/student/my-fyp/:projectId", async (req, res) => {
       submittedAt: row.submitted_at,
       reviewedAt: row.reviewed_at,
     }));
-    const feedback = await query(
-      `SELECT feedback_id, submission_id, author_role, comment, attachment_path,
-              attachment_name, attachment_mime, created_at
-       FROM fyp_feedback WHERE project_id = ? ORDER BY created_at DESC`,
-      [projectId]
+    const timetableRows = await query(
+      `SELECT time_table_id, schedule_json FROM time_table WHERE user_id = ? ORDER BY time_table_id DESC LIMIT 1`,
+      [userId]
     );
+
+    let timetableAttached = false;
+    if (timetableRows.length > 0) {
+      let parsed = [];
+      try {
+        parsed = typeof timetableRows[0].schedule_json === 'string' ? JSON.parse(timetableRows[0].schedule_json) : (timetableRows[0].schedule_json || []);
+      } catch (e) {
+        parsed = [];
+      }
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        timetableAttached = true;
+      }
+    }
+
+    const hasSupervisor = Boolean(first.supervisor_name && first.supervisor_name !== "Not Assigned");
+    let effectiveStatus = first.status || "Pending Review";
+    if (hasSupervisor && (effectiveStatus === "Pending AI Matching" || effectiveStatus === "Pending Review" || effectiveStatus === "Pending Coordinator Review")) {
+      effectiveStatus = "Pending Supervisor Approval";
+    }
 
     res.json({
       success: true,
@@ -209,7 +226,7 @@ router.get("/student/my-fyp/:projectId", async (req, res) => {
         type: first.project_type || "Development",
         abstract: first.abstract || "",
         keywords: first.keywords || "",
-        status: first.status || "Pending Review",
+        status: effectiveStatus,
         currentPhase: first.current_phase || "Proposal",
         progressPercent: Number(first.progress_percent || 0),
         riskStatus: first.risk_status || "On Track",
@@ -223,6 +240,7 @@ router.get("/student/my-fyp/:projectId", async (req, res) => {
         supervisorEmail: first.supervisor_email || "",
         examiner: first.examiner_name || "Not Assigned",
         examinerEmail: first.examiner_email || "",
+        timetableAttached,
         createdAt: first.created_at,
         updatedAt: first.updated_at,
         documents,

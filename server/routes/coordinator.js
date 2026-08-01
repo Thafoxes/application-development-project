@@ -59,28 +59,40 @@ router.get("/coordinator/fyp-queue", (req, res) => {
       return res.status(500).json({ success: false, error: err.message });
     }
 
-    const projects = (rows || []).map((row) => ({
-      project_id: row.project_id,
-      student_user_id: row.student_user_id,
-      studentName: row.student_name || "Student",
-      matricNo: row.matric_no || "-",
-      projectTitle: row.project_title || "Untitled FYP",
-      projectType: row.project_type || "Development",
-      abstract: row.abstract || "",
-      keywords: row.keywords || "",
-      supervisor_user_id: row.supervisor_user_id,
-      supervisorName: row.supervisor_name || "Not Assigned",
-      supervisorEmail: row.supervisor_email || "",
-      matchScore: row.match_score || null,
-      status: row.status || "Pending Coordinator Review",
-      proposalStatus: row.submission_status || "pending",
-      aiStatus: row.match_score ? "AI Completed" : "Pending AI Matching",
-      submissionId: row.submission_id || null,
-      fileName: row.original_file_name || row.file_path || "No proposal document",
-      mimeType: row.mime_type || "application/octet-stream",
-      submittedAt: row.submitted_at || row.created_at,
-      updatedAt: row.updated_at,
-    }));
+    const projects = (rows || []).map((row) => {
+      const hasSupervisor = Boolean(row.supervisor_user_id || (row.supervisor_name && row.supervisor_name !== "Not Assigned"));
+      let aiStatus = "Pending";
+      if (hasSupervisor) {
+        aiStatus = "Supervisor Assigned";
+      } else if (row.match_score) {
+        aiStatus = "AI Completed";
+      } else {
+        aiStatus = "Pending";
+      }
+
+      return {
+        project_id: row.project_id,
+        student_user_id: row.student_user_id,
+        studentName: row.student_name || "Student",
+        matricNo: row.matric_no || "-",
+        projectTitle: row.project_title || "Untitled FYP",
+        projectType: row.project_type || "Development",
+        abstract: row.abstract || "",
+        keywords: row.keywords || "",
+        supervisor_user_id: row.supervisor_user_id,
+        supervisorName: row.supervisor_name || "Not Assigned",
+        supervisorEmail: row.supervisor_email || "",
+        matchScore: row.match_score || null,
+        status: row.status || "Pending Coordinator Review",
+        proposalStatus: row.submission_status || "pending",
+        aiStatus: aiStatus,
+        submissionId: row.submission_id || null,
+        fileName: row.original_file_name || row.file_path || "No proposal document",
+        mimeType: row.mime_type || "application/octet-stream",
+        submittedAt: row.submitted_at || row.created_at,
+        updatedAt: row.updated_at,
+      };
+    });
 
     res.json({
       success: true,

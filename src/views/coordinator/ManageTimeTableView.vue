@@ -167,6 +167,59 @@ const selectSearchResult = (result) => {
   showDropdown.value = false
 }
 
+const showCreateSectionModal = ref(false)
+const newSectionName = ref('')
+const isCreatingSection = ref(false)
+const createSectionError = ref('')
+
+const openCreateSectionModal = () => {
+  createSectionError.value = ''
+  newSectionName.value = targetName.value || ''
+  showCreateSectionModal.value = true
+}
+
+const createSection = async () => {
+  if (!newSectionName.value.trim()) {
+    createSectionError.value = 'Please enter a section name or number.'
+    return
+  }
+
+  if (!calendarStore.activeSessionId) {
+    await calendarStore.fetchActiveSession()
+  }
+
+  const fypSessionId = calendarStore.activeSessionId || 1
+  isCreatingSection.value = true
+  createSectionError.value = ''
+
+  try {
+    const res = await apiService.createClass(fypSessionId, newSectionName.value.trim())
+
+    if (res.success) {
+      targetType.value = 'Section Class'
+      targetName.value = res.section_name || newSectionName.value.trim()
+      selectedTargetId.value = res.class_id
+      showDropdown.value = false
+      showCreateSectionModal.value = false
+
+      searchResults.value = [
+        {
+          id: res.class_id,
+          label: res.section_name || newSectionName.value.trim(),
+          value: res.section_name || newSectionName.value.trim(),
+        },
+      ]
+    } else {
+      createSectionError.value = res.error || 'Failed to create section.'
+    }
+  } catch (err) {
+    console.error('Error creating section:', err)
+    createSectionError.value = err.response?.data?.error || err.message || 'Failed to create section.'
+  } finally {
+    isCreatingSection.value = false
+  }
+}
+
 const createTimeTable = async () => {
   if (!selectedTargetId.value) {
     alert('Please search and select a valid identifier from the dropdown.')
@@ -798,7 +851,26 @@ const updateFromJson = () => {
                       >
                         Create new user in Manage User
                       </router-link>
+
+                      <button
+                        v-if="targetType === 'Section Class'"
+                        @click="openCreateSectionModal"
+                        type="button"
+                        class="text-[#5c001f] font-bold underline block mt-1 hover:text-[#4a0019] text-left cursor-pointer"
+                      >
+                        + Create New Section for Session
+                      </button>
                     </div>
+                  </div>
+
+                  <div v-if="targetType === 'Section Class'" class="mt-1.5">
+                    <button
+                      @click="openCreateSectionModal"
+                      type="button"
+                      class="text-xs text-[#5c001f] font-bold underline hover:text-[#4a0019] flex items-center gap-1 cursor-pointer"
+                    >
+                      Can't find class? + Create New Section
+                    </button>
                   </div>
                 </div>
               </div>
@@ -932,6 +1004,75 @@ const updateFromJson = () => {
     </div>
 
     <AppFooter class="mt-auto -mb-[30px]" />
+
+    <!-- Create Section Popup Modal -->
+    <div
+      v-if="showCreateSectionModal"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+    >
+      <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl relative border border-gray-200">
+        <button
+          @click="showCreateSectionModal = false"
+          class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 font-bold text-xl cursor-pointer"
+        >
+          ✕
+        </button>
+
+        <h2 class="text-2xl font-bold text-[#5c001f] mb-1">Create New Section Class</h2>
+        <p class="text-xs text-gray-600 mb-5">
+          Add a new section for FYP Session {{ calendarStore.activeSessionId || 1 }} to upload its timetable into the database.
+        </p>
+
+        <div v-if="createSectionError" class="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 p-3 rounded-xl font-medium">
+          {{ createSectionError }}
+        </div>
+
+        <div class="space-y-4">
+          <div>
+            <label class="block text-xs uppercase tracking-wider font-bold text-gray-700 mb-1">
+              Active FYP Session
+            </label>
+            <input
+              type="text"
+              :value="`Session ID: ${calendarStore.activeSessionId || 1}`"
+              disabled
+              class="w-full p-3 bg-gray-100 border border-gray-300 rounded-xl text-sm font-semibold text-gray-600"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs uppercase tracking-wider font-bold text-gray-700 mb-1">
+              Section Number / Name <span class="text-red-500">*</span>
+            </label>
+            <input
+              v-model="newSectionName"
+              type="text"
+              placeholder="e.g. Section 01 or 01"
+              class="w-full p-3 border border-gray-300 rounded-xl text-sm font-semibold focus:border-[#5c001f] outline-none"
+              @keyup.enter="createSection"
+            />
+          </div>
+
+          <div class="flex justify-end gap-3 pt-4">
+            <button
+              type="button"
+              @click="showCreateSectionModal = false"
+              class="px-5 py-2.5 rounded-xl border border-gray-300 text-gray-700 font-bold hover:bg-gray-100 text-sm cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              @click="createSection"
+              :disabled="isCreatingSection || !newSectionName.trim()"
+              class="px-6 py-2.5 rounded-xl bg-[#5c001f] hover:bg-[#4a0019] text-white font-bold text-sm shadow transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {{ isCreatingSection ? 'Creating...' : 'Create Section' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <EditSlotModal
       :isOpen="editModal.isOpen"
