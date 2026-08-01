@@ -52,7 +52,50 @@ const selectedTemplateId = ref('')
 // scheduleGrid map: { 'Monday_09:00': { type, label, code, start_time, end_time } }
 const scheduleGrid = ref({})
 
-const isConfigured = computed(() => Object.keys(scheduleGrid.value).length > 0)
+// Helper to parse any schedule JSON format (flat array, nested slots, etc.) to grid map
+const parseScheduleToGrid = (scheduleData, defaultCode = '') => {
+  const grid = {}
+  const DAY_MAP = { 1: 'Monday', 2: 'Tuesday', 3: 'Wednesday', 4: 'Thursday', 5: 'Friday', 6: 'Saturday', 7: 'Sunday' }
+
+  let rawList = []
+  if (Array.isArray(scheduleData)) {
+    rawList = scheduleData
+  } else if (scheduleData && typeof scheduleData === 'object') {
+    rawList = scheduleData.weekly_recurring_occupancy || scheduleData.weekly_recurring || scheduleData.schedule || []
+  }
+
+  rawList.forEach((entry) => {
+    if (entry.slots && Array.isArray(entry.slots)) {
+      const day = entry.day_name || entry.day || DAY_MAP[entry.day_of_week] || 'Monday'
+      entry.slots.forEach((s) => {
+        const time = s.start_time || s.time || '09:00'
+        const key = `${day}_${time}`
+        grid[key] = {
+          type: s.type || 'class',
+          label: s.label || s.subject || s.title || 'Official Class',
+          code: s.code || defaultCode,
+          start_time: time,
+          end_time: s.end_time || `${parseInt(time.split(':')[0], 10) + 1}:00`,
+          color: s.color,
+        }
+      })
+    } else if (entry.day || entry.day_name || entry.time || entry.start_time || entry.day_of_week) {
+      const day = entry.day || entry.day_name || DAY_MAP[entry.day_of_week] || 'Monday'
+      const time = entry.time || entry.start_time || '09:00'
+      const key = `${day}_${time}`
+      grid[key] = {
+        type: entry.type || 'class',
+        label: entry.label || entry.subject || entry.title || 'Official Class',
+        code: entry.code || defaultCode,
+        start_time: time,
+        end_time: entry.end_time || `${parseInt(time.split(':')[0], 10) + 1}:00`,
+        color: entry.color,
+      }
+    }
+  })
+
+  return grid
+}
 
 // Load timetable data from backend
 const loadScheduleData = async () => {
@@ -65,22 +108,8 @@ const loadScheduleData = async () => {
       sectionTemplates.value = res.data.sectionTemplates || []
       userScheduleData.value = res.data.userSchedule
 
-      if (res.data.userSchedule && Array.isArray(res.data.userSchedule.schedule)) {
-        const grid = {}
-        res.data.userSchedule.schedule.forEach((item) => {
-          const day = item.day || item.day_name || 'Monday'
-          const time = item.time || item.start_time || '09:00'
-          const key = `${day}_${time}`
-          grid[key] = {
-            type: item.type || 'class',
-            label: item.label || item.subject || 'Class',
-            code: item.code || '',
-            start_time: time,
-            end_time: item.end_time || `${parseInt(time.split(':')[0]) + 1}:00`,
-            color: item.color,
-          }
-        })
-        scheduleGrid.value = grid
+      if (res.data.userSchedule && res.data.userSchedule.schedule) {
+        scheduleGrid.value = parseScheduleToGrid(res.data.userSchedule.schedule)
       }
     }
   } catch (err) {
@@ -96,23 +125,11 @@ const copySectionTemplate = () => {
   const tmpl = sectionTemplates.value.find(
     (t) => String(t.time_table_id || t.class_id) === String(selectedTemplateId.value)
   )
-  if (!tmpl || !Array.isArray(tmpl.schedule)) return
+  if (!tmpl) return
 
-  const grid = {}
-  tmpl.schedule.forEach((item) => {
-    const day = item.day || item.day_name || 'Monday'
-    const time = item.time || item.start_time || '09:00'
-    const key = `${day}_${time}`
-    grid[key] = {
-      type: item.type || 'class',
-      label: item.label || item.subject || `${tmpl.section_name} Class`,
-      code: item.code || tmpl.section_name,
-      start_time: time,
-      end_time: item.end_time || `${parseInt(time.split(':')[0]) + 1}:00`,
-    }
-  })
+  const grid = parseScheduleToGrid(tmpl.schedule, tmpl.section_name)
   scheduleGrid.value = grid
-  successMessage.value = `Successfully copied template for "${tmpl.section_name}" into your FYP schedule! Click 'Save Schedule' to confirm.`
+  successMessage.value = `Successfully loaded section template for "${tmpl.section_name}" into your FYP schedule grid! Click 'Save Schedule' below to save it.`
 }
 
 // Method 2: AI image upload fallback
@@ -241,23 +258,28 @@ const saveScheduleToBackend = async () => {
       const slot = scheduleGrid.value[key]
       list.push({
         day,
+        day_name: day,
         time,
         start_time: slot.start_time || time,
-        end_time: slot.end_time,
-        type: slot.type,
-        label: slot.label,
-        code: slot.code,
+        end_time: slot.end_time || `${parseInt(time.split(':')[0], 10) + 1}:00`,
+        type: slot.type || 'class',
+        label: slot.label || 'Official Class',
+        code: slot.code || '',
         color: slot.color,
       })
     })
 
-    await api.post('/timetables/my-schedule', {
+    const res = await api.post('/timetables/my-schedule', {
       schedule_json: list,
       fyp_session_id: activeSession.value?.fyp_session_id || 1,
     })
 
-    successMessage.value = 'Your personal FYP timetable schedule has been saved successfully!'
-    await loadScheduleData()
+    if (res.data.success) {
+      successMessage.value = 'Your personal FYP timetable schedule has been saved successfully!'
+      await loadScheduleData()
+    } else {
+      error.value = res.data.error || 'Failed to save schedule.'
+    }
   } catch (err) {
     error.value = err.response?.data?.error || err.message
   } finally {

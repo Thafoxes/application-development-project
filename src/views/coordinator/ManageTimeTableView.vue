@@ -610,35 +610,35 @@ const updateFromJson = () => {
           <span class="font-bold underline">Add New Time Table</span>
         </div>
 
-        <div class="flex flex-col lg:flex-row gap-8 mt-2 h-full">
-          <!-- LEFT PANEL -->
-          <div class="flex-1 flex flex-col gap-6 lg:pr-8 lg:border-r-2 border-black/20">
-            <h1 class="text-3xl font-bold text-black mb-2">Add New Time table</h1>
+        <div class="flex flex-col lg:flex-row gap-6 mt-2 h-full">
+          <!-- LEFT PANEL (Compact Side Panel) -->
+          <div class="w-full lg:w-[320px] xl:w-[340px] shrink-0 flex flex-col gap-5 lg:pr-6 lg:border-r border-black/15">
+            <h1 class="text-2xl font-bold text-black">Add New Time Table</h1>
 
             <!-- Mode Toggles -->
-            <div class="flex flex-col xl:flex-row gap-4">
+            <div class="flex gap-2 bg-gray-200/80 p-1 rounded-2xl border border-gray-300/60">
               <button
                 @click="entryMode = 'manual'"
                 :class="
                   entryMode === 'manual'
-                    ? 'bg-[#5c001f] text-white'
-                    : 'bg-gray-200 text-black hover:bg-gray-300'
+                    ? 'bg-[#5c001f] text-white shadow-sm'
+                    : 'text-gray-800 hover:text-black hover:bg-white/50'
                 "
-                class="px-6 py-3 rounded-full font-bold transition-colors text-sm shadow-md"
+                class="flex-1 px-3 py-2 rounded-xl font-bold transition-all text-xs text-center cursor-pointer"
               >
-                Add in manually
+                Add Manually
               </button>
 
               <button
                 @click="entryMode = 'upload'"
                 :class="
                   entryMode === 'upload'
-                    ? 'bg-[#5c001f] text-white'
-                    : 'bg-gray-200 text-black hover:bg-gray-300'
+                    ? 'bg-[#5c001f] text-white shadow-sm'
+                    : 'text-gray-800 hover:text-black hover:bg-white/50'
                 "
-                class="px-6 py-3 rounded-full font-bold transition-colors text-sm shadow-md"
+                class="flex-1 px-3 py-2 rounded-xl font-bold transition-all text-xs text-center cursor-pointer"
               >
-                Upload & AI Analyse
+                Upload & AI
               </button>
             </div>
 
@@ -788,7 +788,7 @@ const updateFromJson = () => {
                       </button>
 
                       <span class="font-bold text-sm">{{ slot.start_time }} - {{ slot.end_time }}</span>
-                      <span class="text-sm font-medium mt-1">{{ slot.label }}</span>
+                      <span class="text-sm font-medium mt-1 truncate max-w-full block" :title="slot.label">{{ slot.label }}</span>
                       <span class="text-xs text-white/70 mt-1 uppercase tracking-wider">
                         {{ day.day_name }}
                       </span>
@@ -798,7 +798,7 @@ const updateFromJson = () => {
                   <div
                     v-for="event in calendarData.specific_calendar_events"
                     :key="event.event_id"
-                    class="bg-[#e85d04] text-white p-3 rounded-lg flex flex-col relative group shadow-sm transition-transform hover:-translate-y-0.5"
+                    class="bg-[#e85d04] text-white p-3 rounded-lg flex flex-col relative group shadow-sm transition-transform hover:-translate-y-0.5 max-w-full overflow-hidden"
                   >
                     <button
                       @click="removeSpecificEvent(event.event_id)"
@@ -808,7 +808,7 @@ const updateFromJson = () => {
                     </button>
 
                     <span class="font-bold text-sm">{{ event.start_time }} - {{ event.end_time }}</span>
-                    <span class="text-sm font-medium mt-1">{{ event.title }}</span>
+                    <span class="text-sm font-medium mt-1 truncate max-w-full block" :title="event.title">{{ event.title }}</span>
                     <span class="text-xs text-white/70 mt-1 uppercase tracking-wider">
                       {{ event.target_date }}
                     </span>
@@ -828,10 +828,10 @@ const updateFromJson = () => {
             </div>
           </div>
 
-          <!-- RIGHT PANEL -->
-          <div class="flex-[1.5] flex flex-col gap-4">
+          <!-- RIGHT PANEL (Expanded Calendar Area) -->
+          <div class="flex-1 min-w-0 flex flex-col gap-4">
             <div class="flex justify-between items-start mb-2">
-              <div class="flex flex-col gap-2">
+              <div class="flex flex-col gap-2 w-full max-w-md">
                 <label class="text-sm font-medium text-gray-700">Time table for</label>
 
                 <caption>
@@ -841,7 +841,7 @@ const updateFromJson = () => {
 
                 <select
                   v-model="targetType"
-                  class="border border-gray-400 p-2 w-64 outline-none focus:border-[#5c001f] rounded shadow-sm"
+                  class="border border-gray-400 p-2 w-64 max-w-full outline-none focus:border-[#5c001f] rounded shadow-sm"
                 >
                   <option value="Lecturer">Lecturer</option>
                   <option value="Section Class">Section Class</option>
@@ -855,24 +855,26 @@ const updateFromJson = () => {
                   }}
                 </label>
 
-                <div class="relative">
+                <div class="relative w-64 max-w-full">
                   <input
                     v-model="targetName"
                     type="text"
                     @focus="(targetName.length >= (targetType === 'Section Class' ? 1 : 3)) && !selectedTargetId && (showDropdown = true)"
-                    class="border border-gray-400 p-2 w-64 outline-none focus:border-[#5c001f] rounded shadow-sm"
+                    class="border border-gray-400 p-2 w-full outline-none focus:border-[#5c001f] rounded shadow-sm truncate"
                     :placeholder="targetType === 'Lecturer' ? 'e.g. john@utm.my' : 'e.g. 01'"
+                    :title="targetName"
                   />
 
                   <div
                     v-if="showDropdown"
-                    class="absolute z-50 w-64 mt-1 bg-white border border-gray-300 rounded shadow-lg max-h-48 overflow-y-auto"
+                    class="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded shadow-lg max-h-48 overflow-y-auto"
                   >
                     <div
                       v-for="res in searchResults"
                       :key="res.id"
                       @click="selectSearchResult(res)"
-                      class="px-3 py-2 cursor-pointer hover:bg-gray-100 text-sm"
+                      class="px-3 py-2 cursor-pointer hover:bg-gray-100 text-sm truncate"
+                      :title="res.label"
                     >
                       {{ res.label }}
                     </div>
