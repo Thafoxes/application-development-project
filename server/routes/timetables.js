@@ -21,10 +21,9 @@ router.get("/timetables/my-schedule", authenticateToken, (req, res) => {
     return res.status(401).json({ error: "User ID missing from authentication token." });
   }
 
-  // 1. Query active session
-  db.query("SELECT fyp_session_id, session_name FROM fyp_session WHERE status = 'Active' LIMIT 1", (sessErr, sessRows) => {
-    const activeSession = (sessRows && sessRows[0]) || null;
-    const sessionId = activeSession?.fyp_session_id || 1;
+  // 1. Query active or any valid session
+  db.query("SELECT fyp_session_id, session_name FROM fyp_session ORDER BY fyp_session_id DESC LIMIT 1", (sessErr, sessRows) => {
+    const activeSession = (sessRows && sessRows[0]) || { fyp_session_id: 1, session_name: 'Default Session' };
 
     // 2. Query user's personal timetable
     const userSql = `
@@ -56,7 +55,6 @@ router.get("/timetables/my-schedule", authenticateToken, (req, res) => {
         };
       }
 
-      // 3. Query Master Section Timetables (created by Coordinator)
       // 3. Query Master Section Timetables (created by Coordinator)
       const templatesSql = `
         SELECT 
@@ -123,26 +121,42 @@ router.post("/timetables/my-schedule", authenticateToken, (req, res) => {
   }
 
   const jsonStr = typeof schedule_json === 'string' ? schedule_json : JSON.stringify(schedule_json);
-  const sessionId = fyp_session_id ? parseInt(fyp_session_id) : 1;
 
-  // Upsert personal user schedule in SQL database
-  const checkSql = "SELECT time_table_id FROM time_table WHERE user_id = ? LIMIT 1";
-  db.query(checkSql, [userId], (checkErr, rows) => {
-    if (checkErr) return res.status(500).json({ error: checkErr.message });
+  // 1. Resolve existing valid fyp_session_id from database to avoid foreign key constraint failure
+  db.query("SELECT fyp_session_id FROM fyp_session ORDER BY fyp_session_id DESC LIMIT 1", (sessErr, sessRows) => {
+    let resolvedSessionId = (sessRows && sessRows.length > 0) ? sessRows[0].fyp_session_id : (fyp_session_id ? parseInt(fyp_session_id) : null);
 
-    if (rows && rows.length > 0) {
-      const timeTableId = rows[0].time_table_id;
-      const updateSql = "UPDATE time_table SET schedule_json = ?, fyp_session_id = ? WHERE time_table_id = ?";
-      db.query(updateSql, [jsonStr, sessionId, timeTableId], (upErr) => {
-        if (upErr) return res.status(500).json({ error: upErr.message });
-        res.json({ success: true, message: "Personal schedule updated successfully.", time_table_id: timeTableId });
+    const savePersonalSchedule = (validSessionId) => {
+      const checkSql = "SELECT time_table_id FROM time_table WHERE user_id = ? LIMIT 1";
+      db.query(checkSql, [userId], (checkErr, rows) => {
+        if (checkErr) return res.status(500).json({ error: checkErr.message });
+
+        if (rows && rows.length > 0) {
+          const timeTableId = rows[0].time_table_id;
+          const updateSql = "UPDATE time_table SET schedule_json = ?, fyp_session_id = ? WHERE time_table_id = ?";
+          db.query(updateSql, [jsonStr, validSessionId, timeTableId], (upErr) => {
+            if (upErr) return res.status(500).json({ error: upErr.message });
+            res.json({ success: true, message: "Personal schedule updated successfully.", time_table_id: timeTableId });
+          });
+        } else {
+          const insertSql = "INSERT INTO time_table (fyp_session_id, user_id, class_id, schedule_json) VALUES (?, ?, NULL, ?)";
+          db.query(insertSql, [validSessionId, userId, jsonStr], (inErr, result) => {
+            if (inErr) return res.status(500).json({ error: inErr.message });
+            res.json({ success: true, message: "Personal schedule saved successfully.", time_table_id: result.insertId });
+          });
+        }
+      });
+    };
+
+    if (!resolvedSessionId) {
+      // If fyp_session table is completely empty, insert an initial session record
+      const createSessSql = "INSERT INTO fyp_session (session_name, status) VALUES ('2025/2026-1', 'Active')";
+      db.query(createSessSql, (createErr, createRes) => {
+        const fallbackId = (createRes && createRes.insertId) ? createRes.insertId : 1;
+        savePersonalSchedule(fallbackId);
       });
     } else {
-      const insertSql = "INSERT INTO time_table (fyp_session_id, user_id, class_id, schedule_json) VALUES (?, ?, NULL, ?)";
-      db.query(insertSql, [sessionId, userId, jsonStr], (inErr, result) => {
-        if (inErr) return res.status(500).json({ error: inErr.message });
-        res.json({ success: true, message: "Personal schedule saved successfully.", time_table_id: result.insertId });
-      });
+      savePersonalSchedule(resolvedSessionId);
     }
   });
 });

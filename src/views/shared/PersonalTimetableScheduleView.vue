@@ -1,41 +1,42 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
-import {
-  Calendar as CalendarIcon,
-  Sparkles,
-  Upload,
-  Copy,
-  Save,
-  RotateCcw,
-  Clock,
-  CheckCircle2,
-  AlertCircle,
-  BookOpen,
-  Info,
-  Loader2,
-  Plus,
-  Trash2,
-  X,
-} from 'lucide-vue-next'
+import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuth } from '@/composables/useAuth'
 import AppHeader from '@/components/AppHeader.vue'
 import AppSidebar from '@/components/AppSidebar.vue'
 import SystemCalendarGrid from '@/components/calendar_components/SystemCalendarGrid.vue'
-import { api } from '@/services/ifamousApi'
-import { formatMalaysiaDateTime } from '@/utils/dateTime'
+import axios from 'axios'
+import {
+  Calendar as CalendarIcon,
+  Copy,
+  Upload,
+  Sparkles,
+  Save,
+  RotateCcw,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+  Info,
+  ArrowRight,
+  PlusCircle,
+} from 'lucide-vue-next'
 
-const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday']
-const TIME_SLOTS = [
-  '08:00',
-  '09:00',
-  '10:00',
-  '11:00',
-  '12:00',
-  '13:00',
-  '14:00',
-  '15:00',
-  '16:00',
-  '17:00',
-]
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+const getAuthHeader = () => ({ Authorization: `Bearer ${localStorage.getItem('token') || ''}` })
+
+const api = {
+  get: (url) => axios.get(`${API_BASE_URL}/api${url}`, { headers: getAuthHeader() }),
+  post: (url, data, config = {}) =>
+    axios.post(`${API_BASE_URL}/api${url}`, data, { headers: { ...getAuthHeader(), ...(config.headers || {}) } }),
+}
+
+const router = useRouter()
+const { user } = useAuth()
+
+const isStudent = computed(() => {
+  const role = String(user.value?.role || '').toLowerCase()
+  return role === 'student' || Number(user.value?.is_student) === 1
+})
 
 const loading = ref(true)
 const saving = ref(false)
@@ -44,100 +45,44 @@ const error = ref('')
 const successMessage = ref('')
 
 const activeSession = ref(null)
-const userSchedule = ref(null)
+const userScheduleData = ref(null)
 const sectionTemplates = ref([])
 const selectedTemplateId = ref('')
 
-// Draft schedule grid stored as map: key `${day}_${time}` -> { type, label, code }
+// scheduleGrid map: { 'Monday_09:00': { type, label, code, start_time, end_time } }
 const scheduleGrid = ref({})
-
-// Modal for editing a specific cell
-const showCellModal = ref(false)
-const selectedCell = ref({ day: '', time: '', type: 'available', label: '', code: '' })
-
-// File upload reference for AI Image OCR
-const imageInputRef = ref(null)
 
 const isConfigured = computed(() => Object.keys(scheduleGrid.value).length > 0)
 
-const extractGridFromSchedule = (scheduleData, defaultLabel = 'Class') => {
-  const grid = {}
-  if (!scheduleData) return grid
-
-  // Flat array format [ { day, time, type, label, code } ]
-  if (Array.isArray(scheduleData)) {
-    let hasFlat = false
-    scheduleData.forEach((item) => {
-      if (item.day && item.time) {
-        hasFlat = true
-        grid[`${item.day}_${item.time}`] = {
-          type: item.type || 'class',
-          label: item.label || item.subject || defaultLabel,
-          code: item.code || '',
-        }
-      }
-    })
-    if (hasFlat) return grid
-  }
-
-  // AI / ManageTimeTable nested format { weekly_recurring: [...], specific_events: [...] }
-  let recurringList = []
-  if (Array.isArray(scheduleData)) {
-    recurringList = scheduleData
-  } else if (typeof scheduleData === 'object') {
-    recurringList = scheduleData.weekly_recurring || scheduleData.weekly_recurring_occupancy || []
-  }
-
-  const dayNameMap = {
-    1: 'Monday',
-    2: 'Tuesday',
-    3: 'Wednesday',
-    4: 'Thursday',
-    5: 'Friday',
-    6: 'Saturday',
-    7: 'Sunday',
-  }
-
-  if (Array.isArray(recurringList)) {
-    recurringList.forEach((dayEntry) => {
-      const day = dayEntry.day_name || dayNameMap[dayEntry.day_of_week]
-      if (!day) return
-
-      const slots = dayEntry.slots || []
-      slots.forEach((slot) => {
-        const startTime = slot.start_time || slot.time
-        if (!startTime) return
-
-        const startHour = parseInt(startTime.split(':')[0], 10)
-        const endHour = slot.end_time ? parseInt(slot.end_time.split(':')[0], 10) : startHour + 1
-
-        for (let h = startHour; h < endHour; h++) {
-          const timeSlot = `${String(h).padStart(2, '0')}:00`
-          grid[`${day}_${timeSlot}`] = {
-            type: slot.type || 'class',
-            label: slot.label || slot.subject || defaultLabel,
-            code: slot.code || '',
-          }
-        }
-      })
-    })
-  }
-
-  return grid
-}
-
+// Load timetable data from backend
 const loadScheduleData = async () => {
   loading.value = true
   error.value = ''
   try {
     const res = await api.get('/timetables/my-schedule')
-    activeSession.value = res.data.activeSession
-    userSchedule.value = res.data.userSchedule
-    sectionTemplates.value = res.data.sectionTemplates || []
+    if (res.data.success) {
+      activeSession.value = res.data.activeSession
+      sectionTemplates.value = res.data.sectionTemplates || []
+      userScheduleData.value = res.data.userSchedule
 
-    // Populate scheduleGrid if existing
-    const existing = res.data.userSchedule?.schedule
-    scheduleGrid.value = extractGridFromSchedule(existing, 'Personal Slot')
+      if (res.data.userSchedule && Array.isArray(res.data.userSchedule.schedule)) {
+        const grid = {}
+        res.data.userSchedule.schedule.forEach((item) => {
+          const day = item.day || item.day_name || 'Monday'
+          const time = item.time || item.start_time || '09:00'
+          const key = `${day}_${time}`
+          grid[key] = {
+            type: item.type || 'class',
+            label: item.label || item.subject || 'Class',
+            code: item.code || '',
+            start_time: time,
+            end_time: item.end_time || `${parseInt(time.split(':')[0]) + 1}:00`,
+            color: item.color,
+          }
+        })
+        scheduleGrid.value = grid
+      }
+    }
   } catch (err) {
     error.value = err.response?.data?.error || err.message
   } finally {
@@ -145,34 +90,38 @@ const loadScheduleData = async () => {
   }
 }
 
-// Copy selected Master Coordinator Section template
+// Method 1: Copy section template into student's personal schedule
 const copySectionTemplate = () => {
   if (!selectedTemplateId.value) return
   const tmpl = sectionTemplates.value.find(
-    (t) => String(t.time_table_id) === String(selectedTemplateId.value) || String(t.class_id) === String(selectedTemplateId.value),
+    (t) => String(t.time_table_id || t.class_id) === String(selectedTemplateId.value)
   )
-  if (!tmpl) return
+  if (!tmpl || !Array.isArray(tmpl.schedule)) return
 
-  const newGrid = extractGridFromSchedule(tmpl.schedule, tmpl.section_name || 'Official Class')
-  scheduleGrid.value = newGrid
-  successMessage.value = `Copied schedule from ${tmpl.section_name}. Customize replacement subjects or non-availability as needed.`
+  const grid = {}
+  tmpl.schedule.forEach((item) => {
+    const day = item.day || item.day_name || 'Monday'
+    const time = item.time || item.start_time || '09:00'
+    const key = `${day}_${time}`
+    grid[key] = {
+      type: item.type || 'class',
+      label: item.label || item.subject || `${tmpl.section_name} Class`,
+      code: item.code || tmpl.section_name,
+      start_time: time,
+      end_time: item.end_time || `${parseInt(time.split(':')[0]) + 1}:00`,
+    }
+  })
+  scheduleGrid.value = grid
+  successMessage.value = `Successfully copied template for "${tmpl.section_name}" into your FYP schedule! Click 'Save Schedule' to confirm.`
 }
 
-// AI Image Upload & Auto-Rearrange
-const triggerImageUpload = () => {
-  imageInputRef.value?.click()
-}
+// Method 2: AI image upload fallback
+const imageInputRef = ref(null)
+const triggerImageUpload = () => imageInputRef.value?.click()
 
 const handleImageUpload = async (event) => {
   const file = event.target.files?.[0]
   if (!file) return
-
-  // Validate image file format
-  const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp']
-  if (!validTypes.includes(file.type)) {
-    error.value = 'Please select an image file (.png, .jpg, .jpeg, .webp). PDF files are not supported for AI image analysis.'
-    return
-  }
 
   uploadingAi.value = true
   error.value = ''
@@ -186,171 +135,68 @@ const handleImageUpload = async (event) => {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
 
-    const data = res.data
-    if (data.error) throw new Error(data.error)
+    if (res.data.success && res.data.data) {
+      const extractedGrid = {}
+      const recurring = res.data.data.weekly_recurring || []
 
-    // Parse weekly_recurring items into scheduleGrid
-    const weekly = data.weekly_recurring || []
-    const newGrid = {}
+      const DAY_MAP = { 1: 'Monday', 2: 'Tuesday', 3: 'Wednesday', 4: 'Thursday', 5: 'Friday', 6: 'Saturday', 7: 'Sunday' }
 
-    weekly.forEach((item) => {
-      const day = item.day_name || DAYS[item.day_of_week - 1]
-      if (!DAYS.includes(day)) return
-
-      (item.slots || []).forEach((slot) => {
-        const startTime = slot.start_time?.substring(0, 5) || '08:00'
-        newGrid[`${day}_${startTime}`] = {
-          type: 'class',
-          label: slot.label || 'Extracted Subject',
-          code: '',
+      recurring.forEach((d) => {
+        const dayName = d.day_name || DAY_MAP[d.day_of_week] || 'Monday'
+        if (Array.isArray(d.slots)) {
+          d.slots.forEach((s) => {
+            const time = s.start_time || '09:00'
+            const key = `${dayName}_${time}`
+            extractedGrid[key] = {
+              type: s.type || 'class',
+              label: s.label || s.subject || 'Class',
+              code: s.code || '',
+              start_time: time,
+              end_time: s.end_time || `${parseInt(time.split(':')[0]) + 1}:00`,
+            }
+          })
         }
       })
-    })
 
-    scheduleGrid.value = newGrid
-    successMessage.value = 'AI successfully analyzed timetable image and auto-rearranged your weekly slots!'
-  } catch (err) {
-    error.value = err.response?.data?.error || err.message || 'Failed to analyze timetable image.'
-  } finally {
-    uploadingAi.value = false
-    if (event.target) event.target.value = ''
-  }
-}
-
-const formattedSelectedCellDate = computed(() => {
-  if (!selectedCell.value?.dateStr) return selectedCell.value?.day || ''
-  try {
-    const parts = selectedCell.value.dateStr.split('-')
-    const d = new Date(parts[0], parts[1] - 1, parts[2])
-    return d.toLocaleDateString('en-US', {
-      weekday: 'long',
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric',
-    })
-  } catch (e) {
-    return selectedCell.value.day || ''
-  }
-})
-
-// Open slot cell editor
-const openCellEditor = (day, time) => {
-  const key = `${day}_${time}`
-  const existing = scheduleGrid.value[key] || {}
-  const todayStr = new Date().toISOString().split('T')[0]
-  selectedCell.value = {
-    day: day || 'Monday',
-    dateStr: existing.dateStr || todayStr,
-    time: time || '10:10',
-    startTime: existing.start_time || time || '10:10',
-    endTime: existing.end_time || '12:30',
-    type: existing.type || 'available',
-    label: existing.label || '',
-    code: existing.code || '',
-  }
-  showCellModal.value = true
-}
-
-// Save cell edit
-const saveCellEdit = () => {
-  const startTime = selectedCell.value.startTime || selectedCell.value.time || '10:10'
-  const endTime = selectedCell.value.endTime || '12:30'
-  const key = `${selectedCell.value.day}_${startTime}`
-
-  const defaultTitle = selectedCell.value.type === 'available'
-    ? `Free Time (${startTime} - ${endTime})`
-    : selectedCell.value.type === 'replacement'
-    ? 'Replacement Subject'
-    : selectedCell.value.type === 'unavailable'
-    ? 'Personal Non-Availability'
-    : 'Official Class'
-
-  if (selectedCell.value.type === 'available' && !selectedCell.value.label) {
-    delete scheduleGrid.value[key]
-  } else {
-    scheduleGrid.value[key] = {
-      type: selectedCell.value.type,
-      start_time: startTime,
-      end_time: endTime,
-      dateStr: selectedCell.value.dateStr,
-      label: selectedCell.value.label || defaultTitle,
-      code: selectedCell.value.code || '',
+      scheduleGrid.value = extractedGrid
+      successMessage.value = 'AI successfully extracted your timetable image into your schedule grid!'
+    } else {
+      error.value = res.data.error || 'Failed to analyze timetable image.'
     }
-  }
-  showCellModal.value = false
-}
-
-// Save entire schedule to SQL backend
-const saveScheduleToBackend = async () => {
-  saving.value = true
-  error.value = ''
-  successMessage.value = ''
-
-  try {
-    // Convert scheduleGrid map to array format
-    const list = []
-    Object.keys(scheduleGrid.value).forEach((key) => {
-      const [day, time] = key.split('_')
-      const slot = scheduleGrid.value[key]
-      list.push({
-        day,
-        time,
-        type: slot.type,
-        label: slot.label,
-        code: slot.code,
-      })
-    })
-
-    await api.post('/timetables/my-schedule', {
-      schedule_json: list,
-      fyp_session_id: activeSession.value?.fyp_session_id || 1,
-    })
-
-    successMessage.value = 'Your personal FYP timetable schedule has been saved successfully!'
-    await loadScheduleData()
   } catch (err) {
     error.value = err.response?.data?.error || err.message
   } finally {
-    saving.value = false
+    uploadingAi.value = false
+    event.target.value = ''
   }
 }
 
 // Convert scheduleGrid map into weeklyRecurring array for SystemCalendarGrid
 const weeklyRecurringFromGrid = computed(() => {
-  const dayNameMap = {
-    'Monday': 1,
-    'Tuesday': 2,
-    'Wednesday': 3,
-    'Thursday': 4,
-    'Friday': 5,
-    'Saturday': 6,
-    'Sunday': 7,
-  }
-
+  const dayMap = { Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6, Sunday: 7 }
   const list = []
+
   Object.keys(scheduleGrid.value).forEach((key) => {
     const [day, time] = key.split('_')
-    const dayId = dayNameMap[day]
+    const dayId = dayMap[day]
     const slot = scheduleGrid.value[key]
     if (dayId && slot && time) {
       const startHour = parseInt(time.split(':')[0], 10)
-      const endHour = startHour + 1
+      const endHour = slot.end_time ? parseInt(slot.end_time.split(':')[0], 10) : startHour + 1
       list.push({
         day_of_week: dayId,
         day_name: day,
         start_time: time,
-        end_time: `${String(endHour).padStart(2, '0')}:00`,
+        end_time: slot.end_time || `${String(endHour).padStart(2, '0')}:00`,
         label: slot.label,
         type: slot.type,
+        code: slot.code,
+        color: slot.color,
       })
     }
   })
   return list
 })
-
-const handleSystemGridCellClick = (cellInfo) => {
-  openCellEditor(cellInfo.day, cellInfo.time)
-}
 
 const handleSlotSaveFromGrid = (slotData) => {
   const day = slotData.dayName || slotData.day_name || 'Monday'
@@ -377,6 +223,52 @@ const handleSystemGridSlotRemove = (slotInfo) => {
   }
 }
 
+const clearSchedule = () => {
+  if (confirm('Are you sure you want to clear your current schedule grid?')) {
+    scheduleGrid.value = {}
+  }
+}
+
+const saveScheduleToBackend = async () => {
+  saving.value = true
+  error.value = ''
+  successMessage.value = ''
+
+  try {
+    const list = []
+    Object.keys(scheduleGrid.value).forEach((key) => {
+      const [day, time] = key.split('_')
+      const slot = scheduleGrid.value[key]
+      list.push({
+        day,
+        time,
+        start_time: slot.start_time || time,
+        end_time: slot.end_time,
+        type: slot.type,
+        label: slot.label,
+        code: slot.code,
+        color: slot.color,
+      })
+    })
+
+    await api.post('/timetables/my-schedule', {
+      schedule_json: list,
+      fyp_session_id: activeSession.value?.fyp_session_id || 1,
+    })
+
+    successMessage.value = 'Your personal FYP timetable schedule has been saved successfully!'
+    await loadScheduleData()
+  } catch (err) {
+    error.value = err.response?.data?.error || err.message
+  } finally {
+    saving.value = false
+  }
+}
+
+const goToAddTimeTable = () => {
+  router.push('/add-time-table')
+}
+
 onMounted(loadScheduleData)
 </script>
 
@@ -386,23 +278,24 @@ onMounted(loadScheduleData)
     <div class="flex flex-col md:flex-row flex-1 w-full min-w-0">
       <AppSidebar />
       <main class="flex-1 p-4 sm:p-6 lg:p-9 space-y-6 min-w-0 overflow-x-hidden">
-        <!-- Page Title Header -->
+        <!-- Header Banner -->
         <section class="rounded-[30px] bg-[#5c001f] text-white p-8 shadow-xl relative overflow-hidden">
           <div class="absolute -right-20 -top-20 w-72 h-72 rounded-full bg-[#f8be17]/20" />
           <div class="relative flex flex-wrap items-center justify-between gap-4">
             <div>
-              <p class="text-[#f8be17] font-bold uppercase tracking-[0.2em]">Shared Timetable Management</p>
+              <p class="text-[#f8be17] font-bold uppercase tracking-[0.2em]">Personal Schedule Management</p>
               <h1 class="text-3xl lg:text-4xl font-bold mt-2 flex items-center gap-3">
-                <CalendarIcon class="w-8 h-8 text-[#f8be17]" /> My FYP & Personal Timetable
+                <CalendarIcon class="w-8 h-8 text-[#f8be17]" /> My Personal Timetable
               </h1>
               <p class="text-white/75 mt-2 max-w-2xl">
-                Set and customize your weekly schedule. Copy coordinator master timetables, upload an image for AI
-                auto-rearrange, or add replacement subjects.
+                Set and customize your weekly schedule availability. Clone section templates, upload an image, or set free times.
               </p>
             </div>
             <div class="flex items-center gap-2">
-              <span class="rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-wider shadow"
-                :class="isConfigured ? 'bg-emerald-500 text-white' : 'bg-amber-400 text-gray-900'">
+              <span
+                class="rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-wider shadow"
+                :class="isConfigured ? 'bg-emerald-500 text-white' : 'bg-amber-400 text-gray-900'"
+              >
                 {{ isConfigured ? 'Schedule Configured' : 'Unassigned / Empty' }}
               </span>
             </div>
@@ -417,36 +310,70 @@ onMounted(loadScheduleData)
 
         <template v-else>
           <!-- Alerts -->
-          <div v-if="error"
-            class="rounded-[20px] bg-red-50 border border-red-200 p-4 text-red-800 font-bold flex items-center gap-3">
+          <div
+            v-if="error"
+            class="rounded-[20px] bg-red-50 border border-red-200 p-4 text-red-800 font-bold flex items-center gap-3"
+          >
             <AlertCircle class="w-5 h-5 flex-shrink-0 text-red-600" />
             <span>{{ error }}</span>
           </div>
 
-          <div v-if="successMessage"
-            class="rounded-[20px] bg-emerald-50 border border-emerald-200 p-4 text-emerald-800 font-bold flex items-center gap-3">
+          <div
+            v-if="successMessage"
+            class="rounded-[20px] bg-emerald-50 border border-emerald-200 p-4 text-emerald-800 font-bold flex items-center gap-3"
+          >
             <CheckCircle2 class="w-5 h-5 flex-shrink-0 text-emerald-600" />
             <span>{{ successMessage }}</span>
           </div>
 
-          <!-- Unassigned Initial Banner -->
-          <section v-if="!isConfigured"
-            class="rounded-[24px] bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-300 p-6">
-            <div class="flex items-start gap-4">
-              <div class="rounded-full bg-amber-500 text-white p-3 shadow">
-                <Info class="w-6 h-6" />
+          <!-- UNASSIGNED EMPTY STATE BANNER -->
+          <template v-if="!isConfigured">
+            <!-- Non-Student Role (Lecturer / Coordinator / Staff / Admin) -->
+            <section
+              v-if="!isStudent"
+              class="rounded-[26px] bg-white border border-[#d8c9bd] p-8 shadow-md text-center space-y-4"
+            >
+              <div class="w-16 h-16 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center mx-auto">
+                <Info class="w-8 h-8" />
               </div>
-              <div>
-                <h2 class="text-xl font-bold text-amber-900">Your timetable is currently unassigned</h2>
-                <p class="text-sm text-amber-800 mt-1">
-                  Each student can maintain a customized schedule based on replacement subjects or personal
-                  non-availability. Choose an option below to set up your schedule:
+              <div class="max-w-md mx-auto space-y-2">
+                <h2 class="text-2xl font-bold text-gray-900">No Timetable Found for Your Account</h2>
+                <p class="text-sm text-gray-600">
+                  You currently do not have a personal timetable schedule set up in the system. Would you like to create one or manage timetables?
                 </p>
               </div>
-            </div>
-          </section>
+              <div class="pt-2">
+                <button
+                  @click="goToAddTimeTable"
+                  class="rounded-xl bg-[#5c001f] hover:bg-[#4a0019] text-[#f8be17] font-bold px-6 py-3 shadow inline-flex items-center gap-2 transition-all cursor-pointer"
+                >
+                  <PlusCircle class="w-5 h-5" />
+                  Create New Timetable in Add Time Table
+                  <ArrowRight class="w-4 h-4 ml-1" />
+                </button>
+              </div>
+            </section>
 
-          <!-- Action & Setup Bar -->
+            <!-- Student Role -->
+            <section
+              v-else
+              class="rounded-[24px] bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-300 p-6 space-y-4"
+            >
+              <div class="flex items-start gap-4">
+                <div class="rounded-full bg-amber-500 text-white p-3 shadow shrink-0">
+                  <Info class="w-6 h-6" />
+                </div>
+                <div>
+                  <h2 class="text-xl font-bold text-amber-900">Your FYP Timetable Schedule is Unassigned</h2>
+                  <p class="text-sm text-amber-800 mt-1">
+                    Find your class section timetable below to create a copy, or upload an image to set up your personal FYP timetable.
+                  </p>
+                </div>
+              </div>
+            </section>
+          </template>
+
+          <!-- Setup & Customization Tools -->
           <section class="bg-white rounded-[26px] p-6 shadow border border-black/5 space-y-4">
             <h2 class="text-xl font-bold flex items-center gap-2">
               <Sparkles class="w-5 h-5 text-[#5c001f]" /> Setup & Timetable Customization Tools
@@ -454,52 +381,64 @@ onMounted(loadScheduleData)
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-2">
               <!-- Method A: Copy Coordinator Section Template -->
-              <div
-                class="rounded-[20px] bg-[#f7f1ea] border border-[#e1d5cc] p-5 flex flex-col justify-between space-y-4">
+              <div class="rounded-[20px] bg-[#f7f1ea] border border-[#e1d5cc] p-5 flex flex-col justify-between space-y-4">
                 <div>
                   <div class="flex items-center gap-2 font-bold text-[#5c001f]">
-                    <Copy class="w-5 h-5" /> Option 1: Copy Master Section Template
+                    <Copy class="w-5 h-5" /> Option 1: Copy Master Class Section Template
                   </div>
                   <p class="text-xs text-gray-600 mt-1">
-                    Select an official section timetable published by the coordinator and clone it into your FYP
-                    schedule.
+                    Find your section timetable published by the coordinator and clone it into your personal FYP schedule.
                   </p>
                 </div>
 
                 <div class="flex flex-wrap items-center gap-3">
-                  <select v-model="selectedTemplateId"
-                    class="flex-1 rounded-xl border border-gray-300 p-2.5 text-sm font-medium focus:border-[#5c001f] focus:outline-none">
+                  <select
+                    v-model="selectedTemplateId"
+                    class="flex-1 rounded-xl border border-gray-300 p-2.5 text-sm font-medium focus:border-[#5c001f] focus:outline-none"
+                  >
                     <option value="">-- Select Section Timetable --</option>
-                    <option v-for="t in sectionTemplates" :key="t.time_table_id || t.class_id"
-                      :value="t.time_table_id || t.class_id">
+                    <option
+                      v-for="t in sectionTemplates"
+                      :key="t.time_table_id || t.class_id"
+                      :value="t.time_table_id || t.class_id"
+                    >
                       {{ t.section_name }}
                     </option>
                   </select>
-                  <button @click="copySectionTemplate" :disabled="!selectedTemplateId"
-                    class="rounded-xl bg-[#5c001f] px-4 py-2.5 text-sm font-bold text-white shadow disabled:opacity-50 inline-flex items-center gap-2">
+                  <button
+                    @click="copySectionTemplate"
+                    :disabled="!selectedTemplateId"
+                    class="rounded-xl bg-[#5c001f] px-4 py-2.5 text-sm font-bold text-white shadow disabled:opacity-50 inline-flex items-center gap-2 cursor-pointer"
+                  >
                     <Copy class="w-4 h-4" /> Copy Template
                   </button>
                 </div>
               </div>
 
               <!-- Method B: AI Timetable Image Upload & Auto-Rearrange -->
-              <div
-                class="rounded-[20px] bg-gradient-to-r from-purple-500/10 to-indigo-500/10 border border-purple-200 p-5 flex flex-col justify-between space-y-4">
+              <div class="rounded-[20px] bg-gradient-to-r from-purple-500/10 to-indigo-500/10 border border-purple-200 p-5 flex flex-col justify-between space-y-4">
                 <div>
                   <div class="flex items-center gap-2 font-bold text-purple-900">
                     <Sparkles class="w-5 h-5 text-purple-600" /> Option 2: AI Timetable Image Auto-Rearrange
                   </div>
                   <p class="text-xs text-purple-800 mt-1">
-                    Upload an image of your fixed timetable (PNG, JPG, JPEG, WebP). Docling & AI OCR will extract and
-                    auto-populate your weekly grid!
+                    Upload an image of your timetable (PNG, JPG, JPEG, WebP). Docling & AI OCR will extract and auto-populate your weekly grid!
                   </p>
                 </div>
 
                 <div>
-                  <input ref="imageInputRef" type="file" accept="image/png, image/jpeg, image/jpg, image/webp"
-                    class="hidden" @change="handleImageUpload" />
-                  <button @click="triggerImageUpload" :disabled="uploadingAi"
-                    class="w-full rounded-xl bg-purple-700 hover:bg-purple-800 px-4 py-2.5 text-sm font-bold text-white shadow disabled:opacity-50 inline-flex items-center justify-center gap-2 transition-all">
+                  <input
+                    ref="imageInputRef"
+                    type="file"
+                    accept="image/png, image/jpeg, image/jpg, image/webp"
+                    class="hidden"
+                    @change="handleImageUpload"
+                  />
+                  <button
+                    @click="triggerImageUpload"
+                    :disabled="uploadingAi"
+                    class="w-full rounded-xl bg-purple-700 hover:bg-purple-800 px-4 py-2.5 text-sm font-bold text-white shadow disabled:opacity-50 inline-flex items-center justify-center gap-2 transition-all cursor-pointer"
+                  >
                     <Loader2 v-if="uploadingAi" class="w-4 h-4 animate-spin" />
                     <Upload v-else class="w-4 h-4" />
                     {{ uploadingAi ? 'Analyzing Timetable Image with AI...' : 'Upload Timetable Image (.PNG, .JPG)' }}
@@ -509,53 +448,47 @@ onMounted(loadScheduleData)
             </div>
           </section>
 
-          <!-- Main Weekly Timetable Grid Editor -->
+          <!-- Interactive Timetable Grid Section -->
           <section class="bg-white rounded-[26px] p-6 shadow border border-black/5 space-y-4">
-            <div class="flex flex-wrap items-center justify-between gap-4">
+            <div class="flex flex-wrap items-center justify-between gap-4 pb-2 border-b border-gray-100">
               <div>
-                <h2 class="text-xl font-bold flex items-center gap-2">
-                  <Clock class="w-5 h-5 text-[#5c001f]" /> Weekly Schedule Grid
+                <h2 class="text-xl font-bold text-gray-900 flex items-center gap-2">
+                  <CalendarIcon class="w-5 h-5 text-[#5c001f]" /> Personal Schedule Grid
                 </h2>
                 <p class="text-xs text-gray-500 mt-1">
-                  Click any cell to edit status (Official Class, Replacement Subject, Non-Available) or set custom
-                  working hours.
+                  Click any cell or "+ Set Free / Custom Time" to add free time slots or custom subjects, then click Save Schedule.
                 </p>
               </div>
 
-              <!-- Legend Badges & Actions -->
-              <div class="flex flex-wrap items-center gap-3 text-xs font-bold">
-                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-800">
-                  <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Available
-                </span>
-                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#5c001f] text-white">
-                  <span class="w-2.5 h-2.5 rounded-full bg-[#f8be17]"></span> Official Class
-                </span>
-                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-purple-100 text-purple-800">
-                  <span class="w-2.5 h-2.5 rounded-full bg-purple-600"></span> Event / Meeting
-                </span>
-                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-rose-100 text-rose-800">
-                  <span class="w-2.5 h-2.5 rounded-full bg-rose-600"></span> Unavailable
-                </span>
-
-                <div class="flex gap-2 ml-auto">
-                  <button @click="clearSchedule"
-                    class="rounded-xl border border-gray-300 px-3.5 py-2 font-bold text-gray-700 hover:bg-gray-50 inline-flex items-center gap-1.5 cursor-pointer">
-                    <RotateCcw class="w-4 h-4" /> Reset
-                  </button>
-                  <button @click="saveScheduleToBackend" :disabled="saving"
-                    class="rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white px-5 py-2 font-bold shadow disabled:opacity-50 inline-flex items-center gap-1.5 cursor-pointer">
-                    <Loader2 v-if="saving" class="w-4 h-4 animate-spin" />
-                    <Save v-else class="w-4 h-4" />
-                    Save Schedule
-                  </button>
-                </div>
+              <div class="flex gap-2">
+                <button
+                  @click="clearSchedule"
+                  class="rounded-xl border border-gray-300 px-3.5 py-2 font-bold text-gray-700 hover:bg-gray-50 inline-flex items-center gap-1.5 cursor-pointer"
+                >
+                  <RotateCcw class="w-4 h-4" /> Reset
+                </button>
+                <button
+                  @click="saveScheduleToBackend"
+                  :disabled="saving"
+                  class="rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white px-5 py-2 font-bold shadow disabled:opacity-50 inline-flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Loader2 v-if="saving" class="w-4 h-4 animate-spin" />
+                  <Save v-else class="w-4 h-4" />
+                  Save Schedule
+                </button>
               </div>
             </div>
 
             <!-- Unified System Calendar Component -->
-            <SystemCalendarGrid :weeklyRecurring="weeklyRecurringFromGrid" :specificEvents="[]" :interactive="true"
-              :readOnly="false" initialView="week"
-              @slot-save="handleSlotSaveFromGrid" @slot-remove="handleSystemGridSlotRemove" />
+            <SystemCalendarGrid
+              :weeklyRecurring="weeklyRecurringFromGrid"
+              :specificEvents="[]"
+              :interactive="true"
+              :readOnly="false"
+              initialView="week"
+              @slot-save="handleSlotSaveFromGrid"
+              @slot-remove="handleSystemGridSlotRemove"
+            />
           </section>
         </template>
       </main>

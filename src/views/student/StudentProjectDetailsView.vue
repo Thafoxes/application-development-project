@@ -133,7 +133,7 @@ const supervisorFeedback = computed(() =>
 const nextAction = computed(() => nextActionForStatus(effectiveStatus.value));
 
 const openTimetable = () => {
-  router.push({ path: '/personal-timetable', query: { projectId: projectId.value } });
+  router.push({ path: '/add-time-table', query: { projectId: projectId.value } });
 };
 
 const timeline = computed(() => {

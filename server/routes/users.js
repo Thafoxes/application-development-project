@@ -199,12 +199,29 @@ router.put("/users/:id", (req, res) => {
 // GET /api/users/search - search non-student users for autocomplete
 router.get("/users/search", (req, res) => {
   const query = req.query.q;
-  const sessionId = req.query.session_id;
-  if (!query || !sessionId) return res.json([]);
-  const searchStr = `%${query}%`;
-  db.query("CALL sp_SearchNonStudentUsers(?, ?)", [searchStr, sessionId], (err, results) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(results[0] || []);
+  if (!query || !query.trim()) return res.json([]);
+  const searchStr = `%${query.trim()}%`;
+
+  const sql = `
+    SELECT u.user_id, u.email, u.full_name, u.role, u.is_utm_staff
+    FROM users u
+    LEFT JOIN students s ON u.user_id = s.student_id
+    WHERE s.student_id IS NULL
+      AND (u.email LIKE ? OR u.full_name LIKE ? OR u.role LIKE ?)
+    ORDER BY u.full_name ASC
+    LIMIT 15
+  `;
+
+  db.query(sql, [searchStr, searchStr, searchStr], (err, results) => {
+    if (err) {
+      console.error("Direct search users query error, trying stored procedure:", err.message);
+      const sessionId = req.query.session_id || 1;
+      return db.query("CALL sp_SearchNonStudentUsers(?, ?)", [searchStr, sessionId], (spErr, spRes) => {
+        if (spErr) return res.status(500).json({ error: spErr.message });
+        res.json((spRes && spRes[0]) || []);
+      });
+    }
+    res.json(results || []);
   });
 });
 
