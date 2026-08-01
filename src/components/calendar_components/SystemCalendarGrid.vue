@@ -125,6 +125,68 @@ const weekDates = computed(() => {
   return dates
 })
 
+// Google Calendar Style Full Month Grid Calculation (35 or 42 days grid)
+const monthGridDays = computed(() => {
+  const year = currentDate.value.getFullYear()
+  const month = currentDate.value.getMonth()
+
+  const firstDay = new Date(year, month, 1)
+  const lastDay = new Date(year, month + 1, 0)
+
+  const firstDayIndex = firstDay.getDay()
+  const startOffset = firstDayIndex === 0 ? 6 : firstDayIndex - 1
+
+  const days = []
+
+  // 1. Previous Month Padding Days
+  for (let i = startOffset; i > 0; i--) {
+    const prevDate = new Date(year, month, 1 - i)
+    const dayOfWeek = prevDate.getDay() === 0 ? 7 : prevDate.getDay()
+    days.push({
+      date: prevDate,
+      dateStr: prevDate.toISOString().split('T')[0],
+      dayNumber: prevDate.getDate(),
+      dayOfWeek,
+      isCurrentMonth: false,
+      isToday: isSameDay(prevDate, new Date()),
+    })
+  }
+
+  // 2. Current Month Days
+  const totalDays = lastDay.getDate()
+  for (let d = 1; d <= totalDays; d++) {
+    const currDate = new Date(year, month, d)
+    const dayOfWeek = currDate.getDay() === 0 ? 7 : currDate.getDay()
+    days.push({
+      date: currDate,
+      dateStr: currDate.toISOString().split('T')[0],
+      dayNumber: d,
+      dayOfWeek,
+      isCurrentMonth: true,
+      isToday: isSameDay(currDate, new Date()),
+    })
+  }
+
+  // 3. Next Month Padding Days to complete 35 or 42 grid cells
+  const totalGridCells = days.length > 35 ? 42 : 35
+  const paddingNeeded = totalGridCells - days.length
+
+  for (let p = 1; p <= paddingNeeded; p++) {
+    const nextDate = new Date(year, month + 1, p)
+    const dayOfWeek = nextDate.getDay() === 0 ? 7 : nextDate.getDay()
+    days.push({
+      date: nextDate,
+      dateStr: nextDate.toISOString().split('T')[0],
+      dayNumber: nextDate.getDate(),
+      dayOfWeek,
+      isCurrentMonth: false,
+      isToday: isSameDay(nextDate, new Date()),
+    })
+  }
+
+  return days
+})
+
 const currentHeaderTitle = computed(() => {
   if (viewMode.value === 'month') {
     return currentDate.value.toLocaleDateString('en-US', {
@@ -207,10 +269,9 @@ const normalizedWeekly = computed(() => {
   return map
 })
 
-// Find matching slots for a specific day and hour
+// Find matching slots for a specific day and hour in week view
 function getSlotsForCell(dayOfWeek, hour, dateStr) {
   const results = []
-  const hourStr = `${String(hour).padStart(2, '0')}:00`
 
   // 1. Weekly recurring slots
   const dayRecurring = normalizedWeekly.value[dayOfWeek] || []
@@ -249,12 +310,63 @@ function getSlotsForCell(dayOfWeek, hour, dateStr) {
   return results
 }
 
+// Find items for a specific date cell in Google Calendar Month View
+function getItemsForMonthDay(day) {
+  const items = []
+
+  // 1. Specific events for this date
+  const daySpecific = (props.specificEvents || []).filter(
+    (e) => e.target_date === day.dateStr || e.date === day.dateStr,
+  )
+  daySpecific.forEach((evt) => {
+    items.push({
+      id: evt.event_id || evt.id || `${day.dateStr}_${evt.title}`,
+      title: evt.title || evt.label || evt.owner || 'Event',
+      time: evt.start_time || '',
+      color: evt.color || 'bg-purple-600 text-white',
+    })
+  })
+
+  // 2. Weekly recurring slots if current month day
+  if (day.isCurrentMonth) {
+    const dayRecurring = normalizedWeekly.value[day.dayOfWeek] || []
+    dayRecurring.forEach((slot) => {
+      items.push({
+        id: slot.slot_id || `${day.dateStr}_${slot.start_time}_${slot.label}`,
+        title: slot.label || slot.subject || 'Class',
+        time: slot.start_time || '',
+        color: slot.color || getSlotColor(slot.type),
+      })
+    })
+  }
+
+  return items
+}
+
+function getItemStyle(item) {
+  if (item.color && (item.color.startsWith('#') || item.color.startsWith('rgb'))) {
+    return {
+      backgroundColor: item.color,
+      borderColor: item.color,
+      color: '#ffffff',
+    }
+  }
+  return {}
+}
+
+function getItemClass(item) {
+  if (item.color && (item.color.startsWith('#') || item.color.startsWith('rgb'))) {
+    return 'text-white border'
+  }
+  return item.color || 'bg-[#5c001f] text-white border-[#4a0019]'
+}
+
 function getSlotColor(type) {
   const lower = String(type || '').toLowerCase()
   if (lower.includes('replacement')) return 'bg-emerald-700 text-white border-emerald-800'
   if (lower.includes('unavailable') || lower.includes('busy')) return 'bg-red-700 text-white border-red-800'
   if (lower.includes('event') || lower.includes('meeting')) return 'bg-purple-700 text-white border-purple-800'
-  return 'bg-[#5c001f] text-white border-[#4a0019]' // default Maroon FYP class
+  return 'bg-[#5c001f] text-white border-[#4a0019]'
 }
 
 function onCellClick(day, timeSlot) {
@@ -403,7 +515,8 @@ function removeSlot(slot, event) {
                   :key="item.id"
                   @click="onSlotClick(item, $event)"
                   class="p-2 rounded-xl text-xs font-bold shadow-sm border flex items-center justify-between group transition-all transform hover:-translate-y-0.5"
-                  :class="item.color"
+                  :style="getItemStyle(item)"
+                  :class="getItemClass(item)"
                 >
                   <div class="truncate pr-1">
                     <div class="truncate font-bold">{{ item.title }}</div>
@@ -428,32 +541,47 @@ function removeSlot(slot, event) {
       </table>
     </div>
 
-    <!-- MONTH VIEW GRID -->
-    <div v-else-if="viewMode === 'month'" class="p-6 bg-gray-50/50">
-      <div class="grid grid-cols-7 gap-3">
-        <div v-for="d in DAYS_OF_WEEK" :key="d.id" class="text-center font-bold text-xs uppercase tracking-wider text-gray-500 p-2">
+    <!-- GOOGLE CALENDAR STYLE FULL MONTH VIEW GRID -->
+    <div v-else-if="viewMode === 'month'" class="p-4 sm:p-6 bg-gray-50/50">
+      <div class="grid grid-cols-7 border-b border-[#e1d5cc] pb-2 mb-3 bg-[#f7f1ea] rounded-t-2xl p-2.5">
+        <div v-for="d in DAYS_OF_WEEK" :key="d.id" class="text-center font-bold text-xs uppercase tracking-wider text-[#5c001f]">
           {{ d.short }}
         </div>
+      </div>
 
+      <div class="grid grid-cols-7 gap-1.5 sm:gap-2">
         <div
-          v-for="day in weekDates"
-          :key="day.dayOfWeek"
-          class="bg-white border border-[#e1d5cc] rounded-2xl p-3 min-h-[120px] flex flex-col justify-between shadow-sm hover:border-[#5c001f] transition-all"
+          v-for="(day, index) in monthGridDays"
+          :key="index"
+          class="bg-white border rounded-2xl p-2 min-h-[110px] sm:min-h-[130px] flex flex-col justify-between shadow-xs transition-all hover:shadow-md"
+          :class="[
+            !day.isCurrentMonth ? 'bg-gray-100/60 border-gray-200 text-gray-400' : 'border-[#e1d5cc] text-gray-800',
+            day.isToday ? 'ring-2 ring-[#5c001f] bg-amber-50/40' : '',
+          ]"
         >
+          <!-- Date Header -->
           <div class="flex items-center justify-between">
-            <span class="text-sm font-bold" :class="day.isToday ? 'text-[#5c001f]' : 'text-gray-700'">
-              {{ day.dayNumber }} {{ day.shortName }}
+            <span
+              class="text-xs sm:text-sm font-bold inline-flex items-center justify-center w-6 h-6 rounded-full"
+              :class="day.isToday ? 'bg-[#5c001f] text-white' : day.isCurrentMonth ? 'text-gray-900' : 'text-gray-400'"
+            >
+              {{ day.dayNumber }}
             </span>
-            <span v-if="day.isToday" class="text-[10px] bg-[#5c001f] text-white px-2 py-0.5 rounded-full font-bold">Today</span>
+            <span v-if="day.isToday" class="text-[9px] bg-[#5c001f] text-white px-1.5 py-0.5 rounded-full font-bold">Today</span>
           </div>
 
-          <div class="space-y-1 my-2">
+          <!-- Items / Events Badge List -->
+          <div class="space-y-1 my-1 flex-1 overflow-y-auto max-h-[85px] scrollbar-thin">
             <div
-              v-for="item in normalizedWeekly[day.dayOfWeek] || []"
-              :key="item.slot_id || item.label"
-              class="text-[11px] bg-[#5c001f] text-white px-2 py-1 rounded-lg font-bold truncate shadow-xs"
+              v-for="item in getItemsForMonthDay(day)"
+              :key="item.id"
+              class="text-[10px] sm:text-[11px] px-2 py-1 rounded-lg font-bold truncate shadow-xs flex items-center gap-1.5 border transition-transform hover:scale-[1.02]"
+              :style="getItemStyle(item)"
+              :class="getItemClass(item)"
+              :title="item.time ? `${item.time} - ${item.title}` : item.title"
             >
-              {{ item.start_time }} {{ item.label }}
+              <span v-if="item.time" class="opacity-80 text-[9px] font-mono shrink-0">{{ item.time }}</span>
+              <span class="truncate">{{ item.title }}</span>
             </div>
           </div>
         </div>
