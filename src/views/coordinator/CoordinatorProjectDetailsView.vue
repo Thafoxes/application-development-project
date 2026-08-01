@@ -12,6 +12,10 @@ import {
   FileText,
   Loader2,
   UserCheck,
+  Edit3,
+  Trash2,
+  AlertTriangle,
+  Send,
 } from 'lucide-vue-next'
 import AppHeader from '@/components/AppHeader.vue'
 import AppSidebar from '@/components/AppSidebar.vue'
@@ -28,6 +32,13 @@ const nominationAction = ref(0)
 const actionMessage = ref('')
 const pendingNomination = ref(null)
 
+const decisionLoading = ref(false)
+const showRevisionModal = ref(false)
+const revisionFeedback = ref('')
+const showDeleteModal = ref(false)
+const deleteConfirmTitle = ref('')
+const deleteError = ref('')
+
 const projectId = computed(() => Number(route.query.projectId || 0))
 const project = computed(() => data.value?.project || {})
 const submissions = computed(() => data.value?.submissions || [])
@@ -35,6 +46,12 @@ const nominations = computed(() => data.value?.nominations || [])
 const proposalDocuments = computed(() =>
   submissions.value.filter((item) => String(item.submission_type || '').toLowerCase() === 'proposal'),
 )
+
+const isDeleteTitleMatching = computed(() => {
+  const target = (project.value?.project_title || '').trim().toLowerCase()
+  const entered = (deleteConfirmTitle.value || '').trim().toLowerCase()
+  return target.length > 0 && target === entered
+})
 
 const loadProject = async () => {
   loading.value = true
@@ -51,6 +68,71 @@ const loadProject = async () => {
 
 const runAi = () => {
   router.push({ path: '/manage-fyp', query: { projectId: projectId.value, action: 'ai' } })
+}
+
+const approveFYP = async () => {
+  if (!confirm('Are you sure you want to approve this FYP proposal?')) return
+  decisionLoading.value = true
+  actionMessage.value = ''
+  try {
+    await api.patch(`/coordinator/fyp-status/${projectId.value}`, {
+      status: 'Pending AI Matching',
+    })
+    actionMessage.value = 'FYP proposal was successfully approved! Status updated to Pending AI Matching.'
+    await loadProject()
+  } catch (err) {
+    actionMessage.value = err.response?.data?.error || err.message
+  } finally {
+    decisionLoading.value = false
+  }
+}
+
+const openRevisionModal = () => {
+  revisionFeedback.value = ''
+  showRevisionModal.value = true
+}
+
+const submitRevisionRequest = async () => {
+  if (!revisionFeedback.value.trim()) return
+  decisionLoading.value = true
+  actionMessage.value = ''
+  try {
+    await api.patch(`/coordinator/fyp-status/${projectId.value}`, {
+      status: 'Revision Required',
+      feedback: revisionFeedback.value.trim(),
+    })
+    actionMessage.value = 'FYP status set to Revision Required. Update request feedback sent to student.'
+    showRevisionModal.value = false
+    await loadProject()
+  } catch (err) {
+    actionMessage.value = err.response?.data?.error || err.message
+  } finally {
+    decisionLoading.value = false
+  }
+}
+
+const openDeleteModal = () => {
+  deleteConfirmTitle.value = ''
+  deleteError.value = ''
+  showDeleteModal.value = true
+}
+
+const confirmDeleteFYP = async () => {
+  if (!isDeleteTitleMatching.value) {
+    deleteError.value = 'The entered title does not match the FYP title.'
+    return
+  }
+  decisionLoading.value = true
+  deleteError.value = ''
+  try {
+    await api.delete(`/coordinator/fyp-projects/${projectId.value}`)
+    showDeleteModal.value = false
+    router.push({ path: '/manage-fyp', query: { deleted: 'true' } })
+  } catch (err) {
+    deleteError.value = err.response?.data?.error || err.message
+  } finally {
+    decisionLoading.value = false
+  }
 }
 
 const setNominationStatus = async (item, status) => {
@@ -152,6 +234,48 @@ onMounted(loadProject)
         </section>
 
         <template v-else-if="data">
+          <!-- Coordinator Decision & Action Bar -->
+          <section class="bg-white rounded-[26px] p-6 shadow border border-black/5">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <h2 class="text-xl font-bold flex items-center gap-2">
+                  <CheckCircle2 class="w-6 h-6 text-[#5c001f]" /> Coordinator FYP Decision Options
+                </h2>
+                <p class="text-sm text-gray-500 mt-1">
+                  Approve the proposal for AI/supervisor matching, request student updates/revisions, or delete this FYP.
+                </p>
+              </div>
+              <div class="flex flex-wrap items-center gap-3">
+                <!-- 1. Option for Approval -->
+                <button
+                  @click="approveFYP"
+                  :disabled="decisionLoading"
+                  class="inline-flex items-center gap-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white px-5 py-2.5 font-bold shadow-md disabled:opacity-50 transition-all"
+                >
+                  <CheckCircle2 class="w-5 h-5" /> Approve FYP
+                </button>
+
+                <!-- 2. Option to Request Update -->
+                <button
+                  @click="openRevisionModal"
+                  :disabled="decisionLoading"
+                  class="inline-flex items-center gap-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white px-5 py-2.5 font-bold shadow-md disabled:opacity-50 transition-all"
+                >
+                  <Edit3 class="w-5 h-5" /> Need Update
+                </button>
+
+                <!-- 3. Option to Delete FYP -->
+                <button
+                  @click="openDeleteModal"
+                  :disabled="decisionLoading"
+                  class="inline-flex items-center gap-2 rounded-xl bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 font-bold shadow-md disabled:opacity-50 transition-all"
+                >
+                  <Trash2 class="w-5 h-5" /> Delete FYP
+                </button>
+              </div>
+            </div>
+          </section>
+
           <section class="grid grid-cols-1 xl:grid-cols-3 gap-6">
             <div class="xl:col-span-2 bg-white rounded-[26px] p-6 shadow border border-black/5">
               <h2 class="text-2xl font-bold">Project information</h2>
@@ -293,5 +417,102 @@ onMounted(loadProject)
       @cancel="pendingNomination = null"
       @confirm="(sendEmail) => acceptNomination(pendingNomination, sendEmail)"
     />
+
+    <!-- Revision Request Modal -->
+    <div
+      v-if="showRevisionModal"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+    >
+      <div class="w-full max-w-lg rounded-[26px] bg-white p-6 shadow-2xl space-y-4">
+        <div class="flex items-center gap-3 text-amber-700">
+          <div class="rounded-full bg-amber-100 p-2.5">
+            <Edit3 class="w-6 h-6 text-amber-700" />
+          </div>
+          <div>
+            <h3 class="text-xl font-bold text-gray-900">Request FYP Update</h3>
+            <p class="text-xs text-gray-500">Student will be notified to revise their FYP proposal</p>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-bold text-gray-700 mb-1">
+            Revision Instructions for Student <span class="text-red-500">*</span>
+          </label>
+          <textarea
+            v-model="revisionFeedback"
+            rows="4"
+            placeholder="Specify what details, objectives, or documents the student needs to update..."
+            class="w-full rounded-xl border border-gray-300 p-3 text-sm focus:border-amber-500 focus:outline-none"
+          ></textarea>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-2 border-t border-gray-100">
+          <button
+            @click="showRevisionModal = false"
+            class="rounded-xl border border-gray-300 px-4 py-2 text-sm font-bold text-gray-700 hover:bg-gray-50"
+          >
+            Cancel
+          </button>
+          <button
+            @click="submitRevisionRequest"
+            :disabled="!revisionFeedback.trim() || decisionLoading"
+            class="inline-flex items-center gap-2 rounded-xl bg-amber-600 hover:bg-amber-700 px-5 py-2 text-sm font-bold text-white shadow disabled:opacity-50"
+          >
+            <Send class="w-4 h-4" /> Send Request
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete FYP Confirmation Modal -->
+    <div
+      v-if="showDeleteModal"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+    >
+      <div class="w-full max-w-md rounded-[26px] bg-white p-6 shadow-2xl space-y-4">
+        <div class="flex items-center gap-3 text-red-600">
+          <div class="rounded-full bg-red-100 p-2.5">
+            <AlertTriangle class="w-6 h-6 text-red-600" />
+          </div>
+          <div>
+            <h3 class="text-xl font-bold text-gray-900">Delete FYP Project</h3>
+            <p class="text-xs text-red-600 font-semibold">Warning: This action cannot be undone!</p>
+          </div>
+        </div>
+
+        <div class="text-sm text-gray-600 space-y-2">
+          <p>This will permanently delete the FYP project record and all associated submissions and nominations.</p>
+          <p class="font-bold text-gray-800 pt-1">
+            To confirm deletion, please type the exact FYP title below:
+          </p>
+          <div class="rounded-xl bg-gray-100 p-3 font-mono text-xs font-bold text-gray-900 break-words select-all border border-gray-200">
+            {{ project.project_title }}
+          </div>
+          <input
+            v-model="deleteConfirmTitle"
+            type="text"
+            placeholder="Type project title here..."
+            class="w-full rounded-xl border border-gray-300 p-3 text-sm focus:border-red-500 focus:outline-none mt-2"
+          />
+          <p v-if="deleteError" class="text-xs font-bold text-red-600 mt-1">{{ deleteError }}</p>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-2 border-t border-gray-100">
+          <button
+            @click="showDeleteModal = false"
+            class="rounded-xl border border-gray-300 px-4 py-2 text-sm font-bold text-gray-700 hover:bg-gray-50"
+          >
+            Cancel
+          </button>
+          <button
+            @click="confirmDeleteFYP"
+            :disabled="!isDeleteTitleMatching || decisionLoading"
+            class="inline-flex items-center gap-2 rounded-xl bg-red-600 hover:bg-red-700 px-5 py-2 text-sm font-bold text-white shadow disabled:opacity-50"
+          >
+            <Trash2 class="w-4 h-4" /> Delete FYP Permanently
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
