@@ -19,6 +19,7 @@ import {
 } from 'lucide-vue-next'
 import AppHeader from '@/components/AppHeader.vue'
 import AppSidebar from '@/components/AppSidebar.vue'
+import SystemCalendarGrid from '@/components/calendar_components/SystemCalendarGrid.vue'
 import { api } from '@/services/ifamousApi'
 import { formatMalaysiaDateTime } from '@/utils/dateTime'
 
@@ -280,10 +281,49 @@ const saveScheduleToBackend = async () => {
   }
 }
 
-// Reset schedule
-const clearSchedule = () => {
-  if (confirm('Are you sure you want to clear your current timetable draft?')) {
-    scheduleGrid.value = {}
+// Convert scheduleGrid map into weeklyRecurring array for SystemCalendarGrid
+const weeklyRecurringFromGrid = computed(() => {
+  const dayNameMap = {
+    'Monday': 1,
+    'Tuesday': 2,
+    'Wednesday': 3,
+    'Thursday': 4,
+    'Friday': 5,
+    'Saturday': 6,
+    'Sunday': 7,
+  }
+
+  const list = []
+  Object.keys(scheduleGrid.value).forEach((key) => {
+    const [day, time] = key.split('_')
+    const dayId = dayNameMap[day]
+    const slot = scheduleGrid.value[key]
+    if (dayId && slot && time) {
+      const startHour = parseInt(time.split(':')[0], 10)
+      const endHour = startHour + 1
+      list.push({
+        day_of_week: dayId,
+        day_name: day,
+        start_time: time,
+        end_time: `${String(endHour).padStart(2, '0')}:00`,
+        label: slot.label,
+        type: slot.type,
+      })
+    }
+  })
+  return list
+})
+
+const handleSystemGridCellClick = (cellInfo) => {
+  openCellEditor(cellInfo.day, cellInfo.time)
+}
+
+const handleSystemGridSlotRemove = (slotInfo) => {
+  const day = slotInfo.data?.day_name
+  const time = slotInfo.data?.start_time
+  if (day && time) {
+    const key = `${day}_${time}`
+    delete scheduleGrid.value[key]
   }
 }
 
@@ -432,7 +472,7 @@ onMounted(loadScheduleData)
                   <Clock class="w-5 h-5 text-[#5c001f]" /> Weekly Schedule Grid
                 </h2>
                 <p class="text-xs text-gray-500 mt-1">
-                  Click any cell to edit status (Official Class, Replacement Subject, Non-Available) or custom labels.
+                  Click any cell to edit status (Official Class, Replacement Subject, Non-Available) or set custom working hours.
                 </p>
               </div>
 
@@ -441,11 +481,11 @@ onMounted(loadScheduleData)
                 <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-800">
                   <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Available
                 </span>
-                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-100 text-blue-800">
-                  <span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span> Official Class
+                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#5c001f] text-white">
+                  <span class="w-2.5 h-2.5 rounded-full bg-[#f8be17]"></span> Official Class
                 </span>
                 <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-purple-100 text-purple-800">
-                  <span class="w-2.5 h-2.5 rounded-full bg-purple-600"></span> Replacement Subject
+                  <span class="w-2.5 h-2.5 rounded-full bg-purple-600"></span> Event / Meeting
                 </span>
                 <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-rose-100 text-rose-800">
                   <span class="w-2.5 h-2.5 rounded-full bg-rose-600"></span> Unavailable
@@ -454,14 +494,14 @@ onMounted(loadScheduleData)
                 <div class="flex gap-2 ml-auto">
                   <button
                     @click="clearSchedule"
-                    class="rounded-xl border border-gray-300 px-3.5 py-2 font-bold text-gray-700 hover:bg-gray-50 inline-flex items-center gap-1.5"
+                    class="rounded-xl border border-gray-300 px-3.5 py-2 font-bold text-gray-700 hover:bg-gray-50 inline-flex items-center gap-1.5 cursor-pointer"
                   >
                     <RotateCcw class="w-4 h-4" /> Reset
                   </button>
                   <button
                     @click="saveScheduleToBackend"
                     :disabled="saving"
-                    class="rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white px-5 py-2 font-bold shadow disabled:opacity-50 inline-flex items-center gap-1.5"
+                    class="rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white px-5 py-2 font-bold shadow disabled:opacity-50 inline-flex items-center gap-1.5 cursor-pointer"
                   >
                     <Loader2 v-if="saving" class="w-4 h-4 animate-spin" />
                     <Save v-else class="w-4 h-4" />
@@ -471,57 +511,16 @@ onMounted(loadScheduleData)
               </div>
             </div>
 
-            <!-- Timetable Table View -->
-            <div class="overflow-x-auto rounded-2xl border border-gray-200 mt-4">
-              <table class="w-full text-left text-sm border-collapse min-w-[700px]">
-                <thead>
-                  <tr class="bg-[#f7f1ea] text-[#5c001f] border-b border-gray-200">
-                    <th class="p-3 font-bold w-24 border-r border-gray-200">Time</th>
-                    <th v-for="day in DAYS" :key="day" class="p-3 font-bold text-center border-r border-gray-200 last:border-r-0">
-                      {{ day }}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="time in TIME_SLOTS" :key="time" class="border-b border-gray-100 hover:bg-gray-50/50">
-                    <!-- Time Column -->
-                    <td class="p-3 font-mono font-bold text-xs text-gray-500 bg-gray-50/80 border-r border-gray-200">
-                      {{ time }}
-                    </td>
-
-                    <!-- Day Grid Cells -->
-                    <td
-                      v-for="day in DAYS"
-                      :key="day"
-                      @click="openCellEditor(day, time)"
-                      class="p-2 border-r border-gray-100 last:border-r-0 cursor-pointer transition-all hover:ring-2 hover:ring-[#5c001f]/30"
-                    >
-                      <div
-                        v-if="scheduleGrid[`${day}_${time}`]"
-                        class="p-2 rounded-xl text-xs font-bold shadow-sm flex flex-col justify-between h-14"
-                        :class="{
-                          'bg-blue-600 text-white': scheduleGrid[`${day}_${time}`].type === 'class',
-                          'bg-purple-600 text-white': scheduleGrid[`${day}_${time}`].type === 'replacement',
-                          'bg-rose-600 text-white': scheduleGrid[`${day}_${time}`].type === 'unavailable'
-                        }"
-                      >
-                        <span class="truncate">{{ scheduleGrid[`${day}_${time}`].label }}</span>
-                        <span v-if="scheduleGrid[`${day}_${time}`].code" class="text-[10px] opacity-80 uppercase font-mono">
-                          {{ scheduleGrid[`${day}_${time}`].code }}
-                        </span>
-                      </div>
-
-                      <div
-                        v-else
-                        class="p-2 rounded-xl text-xs text-gray-400 border border-dashed border-gray-200 h-14 flex items-center justify-center hover:bg-emerald-50/50 hover:text-emerald-700 hover:border-emerald-300"
-                      >
-                        + Available
-                      </div>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+            <!-- Unified System Calendar Component -->
+            <SystemCalendarGrid
+              :weeklyRecurring="weeklyRecurringFromGrid"
+              :specificEvents="[]"
+              :interactive="true"
+              :readOnly="false"
+              initialView="week"
+              @cell-click="handleSystemGridCellClick"
+              @slot-remove="handleSystemGridSlotRemove"
+            />
           </section>
         </template>
       </main>

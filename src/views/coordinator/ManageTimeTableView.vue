@@ -6,6 +6,7 @@ import AppHeader from '@/components/AppHeader.vue'
 import AppSidebar from '@/components/AppSidebar.vue'
 import AppFooter from '@/components/AppFooter.vue'
 import EditSlotModal from '@/components/calendar_components/EditSlotModal.vue'
+import SystemCalendarGrid from '@/components/calendar_components/SystemCalendarGrid.vue'
 import { apiService } from '@/services/api'
 import { useCalendarStore } from '@/stores/calendarStore'
 
@@ -919,98 +920,14 @@ const updateFromJson = () => {
               </button>
             </div>
 
-            <!-- Calendar Container -->
-            <div class="bg-[#e7ded3] rounded-lg overflow-hidden shadow-lg border border-gray-300">
-              <div class="flex items-center justify-between p-4 bg-white/50">
-                <button
-                  @click="goToPrevMonth"
-                  class="text-black font-bold hover:text-[#5c001f] transition-colors flex items-center gap-2"
-                >
-                  <span>&lt;</span> {{ prevMonthLabel }}
-                </button>
-
-                <h2 class="text-2xl font-bold text-[#5c001f]">{{ activeMonthLabel }}</h2>
-
-                <button
-                  @click="goToNextMonth"
-                  class="text-black font-bold hover:text-[#5c001f] transition-colors flex items-center gap-2"
-                >
-                  {{ nextMonthLabel }} <span>&gt;</span>
-                </button>
-              </div>
-
-              <!-- Calendar Grid -->
-              <div class="w-full bg-[#5c001f] text-white">
-                <div class="grid grid-cols-7">
-                  <div
-                    v-for="header in dayHeaders"
-                    :key="header"
-                    class="p-3 text-center font-bold text-sm border-r border-white/20 last:border-r-0"
-                  >
-                    {{ header }}
-                  </div>
-                </div>
-              </div>
-
-              <div class="bg-[#f0ece9]">
-                <div
-                  v-for="(week, weekIndex) in calendarWeeks"
-                  :key="weekIndex"
-                  class="grid grid-cols-7 border-b border-gray-300 last:border-b-0"
-                >
-                  <div
-                    v-for="(cell, dayIndex) in week"
-                    :key="dayIndex"
-                    class="min-h-[120px] border-r border-gray-300 last:border-r-0 p-1 flex flex-col gap-1 relative"
-                    :class="
-                      !cell.day ? 'bg-gray-200/50' : 'bg-white hover:bg-gray-50 transition-colors'
-                    "
-                  >
-                    <span v-if="cell.day" class="text-sm font-medium pl-1 mt-1 text-gray-700">
-                      {{ cell.day }}
-                    </span>
-
-                    <template v-if="cell.day">
-                      <div
-                        v-for="slot in cell.recurringSlots"
-                        :key="slot.slot_id"
-                        @click="editRecurringSlot(slot.dayOfWeek, slot.slot_id)"
-                        class="bg-[#5c001f] text-white rounded p-1.5 text-[10px] leading-tight flex flex-col cursor-pointer hover:opacity-90 relative group shadow-sm"
-                      >
-                        <button
-                          @click.stop="removeRecurringSlot(slot.dayOfWeek, slot.slot_id)"
-                          class="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center font-bold hidden group-hover:flex z-10 text-[8px] shadow"
-                        >
-                          ✕
-                        </button>
-
-                        <span class="font-bold">{{ slot.start_time }} - {{ slot.end_time }}</span>
-                        <span class="truncate mt-0.5">{{ slot.label }}</span>
-                      </div>
-
-                      <div
-                        v-for="event in cell.events"
-                        :key="event.event_id"
-                        @click="editSpecificEvent(event.event_id)"
-                        class="bg-[#e85d04] text-white rounded p-1.5 text-[10px] leading-tight flex flex-col cursor-pointer hover:opacity-90 relative group shadow-sm"
-                      >
-                        <button
-                          @click.stop="removeSpecificEvent(event.event_id)"
-                          class="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center font-bold hidden group-hover:flex z-10 text-[8px] shadow"
-                        >
-                          ✕
-                        </button>
-
-                        <span class="font-bold" v-if="event.start_time">
-                          {{ event.start_time }} - {{ event.end_time }}
-                        </span>
-                        <span class="truncate mt-0.5">{{ event.title }}</span>
-                      </div>
-                    </template>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <!-- Unified System Calendar Grid -->
+            <SystemCalendarGrid
+              :weeklyRecurring="calendarData.weekly_recurring_occupancy"
+              :specificEvents="calendarData.specific_calendar_events"
+              :interactive="true"
+              :readOnly="false"
+              initialView="week"
+            />
 
             <!-- Developer Sandbox -->
             <div
