@@ -122,61 +122,96 @@ export const useCalendarStore = defineStore('calendar', () => {
     if (!sessionData.value || !sessionData.value.timetables) return []
     const events = []
     let idCounter = 1
+    const DAY_ID_MAP = { Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6, Sunday: 7 }
+    const DAY_NAME_MAP = { 1: 'Monday', 2: 'Tuesday', 3: 'Wednesday', 4: 'Thursday', 5: 'Friday', 6: 'Saturday', 7: 'Sunday' }
 
     sessionData.value.timetables.forEach((tb) => {
       const isClass = tb.class_id != null
       const ownerLabel = isClass
-        ? tb.section_name
-        : tb.staff_name || tb.staff_email || `User ${tb.user_id}`
-      const schedule = tb.schedule || {}
+        ? (tb.section_name || `Section ${tb.class_id}`)
+        : (tb.staff_name || tb.staff_email || `User ${tb.user_id}`)
+      const rawSchedule = tb.schedule || {}
 
-      // 1. Specific calendar events
-      if (schedule.specific_events && Array.isArray(schedule.specific_events)) {
-        schedule.specific_events.forEach((e) => {
+      const color = colorMap.value[tb.time_table_id] || '#5c001f'
+
+      let rawList = []
+      if (Array.isArray(rawSchedule)) {
+        rawList = rawSchedule
+      } else if (rawSchedule && typeof rawSchedule === 'object') {
+        const specList = rawSchedule.specific_events || rawSchedule.specific_calendar_events || []
+        if (Array.isArray(specList)) {
+          specList.forEach((e) => {
+            events.push({
+              id: `db-specific-${idCounter++}`,
+              title: e.label || e.title || 'Event',
+              label: e.label || e.title || 'Event',
+              date: e.date || e.target_date,
+              target_date: e.date || e.target_date,
+              start_time: e.start_time || '08:00',
+              end_time: e.end_time || '09:00',
+              owner: ownerLabel,
+              owner_id: tb.time_table_id,
+              is_class: isClass,
+              is_recurring: false,
+              color: color,
+              type: e.type || 'event',
+            })
+          })
+        }
+
+        rawList = rawSchedule.weekly_recurring || rawSchedule.weekly_recurring_occupancy || rawSchedule.schedule || []
+        if (!Array.isArray(rawList)) rawList = []
+      }
+
+      rawList.forEach((entry) => {
+        if (entry.slots && Array.isArray(entry.slots)) {
+          const dayId = entry.day_of_week || entry.dayOfWeek || DAY_ID_MAP[entry.day_name || entry.day] || 1
+          const dayName = entry.day_name || entry.day || DAY_NAME_MAP[dayId] || 'Monday'
+          entry.slots.forEach((s) => {
+            const startTime = s.start_time || s.time || '09:00'
+            const startHour = parseInt(startTime.split(':')[0], 10)
+            const endTime = s.end_time || `${String(startHour + 1).padStart(2, '0')}:00`
+            events.push({
+              id: `db-recurring-${idCounter++}`,
+              title: s.label || s.subject || s.title || 'Weekly Slot',
+              label: s.label || s.subject || s.title || 'Weekly Slot',
+              day_of_week: dayId,
+              day_name: dayName,
+              start_time: startTime,
+              end_time: endTime,
+              owner: ownerLabel,
+              owner_id: tb.time_table_id,
+              is_class: isClass,
+              is_recurring: true,
+              color: color,
+              type: s.type || 'class',
+              code: s.code || '',
+            })
+          })
+        } else if (entry.day || entry.day_name || entry.time || entry.start_time || entry.day_of_week) {
+          const dayId = entry.day_of_week || entry.dayOfWeek || DAY_ID_MAP[entry.day || entry.day_name] || 1
+          const dayName = entry.day_name || entry.day || DAY_NAME_MAP[dayId] || 'Monday'
+          const startTime = entry.start_time || entry.time || '09:00'
+          const startHour = parseInt(startTime.split(':')[0], 10)
+          const endTime = entry.end_time || `${String(startHour + 1).padStart(2, '0')}:00`
           events.push({
-            id: `db-specific-${idCounter++}`,
-            title: e.label || e.title,
-            date: e.date || e.target_date,
-            start_time: e.start_time || '08:00',
-            end_time: e.end_time || '09:00',
+            id: `db-recurring-${idCounter++}`,
+            title: entry.label || entry.subject || entry.title || 'Weekly Slot',
+            label: entry.label || entry.subject || entry.title || 'Weekly Slot',
+            day_of_week: dayId,
+            day_name: dayName,
+            start_time: startTime,
+            end_time: endTime,
             owner: ownerLabel,
             owner_id: tb.time_table_id,
             is_class: isClass,
-            color: colorMap.value[tb.time_table_id],
+            is_recurring: true,
+            color: color,
+            type: entry.type || 'class',
+            code: entry.code || '',
           })
-        })
-      }
-
-      // 2. Weekly recurring slots (mapped to the year 2026)
-      if (schedule.weekly_recurring && Array.isArray(schedule.weekly_recurring)) {
-        const startDate = new Date(2026, 0, 1)
-        const endDate = new Date(2026, 11, 31)
-
-        for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-          const jsDay = d.getDay()
-          const jsonDayOfWeek = jsDay === 0 ? 7 : jsDay // Convert: 0 (Sun) -> 7 (Sun)
-          const dateStr = formatDate(d)
-
-          const recurringDay = schedule.weekly_recurring.find(
-            (r) => r.day_of_week === jsonDayOfWeek,
-          )
-          if (recurringDay && recurringDay.slots) {
-            recurringDay.slots.forEach((slot) => {
-              events.push({
-                id: `db-recurring-${idCounter++}`,
-                title: slot.label,
-                date: dateStr,
-                start_time: slot.start_time,
-                end_time: slot.end_time,
-                owner: ownerLabel,
-                owner_id: tb.time_table_id,
-                is_class: isClass,
-                color: colorMap.value[tb.time_table_id],
-              })
-            })
-          }
         }
-      }
+      })
     })
 
     return events

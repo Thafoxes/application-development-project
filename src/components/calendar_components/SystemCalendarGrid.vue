@@ -434,24 +434,50 @@ function getSlotColor(type) {
   return 'bg-[#5c001f] text-white border-[#4a0019]'
 }
 
-function openCustomTimeModal(day, timeSlot) {
+function openCustomTimeModal(day, timeSlot, existingSlot = null) {
   if (props.readOnly) return
-  const startTime = timeSlot ? timeSlot.timeStr : '10:10'
-  const endTime = timeSlot ? timeSlot.endStr : '12:30'
-  const dayName = day ? day.dayName : 'Monday'
-  const dayOfWeek = day ? day.dayOfWeek : 1
-  const dateStr = day ? day.dateStr : currentDate.value.toISOString().split('T')[0]
 
-  newSlotForm.value = {
-    dayName,
-    dayOfWeek,
-    dateStr,
-    startTime,
-    endTime,
-    type: 'available',
-    label: '',
-    code: '',
-    color: '#10b981',
+  if (existingSlot) {
+    const data = existingSlot.data || existingSlot
+    const dayName = data.day_name || data.dayName || day?.dayName || 'Monday'
+    const dayOfWeek = data.day_of_week || data.dayOfWeek || day?.dayOfWeek || 1
+    const dateStr = data.dateStr || data.target_date || day?.dateStr || currentDate.value.toISOString().split('T')[0]
+    const startTime = data.start_time || data.startTime || timeSlot?.timeStr || '10:00'
+    const endTime = data.end_time || data.endTime || timeSlot?.endStr || '11:00'
+
+    newSlotForm.value = {
+      slot_id: existingSlot.id || data.slot_id,
+      oldKey: data.key || `${dayName}_${startTime}`,
+      dayName,
+      dayOfWeek,
+      dateStr,
+      startTime,
+      endTime,
+      type: data.type || existingSlot.type || 'available',
+      label: data.label || existingSlot.title || '',
+      code: data.code || '',
+      color: data.color || existingSlot.color || '#10b981',
+      isEditing: true,
+    }
+  } else {
+    const startTime = timeSlot ? timeSlot.timeStr : '10:00'
+    const endTime = timeSlot ? timeSlot.endStr : '11:00'
+    const dayName = day ? day.dayName : 'Monday'
+    const dayOfWeek = day ? day.dayOfWeek : 1
+    const dateStr = day ? day.dateStr : currentDate.value.toISOString().split('T')[0]
+
+    newSlotForm.value = {
+      dayName,
+      dayOfWeek,
+      dateStr,
+      startTime,
+      endTime,
+      type: 'available',
+      label: '',
+      code: '',
+      color: '#10b981',
+      isEditing: false,
+    }
   }
   showAddSlotModal.value = true
 }
@@ -462,45 +488,36 @@ function onCellClick(day, timeSlot) {
   emit('cell-click', { day: day.dayName, dayOfWeek: day.dayOfWeek, dateStr: day.dateStr, time: timeSlot.timeStr })
 }
 
-function saveCustomTimeSlot() {
-  const defaultTitle = newSlotForm.value.type === 'available'
-    ? `Free Time (${newSlotForm.value.startTime} - ${newSlotForm.value.endTime})`
-    : newSlotForm.value.type === 'replacement'
-    ? 'Replacement Subject'
-    : newSlotForm.value.type === 'unavailable'
-    ? 'Personal Non-Availability'
-    : 'Official Class'
+function saveCustomTimeSlot(slotData) {
+  if (!slotData) return
 
-  const slotData = {
-    slot_id: `custom_${Date.now()}`,
-    dayName: newSlotForm.value.dayName,
-    day_name: newSlotForm.value.dayName,
-    dayOfWeek: newSlotForm.value.dayOfWeek,
-    day_of_week: newSlotForm.value.dayOfWeek,
-    dateStr: newSlotForm.value.dateStr,
-    start_time: newSlotForm.value.startTime,
-    end_time: newSlotForm.value.endTime,
-    type: newSlotForm.value.type,
-    label: newSlotForm.value.label || defaultTitle,
-    code: newSlotForm.value.code,
-    color: newSlotForm.value.color || getSlotColor(newSlotForm.value.type),
+  const existingIdx = localCustomSlots.value.findIndex(
+    (s) => s.slot_id === slotData.slot_id || (slotData.oldKey && s.key === slotData.oldKey)
+  )
+  if (existingIdx !== -1) {
+    localCustomSlots.value[existingIdx] = slotData
+  } else {
+    localCustomSlots.value.push(slotData)
   }
 
-  // Push to local list for immediate visual update
-  localCustomSlots.value.push(slotData)
   showAddSlotModal.value = false
   emit('slot-save', slotData)
 }
 
 function onSlotClick(slot, event) {
-  event.stopPropagation()
+  if (event && event.stopPropagation) event.stopPropagation()
   emit('slot-click', slot)
+  if (props.interactive && !props.readOnly) {
+    openCustomTimeModal(null, null, slot)
+  }
 }
 
 function removeSlot(slot, event) {
-  event.stopPropagation()
+  if (event && event.stopPropagation) event.stopPropagation()
   if (props.readOnly) return
-  localCustomSlots.value = localCustomSlots.value.filter((s) => s.slot_id !== slot.id)
+  localCustomSlots.value = localCustomSlots.value.filter(
+    (s) => s.slot_id !== slot.id && s.slot_id !== slot.slot_id && s.key !== slot.data?.key
+  )
   emit('slot-remove', slot)
 }
 </script>
@@ -717,11 +734,11 @@ function removeSlot(slot, event) {
       </div>
     </div>
 
-    <!-- MODULAR TIME SLOT POPUP MODAL -->
     <CalendarEventModal
       v-model:show="showAddSlotModal"
       :initialData="newSlotForm"
       @save="saveCustomTimeSlot"
+      @delete="removeSlot"
     />
 
     <!-- Working Hours & Afternoon Break Settings Modal -->

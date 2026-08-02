@@ -23,15 +23,33 @@ const router = useRouter()
 
 // Convert events array into specificEvents and weeklyRecurring for SystemCalendarGrid
 const specificEvents = computed(() => {
-  return (props.events || []).map((e) => ({
-    event_id: e.id || e.event_id || Math.random().toString(),
-    target_date: e.date || e.target_date,
-    start_time: e.start_time || '09:00',
-    end_time: e.end_time || '10:00',
-    title: e.title || e.label || 'Scheduled Event',
-    color: e.color || 'bg-[#5c001f] text-white',
-    type: e.type || 'event',
-  }))
+  return (props.events || [])
+    .filter((e) => !e.is_recurring && (e.date || e.target_date))
+    .map((e) => ({
+      event_id: e.id || e.event_id || Math.random().toString(),
+      target_date: e.date || e.target_date,
+      start_time: e.start_time || '09:00',
+      end_time: e.end_time || '10:00',
+      title: e.owner ? `[${e.owner}] ${e.title || e.label || 'Scheduled Event'}` : (e.title || e.label || 'Scheduled Event'),
+      color: e.color || 'bg-[#5c001f] text-white',
+      type: e.type || 'event',
+    }))
+})
+
+const weeklyRecurring = computed(() => {
+  const dayMap = { Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6, Sunday: 7 }
+  return (props.events || [])
+    .filter((e) => e.is_recurring || e.day_of_week || e.day_name)
+    .map((e) => ({
+      day_of_week: e.day_of_week || dayMap[e.day_name] || 1,
+      day_name: e.day_name || 'Monday',
+      start_time: e.start_time || '09:00',
+      end_time: e.end_time || '10:00',
+      label: e.owner ? `[${e.owner}] ${e.title || e.label || 'Slot'}` : (e.title || e.label || 'Slot'),
+      type: e.type || 'class',
+      code: e.code || '',
+      color: e.color,
+    }))
 })
 </script>
 
@@ -48,7 +66,7 @@ const specificEvents = computed(() => {
 
     <!-- Unified Master System Calendar Grid -->
     <SystemCalendarGrid
-      :weeklyRecurring="[]"
+      :weeklyRecurring="weeklyRecurring"
       :specificEvents="specificEvents"
       :readOnly="true"
       :interactive="true"

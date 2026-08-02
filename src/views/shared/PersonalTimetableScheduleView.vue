@@ -212,9 +212,11 @@ const weeklyRecurringFromGrid = computed(() => {
       const startHour = parseInt(time.split(':')[0], 10)
       const endHour = slot.end_time ? parseInt(slot.end_time.split(':')[0], 10) : startHour + 1
       list.push({
+        key,
+        slot_id: `grid_${key}`,
         day_of_week: dayId,
         day_name: day,
-        start_time: time,
+        start_time: slot.start_time || time,
         end_time: slot.end_time || `${String(endHour).padStart(2, '0')}:00`,
         label: slot.label,
         type: slot.type,
@@ -228,9 +230,14 @@ const weeklyRecurringFromGrid = computed(() => {
 
 const handleSlotSaveFromGrid = (slotData) => {
   const day = slotData.dayName || slotData.day_name || 'Monday'
-  const startTime = slotData.start_time || '10:10'
-  const endTime = slotData.end_time || '12:30'
+  const startTime = slotData.start_time || slotData.startTime || '10:00'
+  const endTime = slotData.end_time || slotData.endTime || '11:00'
   const key = `${day}_${startTime}`
+
+  // If slot was moved/edited, remove old key if it differs
+  if (slotData.oldKey && slotData.oldKey !== key && scheduleGrid.value[slotData.oldKey]) {
+    delete scheduleGrid.value[slotData.oldKey]
+  }
 
   scheduleGrid.value[key] = {
     type: slotData.type || 'available',
@@ -243,80 +250,158 @@ const handleSlotSaveFromGrid = (slotData) => {
 }
 
 const handleSystemGridSlotRemove = (slotInfo) => {
-  const day = slotInfo.data?.day_name
-  const time = slotInfo.data?.start_time
+  const targetKey = slotInfo.data?.key || slotInfo.key || slotInfo.oldKey
+  if (targetKey && scheduleGrid.value[targetKey]) {
+    delete scheduleGrid.value[targetKey]
+    return
+  }
+
+  const day = slotInfo.data?.day_name || slotInfo.day_name || slotInfo.dayName
+  const time = slotInfo.data?.start_time || slotInfo.start_time || slotInfo.startTime
   if (day && time) {
     const key = `${day}_${time}`
     delete scheduleGrid.value[key]
   }
 }
 
+const confirmModal = ref({
+  show: false,
+  title: '',
+  message: '',
+  type: 'confirm', // 'confirm', 'success', 'danger'
+  confirmText: 'Confirm',
+  cancelText: 'Cancel',
+  actionHandler: null,
+})
+
+const openConfirmModal = ({ title, message, type = 'confirm', confirmText = 'Confirm', actionHandler = null }) => {
+  confirmModal.value = {
+    show: true,
+    title,
+    message,
+    type,
+    confirmText,
+    cancelText: 'Cancel',
+    actionHandler,
+  }
+}
+
+const handleConfirmModalAction = async () => {
+  const handler = confirmModal.value.actionHandler
+  confirmModal.value.show = false
+  if (handler) {
+    await handler()
+  }
+}
+
 const clearSchedule = () => {
-  if (confirm('Are you sure you want to clear your current schedule grid?')) {
-    scheduleGrid.value = {}
-  }
-}
-
-const saveScheduleToBackend = async () => {
-  saving.value = true
-  error.value = ''
-  successMessage.value = ''
-
-  try {
-    const list = []
-    Object.keys(scheduleGrid.value).forEach((key) => {
-      const [day, time] = key.split('_')
-      const slot = scheduleGrid.value[key]
-      list.push({
-        day,
-        day_name: day,
-        time,
-        start_time: slot.start_time || time,
-        end_time: slot.end_time || `${parseInt(time.split(':')[0], 10) + 1}:00`,
-        type: slot.type || 'class',
-        label: slot.label || 'Official Class',
-        code: slot.code || '',
-        color: slot.color,
-      })
-    })
-
-    const res = await api.post('/timetables/my-schedule', {
-      schedule_json: list,
-      fyp_session_id: activeSession.value?.fyp_session_id || 1,
-    })
-
-    if (res.data.success) {
-      successMessage.value = 'Your personal FYP timetable schedule has been saved successfully!'
-      await loadScheduleData()
-    } else {
-      error.value = res.data.error || 'Failed to save schedule.'
-    }
-  } catch (err) {
-    error.value = err.response?.data?.error || err.message
-  } finally {
-    saving.value = false
-  }
-}
-
-const deleteScheduleFromBackend = async () => {
-  if (!confirm('Are you sure you want to completely delete your personal timetable?')) return
-  saving.value = true
-  error.value = ''
-  successMessage.value = ''
-  try {
-    const res = await api.delete('/timetables/my-schedule')
-    if (res.data.success) {
+  openConfirmModal({
+    title: 'Reset Schedule Grid',
+    message: 'Are you sure you want to reset and clear your current schedule grid? All un-saved slot changes will be cleared.',
+    type: 'danger',
+    confirmText: 'Reset Grid',
+    actionHandler: () => {
       scheduleGrid.value = {}
-      userScheduleData.value = null
-      successMessage.value = 'Your personal timetable has been deleted successfully.'
-    } else {
-      error.value = res.data.error || 'Failed to delete timetable.'
-    }
-  } catch (err) {
-    error.value = err.response?.data?.error || err.message
-  } finally {
-    saving.value = false
-  }
+      successMessage.value = 'Schedule grid has been reset successfully.'
+      openConfirmModal({
+        title: 'Grid Reset Complete',
+        message: 'Schedule grid has been reset successfully.',
+        type: 'success',
+        confirmText: 'OK',
+      })
+    },
+  })
+}
+
+const saveScheduleToBackend = () => {
+  openConfirmModal({
+    title: 'Save Timetable Schedule',
+    message: 'Are you sure you want to save your current personal timetable schedule to your account?',
+    type: 'confirm',
+    confirmText: 'Save Schedule',
+    actionHandler: async () => {
+      saving.value = true
+      error.value = ''
+      successMessage.value = ''
+
+      try {
+        const list = []
+        Object.keys(scheduleGrid.value).forEach((key) => {
+          const [day, time] = key.split('_')
+          const slot = scheduleGrid.value[key]
+          list.push({
+            day,
+            day_name: day,
+            time,
+            start_time: slot.start_time || time,
+            end_time: slot.end_time || `${parseInt(time.split(':')[0], 10) + 1}:00`,
+            type: slot.type || 'class',
+            label: slot.label || 'Official Class',
+            code: slot.code || '',
+            color: slot.color,
+          })
+        })
+
+        const res = await api.post('/timetables/my-schedule', {
+          schedule_json: list,
+          fyp_session_id: activeSession.value?.fyp_session_id || 1,
+        })
+
+        if (res.data.success) {
+          const msg = 'Your personal FYP timetable schedule has been saved successfully!'
+          successMessage.value = msg
+          openConfirmModal({
+            title: 'Schedule Saved Successfully',
+            message: msg,
+            type: 'success',
+            confirmText: 'Great!',
+          })
+          await loadScheduleData()
+        } else {
+          error.value = res.data.error || 'Failed to save schedule.'
+        }
+      } catch (err) {
+        error.value = err.response?.data?.error || err.message
+      } finally {
+        saving.value = false
+      }
+    },
+  })
+}
+
+const deleteScheduleFromBackend = () => {
+  openConfirmModal({
+    title: 'Delete Personal Timetable',
+    message: 'Are you sure you want to completely delete your personal timetable? This action cannot be undone.',
+    type: 'danger',
+    confirmText: 'Delete Timetable',
+    actionHandler: async () => {
+      saving.value = true
+      error.value = ''
+      successMessage.value = ''
+      try {
+        const res = await api.delete('/timetables/my-schedule')
+        if (res.data.success) {
+          scheduleGrid.value = {}
+          userScheduleData.value = null
+          const msg = 'Your personal timetable has been deleted successfully.'
+          successMessage.value = msg
+          openConfirmModal({
+            title: 'Timetable Deleted',
+            message: msg,
+            type: 'success',
+            confirmText: 'OK',
+          })
+        } else {
+          error.value = res.data.error || 'Failed to delete timetable.'
+        }
+      } catch (err) {
+        error.value = err.response?.data?.error || err.message
+      } finally {
+        saving.value = false
+      }
+    },
+  })
 }
 
 const goToAddTimeTable = () => {
@@ -553,6 +638,68 @@ onMounted(loadScheduleData)
           </section>
         </template>
       </main>
+    </div>
+
+    <!-- ACTION CONFIRMATION & ALERT MODAL (MOBILE INTERACTIVE & RESPONSIVE) -->
+    <div
+      v-if="confirmModal.show"
+      class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+    >
+      <div
+        class="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl relative border border-gray-200 text-gray-900 space-y-4 font-['Inter'] transition-all transform scale-100"
+      >
+        <button
+          @click="confirmModal.show = false"
+          class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 font-bold text-xl cursor-pointer p-1"
+        >
+          ✕
+        </button>
+
+        <div class="flex items-center gap-3">
+          <div
+            class="p-3 rounded-2xl shrink-0"
+            :class="[
+              confirmModal.type === 'danger' ? 'bg-red-100 text-red-700' : '',
+              confirmModal.type === 'success' ? 'bg-emerald-100 text-emerald-700' : '',
+              confirmModal.type === 'confirm' ? 'bg-[#5c001f] text-[#f8be17]' : '',
+            ]"
+          >
+            <AlertCircle v-if="confirmModal.type === 'danger'" class="w-7 h-7" />
+            <CheckCircle2 v-else-if="confirmModal.type === 'success'" class="w-7 h-7" />
+            <Info v-else class="w-7 h-7" />
+          </div>
+
+          <div>
+            <h3 class="text-xl font-bold text-gray-900">{{ confirmModal.title }}</h3>
+            <p class="text-xs text-gray-500 mt-0.5">Please confirm your action below.</p>
+          </div>
+        </div>
+
+        <p class="text-sm font-semibold text-gray-700 leading-relaxed bg-gray-50 p-4 rounded-2xl border border-gray-100">
+          {{ confirmModal.message }}
+        </p>
+
+        <div class="flex flex-col-reverse sm:flex-row items-center justify-end gap-3 pt-3 border-t border-gray-100">
+          <button
+            v-if="confirmModal.type !== 'success'"
+            @click="confirmModal.show = false"
+            class="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-gray-300 font-bold text-xs text-gray-700 hover:bg-gray-50 transition-all cursor-pointer text-center"
+          >
+            {{ confirmModal.cancelText }}
+          </button>
+          <button
+            @click="handleConfirmModalAction"
+            class="w-full sm:w-auto px-6 py-2.5 rounded-xl font-bold text-xs shadow transition-all cursor-pointer text-center"
+            :class="[
+              confirmModal.type === 'danger' ? 'bg-red-600 hover:bg-red-700 text-white' : '',
+              confirmModal.type === 'success' ? 'bg-emerald-700 hover:bg-emerald-800 text-white' : '',
+              confirmModal.type === 'confirm' ? 'bg-[#5c001f] hover:bg-[#4a0019] text-[#f8be17]' : '',
+            ]"
+          >
+            {{ confirmModal.confirmText }}
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </template>

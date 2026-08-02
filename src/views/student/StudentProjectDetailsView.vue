@@ -380,6 +380,7 @@ onMounted(async () => {
                     {{ project.timetableAttached ? 'Manage / Edit Timetable' : 'Attach My Timetable' }}
                   </button>
                 </div>
+              </div>
             </div>
 
             <div class="rounded-[18px] border border-[#e1d5cc] p-5 mt-5">
