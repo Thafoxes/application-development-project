@@ -85,15 +85,46 @@ function parseTimeToMinutes(timeStr) {
   return hours * 60 + minutes
 }
 
-const TIME_OPTIONS_24H = computed(() => {
+const showStartTimeDropdown = ref(false)
+const showEndTimeDropdown = ref(false)
+
+const TIME_OPTIONS_15M = computed(() => {
   const times = []
   for (let h = 0; h < 24; h++) {
     const hh = String(h).padStart(2, '0')
     times.push(`${hh}:00`)
+    times.push(`${hh}:10`)
+    times.push(`${hh}:20`)
     times.push(`${hh}:30`)
+    times.push(`${hh}:40`)
+    times.push(`${hh}:50`)
   }
   return times
 })
+
+const filteredStartTimeOptions = computed(() => {
+  if (!form.value.startTime) return TIME_OPTIONS_15M.value
+  const query = form.value.startTime.trim().toLowerCase()
+  const matches = TIME_OPTIONS_15M.value.filter((t) => t.includes(query))
+  return matches.length > 0 ? matches : TIME_OPTIONS_15M.value
+})
+
+const filteredEndTimeOptions = computed(() => {
+  if (!form.value.endTime) return TIME_OPTIONS_15M.value
+  const query = form.value.endTime.trim().toLowerCase()
+  const matches = TIME_OPTIONS_15M.value.filter((t) => t.includes(query))
+  return matches.length > 0 ? matches : TIME_OPTIONS_15M.value
+})
+
+function selectStartTime(t) {
+  form.value.startTime = t
+  showStartTimeDropdown.value = false
+}
+
+function selectEndTime(t) {
+  form.value.endTime = t
+  showEndTimeDropdown.value = false
+}
 
 // Dynamic validation for logical start & end times
 const timeError = computed(() => {
@@ -322,43 +353,51 @@ function handleSave() {
           </span>
         </div>
 
-        <div class="flex flex-wrap items-center gap-2 pt-1 border-t border-gray-200/60 pl-6">
-          <span class="text-xs font-bold text-gray-600">24-Hour Time Range:</span>
-          <div class="flex items-center gap-1.5">
+        <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-gray-200/60 pl-6">
+          <span class="text-xs font-bold text-gray-700 shrink-0">Time Range (24h):</span>
+
+          <div class="flex items-center gap-2">
+            <!-- Start Time Combobox -->
             <div class="relative">
-              <input
-                v-model="form.startTime"
-                list="start-time-24h-options"
-                type="text"
-                placeholder="10:00"
-                class="w-24 bg-white border rounded-xl px-2.5 py-1.5 text-xs font-bold text-gray-900 text-center outline-none shadow-xs font-mono"
-                :class="timeError ? 'border-red-400 focus:border-red-500 text-red-700' : 'border-gray-300 focus:border-[#5c001f]'"
-              />
-              <datalist id="start-time-24h-options">
-                <option v-for="t in TIME_OPTIONS_24H" :key="`start_${t}`" :value="t">{{ t }}</option>
-              </datalist>
+              <input v-model="form.startTime" type="text" placeholder="10:00" @focus="showStartTimeDropdown = true"
+                @blur="setTimeout(() => { showStartTimeDropdown = false }, 150)"
+                class="w-24 bg-white border rounded-xl px-3 py-1.5 text-xs font-bold text-gray-900 text-center outline-none shadow-xs font-mono transition-all cursor-pointer"
+                :class="timeError ? 'border-red-400 focus:border-red-500 text-red-700' : 'border-gray-300 focus:border-[#5c001f] focus:ring-2 focus:ring-[#5c001f]/20'" />
+              <!-- Google Calendar Popup Dropdown -->
+              <div v-if="showStartTimeDropdown && filteredStartTimeOptions.length > 0"
+                class="absolute left-0 sm:left-auto sm:right-0 top-full mt-1.5 w-32 bg-white rounded-2xl shadow-2xl border border-gray-200 z-50 max-h-48 overflow-y-auto font-mono text-xs py-1.5 space-y-0.5 animate-in fade-in duration-100">
+                <div v-for="t in filteredStartTimeOptions" :key="`start_${t}`" @mousedown.prevent="selectStartTime(t)"
+                  class="px-3 py-2 cursor-pointer hover:bg-[#5c001f] hover:text-[#f8be17] font-bold text-center transition-colors rounded-xl mx-1"
+                  :class="form.startTime === t ? 'bg-[#5c001f]/10 text-[#5c001f] font-extrabold' : 'text-gray-800'">
+                  {{ t }}
+                </div>
+              </div>
             </div>
 
-            <span class="text-gray-400 font-bold">–</span>
+            <span class="text-gray-400 font-bold text-sm">–</span>
 
+            <!-- End Time Combobox -->
             <div class="relative">
-              <input
-                v-model="form.endTime"
-                list="end-time-24h-options"
-                type="text"
-                placeholder="11:00"
-                class="w-24 bg-white border rounded-xl px-2.5 py-1.5 text-xs font-bold text-gray-900 text-center outline-none shadow-xs font-mono"
-                :class="timeError ? 'border-red-400 focus:border-red-500 text-red-700' : 'border-gray-300 focus:border-[#5c001f]'"
-              />
-              <datalist id="end-time-24h-options">
-                <option v-for="t in TIME_OPTIONS_24H" :key="`end_${t}`" :value="t">{{ t }}</option>
-              </datalist>
+              <input v-model="form.endTime" type="text" placeholder="11:00" @focus="showEndTimeDropdown = true"
+                @blur="setTimeout(() => { showEndTimeDropdown = false }, 150)"
+                class="w-24 bg-white border rounded-xl px-3 py-1.5 text-xs font-bold text-gray-900 text-center outline-none shadow-xs font-mono transition-all cursor-pointer"
+                :class="timeError ? 'border-red-400 focus:border-red-500 text-red-700' : 'border-gray-300 focus:border-[#5c001f] focus:ring-2 focus:ring-[#5c001f]/20'" />
+              <!-- Google Calendar Popup Dropdown -->
+              <div v-if="showEndTimeDropdown && filteredEndTimeOptions.length > 0"
+                class="absolute right-0 top-full mt-1.5 w-32 bg-white rounded-2xl shadow-2xl border border-gray-200 z-50 max-h-48 overflow-y-auto font-mono text-xs py-1.5 space-y-0.5 animate-in fade-in duration-100">
+                <div v-for="t in filteredEndTimeOptions" :key="`end_${t}`" @mousedown.prevent="selectEndTime(t)"
+                  class="px-3 py-2 cursor-pointer hover:bg-[#5c001f] hover:text-[#f8be17] font-bold text-center transition-colors rounded-xl mx-1"
+                  :class="form.endTime === t ? 'bg-[#5c001f]/10 text-[#5c001f] font-extrabold' : 'text-gray-800'">
+                  {{ t }}
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
         <!-- Illogical Time Range Error Alert -->
-        <div v-if="timeError" class="mt-2 text-xs font-bold text-red-700 bg-red-50 border border-red-200 p-2.5 rounded-xl flex items-center gap-2">
+        <div v-if="timeError"
+          class="mt-2 text-xs font-bold text-red-700 bg-red-50 border border-red-200 p-2.5 rounded-xl flex items-center gap-2">
           <AlertCircle class="w-4 h-4 text-red-600 shrink-0" />
           <span>{{ timeError }}</span>
         </div>
