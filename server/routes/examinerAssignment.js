@@ -183,8 +183,8 @@ router.get("/coordinator/examiner-match/:projectId", async (req, res) => {
     );
     if (!projectRows.length) return res.status(404).json({ error: "Project not found" });
     const project = projectRows[0];
-    if (!['Awaiting Examiner Assignment', 'Examiner Assigned'].includes(project.status)) {
-      return res.status(409).json({ error: "The project is not ready for examiner assignment" });
+    if (project.status === 'Rejected') {
+      return res.status(409).json({ error: "Cannot match examiner for a rejected project" });
     }
 
     const candidates = await query(
