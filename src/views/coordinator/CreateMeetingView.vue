@@ -1,8 +1,8 @@
 <script setup>
-import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
+import { ref, watch, onMounted, onBeforeUnmount, computed } from 'vue'
 import axios from 'axios'
+import { Search } from 'lucide-vue-next'
 import { useCalendarStore } from '@/stores/calendarStore'
-import fypMockData from '../../../localData/fyp_mock_structure.json'
 import CalendarSchedule from '@/components/calendar_components/CalendarSchedule.vue'
 import AppHeader from '@/components/AppHeader.vue'
 import AppSidebar from '@/components/AppSidebar.vue'
@@ -11,6 +11,52 @@ import AppFooter from '@/components/AppFooter.vue'
 const calendarStore = useCalendarStore()
 
 const generatedMeetings = ref([])
+const fypProjects = ref([])
+const loadingProjects = ref(false)
+
+const searchQuery = ref('')
+const sortBy = ref('newest')
+
+const filteredFypProjects = computed(() => {
+  let list = [...fypProjects.value]
+
+  const q = searchQuery.value.trim().toLowerCase()
+  if (q) {
+    list = list.filter((p) => {
+      const title = (p.fyp_title || p.project_title || '').toLowerCase()
+      const studentName = (p.student?.full_name || p.student_name || '').toLowerCase()
+      const studentEmail = (p.student?.email || '').toLowerCase()
+      const matricNo = (p.student?.matric_no || p.matric_no || '').toLowerCase()
+      return title.includes(q) || studentName.includes(q) || studentEmail.includes(q) || matricNo.includes(q)
+    })
+  }
+
+  if (sortBy.value === 'newest') {
+    list.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+  } else if (sortBy.value === 'oldest') {
+    list.sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0))
+  } else if (sortBy.value === 'updated') {
+    list.sort((a, b) => new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0))
+  } else if (sortBy.value === 'title') {
+    list.sort((a, b) => (a.fyp_title || a.project_title || '').localeCompare(b.fyp_title || b.project_title || ''))
+  }
+
+  return list
+})
+
+const fetchFypProjects = async () => {
+  loadingProjects.value = true
+  try {
+    const res = await axios.get('http://localhost:3000/api/timetable/projects')
+    if (res.data.success && res.data.data) {
+      fypProjects.value = res.data.data
+    }
+  } catch (e) {
+    console.error('Failed to fetch FYP projects:', e)
+  } finally {
+    loadingProjects.value = false
+  }
+}
 
 const fetchTempMeeting = async () => {
   try {
@@ -143,6 +189,7 @@ onMounted(() => {
   if (calendarStore.availableSchedules.lecturers.length === 0) {
     calendarStore.fetchActiveSession()
   }
+  fetchFypProjects()
   fetchTempMeeting()
   window.addEventListener('temp-meetings-updated', fetchTempMeeting)
 })
@@ -154,15 +201,13 @@ onBeforeUnmount(() => {
 const selectedProjectId = ref(null)
 const displayedEvents = ref([])
 
-import { computed } from 'vue'
-
 const combinedEvents = computed(() => {
   const arr = [...displayedEvents.value]
   if (generatedMeetings.value && generatedMeetings.value.length > 0) {
     generatedMeetings.value.forEach((meeting) => {
       arr.push({
         id: `generated-meeting-${meeting.id}`,
-        title: 'FYP Mtg: ' + meeting.project_title,
+        title: 'FYP Mtg: ' + (meeting.project_title || meeting.fyp_title || 'Meeting'),
         date: meeting.date,
         start_time: meeting.start_time,
         end_time: meeting.end_time,
@@ -175,22 +220,56 @@ const combinedEvents = computed(() => {
   return arr
 })
 
-// Watch for project selection and fetch actual crosscheck schedule data from backend
+// Watch for project selection and fetch actual crosscheck schedule data (Student, Supervisor, Examiner) from backend
 watch(selectedProjectId, async (newProjectId) => {
   if (!newProjectId) {
     displayedEvents.value = []
     return
   }
 
-  const project = fypMockData.find((p) => p.project_id == newProjectId)
+  const project = fypProjects.value.find((p) => p.project_id == newProjectId)
   if (!project) {
     displayedEvents.value = []
     return
   }
 
-  const userIds = [project.supervisor.user_id]
-  if (project.examiners) {
-    project.examiners.forEach((ex) => userIds.push(ex.user_id))
+  const userIds = []
+  const userRolesMap = {}
+
+  // 1. Student timetable
+  const studentId = project.student?.user_id || project.student_user_id
+  if (studentId) {
+    userIds.push(studentId)
+    userRolesMap[studentId] = {
+      role: 'Student',
+      email: project.student?.email || project.student?.full_name || project.student_name || 'Student',
+      color: '#2563eb', // Royal Blue for Student
+    }
+  }
+
+  // 2. Supervisor timetable
+  const supervisorId = project.supervisor?.user_id || project.supervisor_user_id
+  if (supervisorId) {
+    userIds.push(supervisorId)
+    userRolesMap[supervisorId] = {
+      role: 'Supervisor',
+      email: project.supervisor?.email || project.supervisor?.full_name || project.supervisor_name || 'Supervisor',
+      color: '#5c001f', // Maroon for Supervisor
+    }
+  }
+
+  // 3. Examiner timetables
+  if (project.examiners && Array.isArray(project.examiners)) {
+    project.examiners.forEach((ex, idx) => {
+      if (ex.user_id) {
+        userIds.push(ex.user_id)
+        userRolesMap[ex.user_id] = {
+          role: `Examiner ${idx + 1}`,
+          email: ex.email || ex.full_name || `Examiner ${idx + 1}`,
+          color: idx === 0 ? '#d97706' : '#7c3aed', // Amber / Violet for Examiners
+        }
+      }
+    })
   }
 
   try {
@@ -198,6 +277,7 @@ watch(selectedProjectId, async (newProjectId) => {
       fyp_session_id: project.fyp_session_id,
       class_id: project.student?.class_id,
       user_ids: userIds,
+      user_roles: userRolesMap,
     })
 
     if (response.data && response.data.status === 'success') {
@@ -308,7 +388,7 @@ const generateSchedule = async () => {
 
   // 2. Write to temporary JSON file via backend
   try {
-    const projectFull = fypMockData.find((p) => p.project_id == selectedProjectId.value)
+    const projectFull = fypProjects.value.find((p) => p.project_id == selectedProjectId.value)
     const response = await axios.post('http://localhost:3000/api/timetable/generate-temp', {
       project: projectFull,
       date: startingDate.value,
@@ -416,17 +496,49 @@ const autoScheduleAll = async () => {
           <!-- LEFT COLUMN: Projects & Meeting -->
           <div class="w-full lg:w-1/4 lg:min-w-[280px] flex flex-col gap-6 shrink-0">
             <!-- FYP Projects Card -->
-            <div class="flex flex-col h-1/2 min-h-[300px]">
+            <div class="flex flex-col h-1/2 min-h-[360px]">
               <div
                 class="bg-[#FFFFAB] p-4 font-extrabold text-[#5C001F] text-xl tracking-wider rounded-t-lg shadow-sm border-b-2 border-gray-200"
               >
                 FYP PROJECTS
               </div>
+
+              <!-- Search Bar & Sort Dropdown -->
+              <div class="bg-[#FFFFAB]/90 px-4 py-3 border-b border-[#5C001F]/10 space-y-2.5">
+                <div class="relative">
+                  <Search class="w-4 h-4 text-gray-400 absolute left-3 top-2.5" />
+                  <input
+                    v-model="searchQuery"
+                    type="text"
+                    placeholder="Search project title or student..."
+                    class="w-full pl-9 pr-3 py-2 text-xs font-semibold rounded-lg bg-white border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#5c001f]"
+                  />
+                </div>
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-[10px] font-bold text-gray-700 uppercase tracking-wider">Sort by:</span>
+                  <select
+                    v-model="sortBy"
+                    class="flex-1 text-xs font-bold rounded-lg bg-white border border-gray-300 py-1.5 px-2 focus:outline-none focus:ring-2 focus:ring-[#5c001f] text-slate-800"
+                  >
+                    <option value="newest">Created Date (Newest)</option>
+                    <option value="oldest">Created Date (Oldest)</option>
+                    <option value="updated">Recently Modified</option>
+                    <option value="title">Project Title (A-Z)</option>
+                  </select>
+                </div>
+              </div>
+
               <div
                 class="flex flex-col gap-4 bg-[#FFFFAB]/80 p-4 flex-1 rounded-b-lg shadow-sm overflow-y-auto"
               >
+                <div v-if="loadingProjects" class="p-4 text-center text-xs font-bold text-[#5c001f]">
+                  Loading database projects...
+                </div>
+                <div v-else-if="!filteredFypProjects.length" class="p-4 text-center text-xs text-gray-600 font-medium">
+                  No FYP projects match your search or filter.
+                </div>
                 <label
-                  v-for="project in fypMockData"
+                  v-for="project in filteredFypProjects"
                   :key="project.project_id"
                   class="bg-white p-4 rounded-xl flex items-center justify-between cursor-pointer transition-all hover:shadow-md active:scale-[0.98] border border-gray-200 relative min-h-[120px] shrink-0"
                   :class="{
@@ -435,15 +547,15 @@ const autoScheduleAll = async () => {
                   }"
                 >
                   <div class="flex flex-col gap-1 pr-8">
-                    <span class="font-bold text-[#5C001F]">{{ project.fyp_title }}</span>
+                    <span class="font-bold text-[#5C001F]">{{ project.fyp_title || project.project_title }}</span>
                     <span class="text-xs font-semibold text-gray-700 mt-2 uppercase tracking-wide"
                       >STUDENT</span
                     >
-                    <span class="text-sm text-gray-800">{{ project.student.full_name }}</span>
+                    <span class="text-sm text-gray-800">{{ project.student?.full_name || project.student_name || 'Student' }}</span>
                     <div class="flex items-center gap-1 mt-1">
                       <span class="text-[10px] font-bold text-gray-500 uppercase">SV:</span>
                       <span class="text-xs font-medium text-gray-600">{{
-                        project.supervisor.email
+                        project.supervisor?.email || project.supervisor_email || project.supervisor?.full_name || 'Not assigned'
                       }}</span>
                     </div>
                   </div>

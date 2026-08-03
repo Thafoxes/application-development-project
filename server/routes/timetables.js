@@ -233,23 +233,29 @@ router.put("/timetables/:id", (req, res) => {
 
 // POST /api/timetable/crosscheck - crosscheck class and user timetable schedules to detect slot conflicts
 router.post("/timetable/crosscheck", (req, res) => {
-  const { fyp_session_id, class_id, user_ids } = req.body;
+  const { fyp_session_id, class_id, user_ids, user_roles } = req.body;
 
   if (!fyp_session_id) {
     return res.status(400).json({ error: "fyp_session_id is required" });
   }
 
+  const userRolesMap = user_roles || {};
   const queries = [];
   const queryValues = [];
 
   if (class_id) {
-    queries.push(`SELECT class_id, schedule_json FROM time_table WHERE class_id = ? AND fyp_session_id = ?`);
+    queries.push(`SELECT class_id, NULL AS user_id, schedule_json, NULL AS full_name, NULL AS email FROM time_table WHERE class_id = ? AND fyp_session_id = ?`);
     queryValues.push([class_id, fyp_session_id]);
   }
 
   if (user_ids && user_ids.length > 0) {
     const placeholders = user_ids.map(() => '?').join(',');
-    queries.push(`SELECT user_id, schedule_json FROM time_table WHERE user_id IN (${placeholders}) AND fyp_session_id = ?`);
+    queries.push(`
+      SELECT tt.user_id, tt.class_id, tt.schedule_json, u.full_name, u.email
+      FROM time_table tt
+      LEFT JOIN users u ON u.user_id = tt.user_id
+      WHERE tt.user_id IN (${placeholders}) AND tt.fyp_session_id = ?
+    `);
     queryValues.push([...user_ids, fyp_session_id]);
   }
 
@@ -291,8 +297,11 @@ router.post("/timetable/crosscheck", (req, res) => {
           }
 
           const isClass = row.class_id != null;
-          const ownerLabel = isClass ? `Class ID: ${row.class_id}` : `User ID: ${row.user_id}`;
-          const color = isClass ? '#eab308' : '#5C001F';
+          const meta = userRolesMap[row.user_id] || {};
+          const roleName = meta.role || (isClass ? 'Class' : 'User');
+          const emailOrName = meta.email || row.email || row.full_name || `User ${row.user_id}`;
+          const ownerLabel = isClass ? `Class ID: ${row.class_id}` : `[${roleName}: ${emailOrName}]`;
+          const color = isClass ? '#eab308' : (meta.color || '#5C001F');
 
           if (schedule.specific_events && Array.isArray(schedule.specific_events)) {
             schedule.specific_events.forEach(e => {
@@ -423,6 +432,128 @@ router.delete("/timetable/temp", (req, res) => {
   }
 });
 
+// Helper to fetch real FYP projects from MySQL database
+async function fetchRealProjectsFromDb() {
+  // 1. Query current active session from SQL database
+  const activeSessionRows = await new Promise((resolve) => {
+    db.query(
+      `SELECT fyp_session_id FROM fyp_session WHERE is_active = 1 OR is_active = TRUE ORDER BY fyp_session_id DESC LIMIT 1`,
+      (err, results) => {
+        if (err || !results || !results.length) {
+          db.query(`SELECT fyp_session_id FROM fyp_session ORDER BY fyp_session_id DESC LIMIT 1`, (err2, res2) => {
+            resolve(res2 || []);
+          });
+        } else {
+          resolve(results);
+        }
+      }
+    );
+  });
+
+  const activeSessionId = activeSessionRows?.[0]?.fyp_session_id || 1;
+
+  // 2. Query real FYP projects from database
+  const sql = `
+    SELECT
+      fp.project_id,
+      fp.project_title,
+      fp.status,
+      fp.student_user_id,
+      fp.student_name,
+      fp.matric_no,
+      fp.created_at,
+      fp.updated_at,
+      su.full_name AS student_full_name,
+      su.email AS student_email,
+      fp.supervisor_user_id,
+      COALESCE(sv_u.full_name, fp.supervisor_name, 'Not Assigned') AS supervisor_full_name,
+      COALESCE(sv_u.email, fp.supervisor_email, '') AS supervisor_email,
+      ea.examiner_user_id AS assigned_examiner_user_id,
+      COALESCE(ex_u.full_name, fp.examiner_name) AS examiner_full_name,
+      COALESCE(ex_u.email, fp.examiner_email) AS examiner_email
+    FROM fyp_projects fp
+    LEFT JOIN users su ON su.user_id = fp.student_user_id
+    LEFT JOIN users sv_u ON sv_u.user_id = fp.supervisor_user_id
+    LEFT JOIN fyp_examiner_assignments ea ON ea.project_id = fp.project_id AND ea.status = 'Assigned'
+    LEFT JOIN users ex_u ON ex_u.user_id = COALESCE(ea.examiner_user_id, fp.examiner_user_id)
+    ORDER BY fp.project_id ASC
+  `;
+
+  const rows = await new Promise((resolve) => {
+    db.query(sql, (err, results) => {
+      if (err) {
+        console.error("fetchRealProjectsFromDb query error:", err);
+        resolve([]);
+      } else {
+        resolve(results || []);
+      }
+    });
+  });
+
+  if (!rows || rows.length === 0) {
+    return null;
+  }
+
+  const projectMap = new Map();
+  for (const r of rows) {
+    if (!projectMap.has(r.project_id)) {
+      projectMap.set(r.project_id, {
+        project_id: r.project_id,
+        fyp_title: r.project_title || 'FYP Project',
+        fyp_session_id: activeSessionId,
+        created_at: r.created_at || null,
+        updated_at: r.updated_at || r.created_at || null,
+        student: {
+          user_id: r.student_user_id || 0,
+          full_name: r.student_full_name || r.student_name || 'Student',
+          email: r.student_email || '',
+          matric_no: r.matric_no || '',
+          class_id: null,
+        },
+        supervisor: {
+          user_id: r.supervisor_user_id || 0,
+          full_name: r.supervisor_full_name,
+          email: r.supervisor_email,
+        },
+        examiners: [],
+      });
+    }
+
+    const proj = projectMap.get(r.project_id);
+    if (r.assigned_examiner_user_id || r.examiner_full_name) {
+      const exUserId = r.assigned_examiner_user_id || 0;
+      if (!proj.examiners.some((e) => e.user_id === exUserId && exUserId > 0)) {
+        proj.examiners.push({
+          user_id: exUserId,
+          full_name: r.examiner_full_name || 'Examiner',
+          email: r.examiner_email || '',
+        });
+      }
+    }
+  }
+
+  return Array.from(projectMap.values());
+}
+
+// GET /api/timetable/projects - get all FYP projects from database for scheduling
+router.get("/timetable/projects", async (req, res) => {
+  try {
+    const realProjects = await fetchRealProjectsFromDb();
+    if (realProjects && realProjects.length > 0) {
+      return res.json({ success: true, data: realProjects });
+    }
+    const projectsFilePath = path.join(__dirname, "..", "..", "localData", "fyp_mock_structure.json");
+    if (fs.existsSync(projectsFilePath)) {
+      const mockProjects = JSON.parse(fs.readFileSync(projectsFilePath, 'utf8'));
+      return res.json({ success: true, data: mockProjects });
+    }
+    return res.json({ success: true, data: [] });
+  } catch (err) {
+    console.error("Error fetching timetable projects:", err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // POST /api/timetable/auto-assign - run AI auto-scheduling algorithm for FYP project presentations
 router.post("/timetable/auto-assign", async (req, res) => {
   let {
@@ -464,15 +595,17 @@ router.post("/timetable/auto-assign", async (req, res) => {
     return res.status(400).json({ success: false, error: "startDate and endDate are required" });
   }
 
-  const projectsFilePath = path.join(__dirname, "..", "..", "localData", "fyp_mock_structure.json");
-  let projects = [];
-  try {
-    if (fs.existsSync(projectsFilePath)) {
-      projects = JSON.parse(fs.readFileSync(projectsFilePath, 'utf8'));
+  let projects = await fetchRealProjectsFromDb();
+  if (!projects || projects.length === 0) {
+    const projectsFilePath = path.join(__dirname, "..", "..", "localData", "fyp_mock_structure.json");
+    try {
+      if (fs.existsSync(projectsFilePath)) {
+        projects = JSON.parse(fs.readFileSync(projectsFilePath, 'utf8'));
+      }
+    } catch (err) {
+      console.error("Failed to read fyp_mock_structure.json:", err);
+      return res.status(500).json({ success: false, error: "Server failed to load project mock structure" });
     }
-  } catch (err) {
-    console.error("Failed to read fyp_mock_structure.json:", err);
-    return res.status(500).json({ success: false, error: "Server failed to load project mock structure" });
   }
 
   let timetables = [];
