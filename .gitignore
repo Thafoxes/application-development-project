@@ -61,3 +61,4 @@ server/*_backup_*.js
 /server/uploads/journey/
 server/.env.*
 !server/.env.example
+localData/walkrhtough.md

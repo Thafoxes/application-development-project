@@ -328,6 +328,15 @@ onMounted(loadProject)
         </section>
 
         <template v-else-if="data">
+          <!-- Top Action Notification Banner -->
+          <div v-if="actionMessage" class="rounded-[20px] bg-[#f7f1ea] border-2 border-[#5c001f]/30 p-4 text-[#5c001f] font-bold flex items-center justify-between gap-4 shadow-sm">
+            <div class="flex items-center gap-3">
+              <CheckCircle2 class="w-5 h-5 flex-shrink-0 text-[#5c001f]" />
+              <span>{{ actionMessage }}</span>
+            </div>
+            <button @click="actionMessage = ''" class="text-xs font-extrabold hover:bg-black/10 rounded-full px-2 py-1 cursor-pointer">✕</button>
+          </div>
+
           <!-- Coordinator Decision & Action Bar -->
           <section class="bg-white rounded-[26px] p-6 shadow border border-black/5">
             <div class="flex flex-wrap items-center justify-between gap-4">

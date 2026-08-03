@@ -290,7 +290,10 @@ Rules:
   }
 
   const data = await response.json();
-  const aiText = data.message?.content || "";
+  let aiText = (data.message?.content || "").trim();
+  aiText = aiText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+  const arrayMatch = aiText.match(/(\[[\s\S]*\])/);
+  if (arrayMatch) aiText = arrayMatch[1];
 
   try {
     const parsed = JSON.parse(aiText);
@@ -615,7 +618,10 @@ ${String(rawText || "").slice(0, 10000)}
     }
 
     const data = await response.json();
-    const aiText = data.message?.content || "";
+    let aiText = (data.message?.content || "").trim();
+    aiText = aiText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+    const objMatch = aiText.match(/(\{[\s\S]*\})/);
+    if (objMatch) aiText = objMatch[1];
     const parsed = JSON.parse(aiText);
 
     const parsedMembers = Array.isArray(parsed.members) ? parsed.members : [];

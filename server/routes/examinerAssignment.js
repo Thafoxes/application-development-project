@@ -86,7 +86,11 @@ Return ONLY a JSON array containing every candidate once: [{"user_id":1,"score":
     });
     if (!response.ok) throw new Error(`AI service returned ${response.status}`);
     const body = await response.json();
-    const parsed = JSON.parse(body.message?.content || "[]");
+    let rawContent = (body.message?.content || "[]").trim();
+    rawContent = rawContent.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+    const arrayMatch = rawContent.match(/(\[[\s\S]*\])/);
+    if (arrayMatch) rawContent = arrayMatch[1];
+    const parsed = JSON.parse(rawContent);
     const byId = new Map(parsed.map((item) => [Number(item.user_id), item]));
     const ranked = fallback.map((candidate) => {
       const ai = byId.get(Number(candidate.user_id));
@@ -183,9 +187,6 @@ router.get("/coordinator/examiner-match/:projectId", async (req, res) => {
     );
     if (!projectRows.length) return res.status(404).json({ error: "Project not found" });
     const project = projectRows[0];
-    if (project.status === 'Rejected') {
-      return res.status(409).json({ error: "Cannot match examiner for a rejected project" });
-    }
 
     const candidates = await query(
       `SELECT u.user_id, u.full_name, u.email, u.expertise, u.affiliation,
@@ -201,10 +202,10 @@ router.get("/coordinator/examiner-match/:projectId", async (req, res) => {
        LEFT JOIN fyp_examiner_assignments ea ON ea.examiner_user_id = u.user_id
        LEFT JOIN fyp_evaluations ev
          ON ev.project_id = ea.project_id AND ev.examiner_user_id = ea.examiner_user_id
-       WHERE u.user_id <> ? AND st.student_id IS NULL
+       WHERE u.user_id <> COALESCE(?, 0) AND st.student_id IS NULL
        GROUP BY u.user_id, u.full_name, u.email, u.expertise, u.affiliation,
                 e.industry_background, up.department, up.organisation, up.is_available, u.company_name`,
-      [project.supervisor_user_id]
+      [project.supervisor_user_id || 0]
     );
 
     const ranking = await rankCandidates(project, candidates);
