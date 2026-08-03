@@ -403,37 +403,7 @@ router.post("/timetable/crosscheck", (req, res) => {
         });
       }
 
-      console.log("\n📋 ================= FYP ACTORS TIMETABLE BREAKDOWN =================");
-      if (user_ids && Array.isArray(user_ids)) {
-        user_ids.forEach(uid => {
-          const numId = Number(uid);
-          const meta = userRolesMap[uid] || userRolesMap[String(uid)] || {};
-          const role = meta.role || 'Party Member';
-          const email = meta.email || `ID ${numId}`;
-          const isFound = foundUserIds.has(numId);
 
-          if (isFound) {
-            const userRows = [];
-            resultsArray.forEach(arr => {
-              arr.forEach(r => {
-                if (Number(r.user_id) === numId) userRows.push(r);
-              });
-            });
-            console.log(`✅ [${role.toUpperCase()}] ${email} (User ID: ${numId}) -> TIMETABLE FOUND (${userRows.length} record(s))`);
-            userRows.forEach((r, idx) => {
-              try {
-                const sched = typeof r.schedule_json === 'string' ? JSON.parse(r.schedule_json) : r.schedule_json;
-                console.log(`   -> Record #${idx + 1} Schedule JSON:`, JSON.stringify(sched, null, 2));
-              } catch(e) {
-                console.log(`   -> Record #${idx + 1} Raw:`, r.schedule_json);
-              }
-            });
-          } else {
-            console.log(`❌ [${role.toUpperCase()}] ${email} (User ID: ${numId}) -> NO TIMETABLE FOUND IN DATABASE`);
-          }
-        });
-      }
-      console.log("======================================================================\n");
 
       res.json({
         status: "success",
@@ -955,6 +925,151 @@ router.post("/timetable/auto-assign", async (req, res) => {
   } catch (err) {
     console.error("Failed to save auto-assigned meetings:", err);
     res.status(500).json({ success: false, error: "Failed to write temp meeting file" });
+  }
+});
+
+const { createNotificationRecord } = require("../utils/innovationNotifications");
+
+// POST /api/timetable/save-meetings - save proposed/scheduled meetings to database & notify all relevant actors
+router.post("/timetable/save-meetings", async (req, res) => {
+  try {
+    let meetingsToSave = req.body.meetings;
+    if (!meetingsToSave || !Array.isArray(meetingsToSave) || meetingsToSave.length === 0) {
+      if (fs.existsSync(tempFilePath)) {
+        const raw = fs.readFileSync(tempFilePath, 'utf8');
+        if (raw) meetingsToSave = JSON.parse(raw);
+      }
+    }
+
+    if (!meetingsToSave || meetingsToSave.length === 0) {
+      return res.status(400).json({ success: false, error: "No proposed meetings to save." });
+    }
+
+    const notifiedActors = [];
+    const notificationPromises = [];
+
+    for (const mtg of meetingsToSave) {
+      const projId = mtg.project_id;
+      const title = mtg.project_title || "FYP Presentation Meeting";
+      const date = mtg.date;
+      const startTime = mtg.start_time;
+      const endTime = mtg.end_time;
+
+      // 1. Notify Student
+      if (mtg.student) {
+        const sEmail = mtg.student.email;
+        const sName = mtg.student.full_name || "Student";
+        const sId = mtg.student.user_id;
+
+        notificationPromises.push(
+          createNotificationRecord({
+            projectId: projId,
+            recipientType: "Student",
+            recipientName: sName,
+            recipientEmail: sEmail,
+            title: "FYP Presentation Meeting Booked",
+            message: `Your FYP presentation meeting for "${title}" is booked on ${date} from ${startTime} to ${endTime}.`,
+            sendEmail: true,
+          }).catch(e => console.error("Student notification error:", e))
+        );
+
+        notifiedActors.push({ role: "Student", name: sName, email: sEmail, project: title, date, time: `${startTime} - ${endTime}` });
+      }
+
+      // 2. Notify Supervisor
+      if (mtg.supervisor) {
+        const svEmail = mtg.supervisor.email;
+        const svName = mtg.supervisor.full_name || "Supervisor";
+        const svId = mtg.supervisor.user_id;
+
+        notificationPromises.push(
+          createNotificationRecord({
+            projectId: projId,
+            recipientType: "Supervisor",
+            recipientName: svName,
+            recipientEmail: svEmail,
+            title: "FYP Presentation Meeting Booked",
+            message: `Presentation meeting for project "${title}" is booked on ${date} from ${startTime} to ${endTime}.`,
+            sendEmail: true,
+          }).catch(e => console.error("Supervisor notification error:", e))
+        );
+
+        notifiedActors.push({ role: "Supervisor", name: svName, email: svEmail, project: title, date, time: `${startTime} - ${endTime}` });
+      }
+
+      // 3. Notify Examiners
+      if (mtg.examiners && Array.isArray(mtg.examiners)) {
+        mtg.examiners.forEach((ex, idx) => {
+          const exEmail = ex.email;
+          const exName = ex.full_name || `Examiner ${idx + 1}`;
+
+          notificationPromises.push(
+            createNotificationRecord({
+              projectId: projId,
+              recipientType: "Examiner",
+              recipientName: exName,
+              recipientEmail: exEmail,
+              title: "FYP Examiner Presentation Scheduled",
+              message: `You are assigned as Examiner for project "${title}" presentation on ${date} from ${startTime} to ${endTime}.`,
+              sendEmail: true,
+            }).catch(e => console.error("Examiner notification error:", e))
+          );
+
+          notifiedActors.push({ role: `Examiner ${idx + 1}`, name: exName, email: exEmail, project: title, date, time: `${startTime} - ${endTime}` });
+        });
+      }
+
+      // 4. Save event into time_table for users
+      const specificEventObj = {
+        title: `Booked FYP Mtg: ${title}`,
+        date: date,
+        start_time: startTime,
+        end_time: endTime,
+        label: `FYP Meeting (${title})`,
+        type: "event",
+        is_blocking: true
+      };
+
+      const addUserEvent = (uid) => {
+        if (!uid || Number(uid) <= 0) return;
+        try {
+          db.query("SELECT time_table_id, schedule_json FROM time_table WHERE user_id = ? LIMIT 1", [uid], (err, rows) => {
+            if (!err && rows && rows.length > 0) {
+              let sched = {};
+              try { sched = typeof rows[0].schedule_json === 'string' ? JSON.parse(rows[0].schedule_json) : rows[0].schedule_json; } catch(e) {}
+              if (!sched || typeof sched !== 'object' || Array.isArray(sched)) sched = { specific_events: Array.isArray(sched) ? sched : [], weekly_recurring: [] };
+              if (!sched.specific_events) sched.specific_events = [];
+              sched.specific_events.push(specificEventObj);
+              db.query("UPDATE time_table SET schedule_json = ? WHERE time_table_id = ?", [JSON.stringify(sched), rows[0].time_table_id]);
+            }
+          });
+        } catch(e) { console.error("Error adding user event:", e); }
+      };
+
+      if (mtg.student?.user_id) addUserEvent(mtg.student.user_id);
+      if (mtg.supervisor?.user_id) addUserEvent(mtg.supervisor.user_id);
+      if (mtg.examiners && Array.isArray(mtg.examiners)) {
+        mtg.examiners.forEach(ex => { if (ex.user_id) addUserEvent(ex.user_id); });
+      }
+    }
+
+    await Promise.all(notificationPromises);
+
+    // Clear temporary meeting file
+    try {
+      fs.writeFileSync(tempFilePath, JSON.stringify([], null, 4));
+    } catch(e) {}
+
+    res.json({
+      success: true,
+      message: "All meetings saved successfully and all relevant actors have been notified via in-app notifications and email.",
+      saved_count: meetingsToSave.length,
+      notified_actors: notifiedActors
+    });
+
+  } catch (err) {
+    console.error("Save meetings error:", err);
+    res.status(500).json({ success: false, error: "Failed to save meetings and notify actors: " + err.message });
   }
 });
 

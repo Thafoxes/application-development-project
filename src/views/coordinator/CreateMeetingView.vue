@@ -1,7 +1,7 @@
 <script setup>
 import { ref, watch, onMounted, onBeforeUnmount, computed } from 'vue'
 import axios from 'axios'
-import { AlertTriangle, Search } from 'lucide-vue-next'
+import { AlertTriangle, Search, CheckCircle } from 'lucide-vue-next'
 import { useCalendarStore } from '@/stores/calendarStore'
 import CalendarSchedule from '@/components/calendar_components/CalendarSchedule.vue'
 import AppHeader from '@/components/AppHeader.vue'
@@ -14,6 +14,10 @@ const generatedMeetings = ref([])
 const fypProjects = ref([])
 const loadingProjects = ref(false)
 const missingActors = ref([])
+
+const isSavingMeetings = ref(false)
+const showSaveSuccessModal = ref(false)
+const savedNotificationSummary = ref({ saved_count: 0, notified_actors: [] })
 
 const searchQuery = ref('')
 const sortBy = ref('newest')
@@ -186,6 +190,36 @@ const exportToPdf = async () => {
   }
 }
 
+const saveAllMeetings = async () => {
+  if (generatedMeetings.value.length === 0) {
+    alert('No proposed meetings to save!')
+    return
+  }
+
+  isSavingMeetings.value = true
+  try {
+    const res = await axios.post('http://localhost:3000/api/timetable/save-meetings', {
+      meetings: generatedMeetings.value,
+    })
+
+    if (res.data.success) {
+      savedNotificationSummary.value = {
+        saved_count: res.data.saved_count || generatedMeetings.value.length,
+        notified_actors: res.data.notified_actors || [],
+      }
+      generatedMeetings.value = []
+      showSaveSuccessModal.value = true
+    } else {
+      alert('Failed to save meetings: ' + (res.data.error || 'Unknown error'))
+    }
+  } catch (err) {
+    console.error('Failed to save meetings:', err)
+    alert('Error connecting to backend server to save meetings.')
+  } finally {
+    isSavingMeetings.value = false
+  }
+}
+
 onMounted(() => {
   if (calendarStore.availableSchedules.lecturers.length === 0) {
     calendarStore.fetchActiveSession()
@@ -310,8 +344,10 @@ watch(selectedProjectId, async (newProjectId) => {
   }
 })
 
-const startingDate = ref('2026-06-28')
-const endingDate = ref('2026-06-28')
+const getTodayDateStr = () => new Date().toISOString().split('T')[0]
+
+const startingDate = ref(getTodayDateStr())
+const endingDate = ref(getTodayDateStr())
 const meetingDuration = ref(10)
 const startingTime = ref('13:00')
 const endingTime = ref('14:00')
@@ -501,44 +537,41 @@ const autoScheduleAll = async () => {
       <AppSidebar />
 
       <!-- Main Dashboard Content -->
-      <main class="flex-1 flex flex-col px-4 sm:px-6 lg:px-[50px] py-4 sm:py-6 lg:py-[30px] gap-6 overflow-y-auto min-w-0">
+      <main
+        class="flex-1 flex flex-col px-4 sm:px-6 lg:px-[50px] py-4 sm:py-6 lg:py-[30px] gap-6 overflow-y-auto min-w-0">
         <!-- Breadcrumbs -->
         <div class="text-[#5c001f] text-sm mb-4">
-          <span class="hover:underline cursor-pointer" @click="$router.push('/calendar')"
-            >View Calendar</span
-          >
+          <span class="hover:underline cursor-pointer" @click="$router.push('/calendar')">View Calendar</span>
           &gt;
           <span class="font-bold underline">Add new meeting</span>
         </div>
 
-        <div class="flex flex-col lg:flex-row flex-1 gap-6 w-full">
-          <!-- LEFT COLUMN: Projects & Meeting -->
-          <div class="w-full lg:w-1/4 lg:min-w-[280px] flex flex-col gap-6 shrink-0">
+        <!-- Top Control Panel: FYP Projects & Meeting Settings Side-by-Side -->
+        <div class="flex flex-col lg:flex-row gap-6 w-full">
+          <!-- LEFT CARD: FYP PROJECTS Selector & Scheduled Meetings -->
+          <div class="w-full lg:w-1/2 flex flex-col gap-6">
             <!-- FYP Projects Card -->
-            <div class="flex flex-col h-1/2 min-h-[360px]">
+            <div
+              class="flex flex-col bg-[#FFFFAB] rounded-2xl shadow-md border border-[#5C001F]/20 overflow-hidden min-h-[340px]">
               <div
-                class="bg-[#FFFFAB] p-4 font-extrabold text-[#5C001F] text-xl tracking-wider rounded-t-lg shadow-sm border-b-2 border-gray-200"
-              >
-                FYP PROJECTS
+                class="bg-[#FFFFAB] p-4 font-extrabold text-[#5C001F] text-lg tracking-wider border-b-2 border-gray-200 flex items-center justify-between">
+                <span>FYP PROJECTS</span>
+                <span class="text-xs font-bold text-gray-600 bg-white/70 px-2.5 py-1 rounded-full">
+                  {{ filteredFypProjects.length }} Project(s)
+                </span>
               </div>
 
               <!-- Search Bar & Sort Dropdown -->
               <div class="bg-[#FFFFAB]/90 px-4 py-3 border-b border-[#5C001F]/10 space-y-2.5">
                 <div class="relative">
                   <Search class="w-4 h-4 text-gray-400 absolute left-3 top-2.5" />
-                  <input
-                    v-model="searchQuery"
-                    type="text"
-                    placeholder="Search project title or student..."
-                    class="w-full pl-9 pr-3 py-2 text-xs font-semibold rounded-lg bg-white border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#5c001f]"
-                  />
+                  <input v-model="searchQuery" type="text" placeholder="Search project title or student..."
+                    class="w-full pl-9 pr-3 py-2 text-xs font-semibold rounded-lg bg-white border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#5c001f]" />
                 </div>
                 <div class="flex items-center justify-between gap-2">
                   <span class="text-[10px] font-bold text-gray-700 uppercase tracking-wider">Sort by:</span>
-                  <select
-                    v-model="sortBy"
-                    class="flex-1 text-xs font-bold rounded-lg bg-white border border-gray-300 py-1.5 px-2 focus:outline-none focus:ring-2 focus:ring-[#5c001f] text-slate-800"
-                  >
+                  <select v-model="sortBy"
+                    class="flex-1 text-xs font-bold rounded-lg bg-white border border-gray-300 py-1.5 px-2 focus:outline-none focus:ring-2 focus:ring-[#5c001f] text-slate-800">
                     <option value="newest">Created Date (Newest)</option>
                     <option value="oldest">Created Date (Oldest)</option>
                     <option value="updated">Recently Modified</option>
@@ -547,404 +580,185 @@ const autoScheduleAll = async () => {
                 </div>
               </div>
 
-              <div
-                class="flex flex-col gap-4 bg-[#FFFFAB]/80 p-4 flex-1 rounded-b-lg shadow-sm overflow-y-auto"
-              >
+              <!-- Fixed Height Scrollable Projects List -->
+              <div class="flex flex-col gap-3 p-4 max-h-[260px] overflow-y-auto bg-[#FFFFAB]/70">
                 <div v-if="loadingProjects" class="p-4 text-center text-xs font-bold text-[#5c001f]">
                   Loading database projects...
                 </div>
                 <div v-else-if="!filteredFypProjects.length" class="p-4 text-center text-xs text-gray-600 font-medium">
                   No FYP projects match your search or filter.
                 </div>
-                <label
-                  v-for="project in filteredFypProjects"
-                  :key="project.project_id"
-                  class="bg-white p-4 rounded-xl flex items-center justify-between cursor-pointer transition-all hover:shadow-md active:scale-[0.98] border border-gray-200 relative min-h-[120px] shrink-0"
+                <label v-for="project in filteredFypProjects" :key="project.project_id"
+                  class="bg-white p-3.5 rounded-xl flex items-center justify-between cursor-pointer transition-all hover:shadow-md active:scale-[0.98] border border-gray-200 relative shrink-0"
                   :class="{
                     'ring-2 ring-[#5C001F] bg-[#fff5f7] border-[#5C001F]/30':
                       selectedProjectId === project.project_id,
-                  }"
-                >
+                  }">
                   <div class="flex flex-col gap-1 pr-8">
-                    <span class="font-bold text-[#5C001F]">{{ project.fyp_title || project.project_title }}</span>
-                    <span class="text-xs font-semibold text-gray-700 mt-2 uppercase tracking-wide"
-                      >STUDENT</span
-                    >
-                    <span class="text-sm text-gray-800">{{ project.student?.full_name || project.student_name || 'Student' }}</span>
-                    <div class="flex items-center gap-1 mt-1">
+                    <span class="font-bold text-[#5C001F] text-sm">{{ project.fyp_title || project.project_title }}</span>
+                    <span class="text-[10px] font-bold text-gray-600 uppercase tracking-wide">STUDENT</span>
+                    <span class="text-xs text-gray-800 font-semibold">{{ project.student?.full_name || project.student_name || 'Student' }}</span>
+                    <div class="flex items-center gap-1 mt-0.5">
                       <span class="text-[10px] font-bold text-gray-500 uppercase">SV:</span>
-                      <span class="text-xs font-medium text-gray-600">{{
-                        project.supervisor?.email || project.supervisor_email || project.supervisor?.full_name || 'Not assigned'
-                      }}</span>
+                      <span class="text-xs font-medium text-gray-600">
+                        {{ project.supervisor?.email || project.supervisor_email || project.supervisor?.full_name || 'Not assigned' }}
+                      </span>
                     </div>
                   </div>
-                  <input
-                    type="radio"
-                    name="project"
-                    :value="project.project_id"
-                    v-model="selectedProjectId"
-                    class="w-5 h-5 absolute right-4 cursor-pointer accent-[#5c001f]"
-                  />
+                  <input type="radio" name="project" :value="project.project_id" v-model="selectedProjectId"
+                    class="w-5 h-5 absolute right-4 cursor-pointer accent-[#5c001f]" />
                 </label>
               </div>
             </div>
 
-            <!-- Generated Meetings List -->
-            <div v-if="generatedMeetings.length > 0" class="flex flex-col gap-4 mt-2">
+            <!-- Generated Meetings Drawer List (Fixed height scrollable) -->
+            <div v-if="generatedMeetings.length > 0"
+              class="flex flex-col bg-white border border-[#10b981] rounded-2xl shadow-sm overflow-hidden p-4 gap-3 max-h-[220px] overflow-y-auto">
               <div class="flex items-center justify-between border-b border-gray-200 pb-2">
-                <h3 class="font-extrabold text-[#5C001F] uppercase text-sm tracking-wider">
-                  Scheduled Meetings
+                <h3 class="font-extrabold text-[#5C001F] uppercase text-xs tracking-wider">
+                  Scheduled Meetings ({{ generatedMeetings.length }})
                 </h3>
-                <button
-                  @click="exportToPdf"
-                  class="bg-[#5C001F] text-white text-[10px] font-bold px-3 py-1.5 rounded-md hover:bg-[#4a0018] transition-colors shadow-sm uppercase tracking-wide flex items-center gap-1"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    class="h-3.5 w-3.5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                    />
-                  </svg>
-                  Export PDF
-                </button>
+                <div class="flex items-center gap-2">
+                  <button @click="saveAllMeetings" :disabled="isSavingMeetings"
+                    class="bg-[#10b981] hover:bg-[#059669] text-white text-[10px] font-bold px-3 py-1 rounded-md transition-all shadow-sm uppercase tracking-wide flex items-center gap-1 cursor-pointer disabled:opacity-50">
+                    <CheckCircle class="w-3.5 h-3.5" />
+                    <span>{{ isSavingMeetings ? 'Saving...' : 'Save & Notify All' }}</span>
+                  </button>
+                  <button @click="exportToPdf"
+                    class="bg-[#5C001F] text-white text-[10px] font-bold px-3 py-1 rounded-md hover:bg-[#4a0018] transition-colors shadow-sm uppercase tracking-wide flex items-center gap-1 cursor-pointer">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24"
+                      stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Export PDF
+                  </button>
+                </div>
               </div>
 
-              <div
-                v-for="meeting in generatedMeetings"
-                :key="meeting.id"
-                class="flex flex-col bg-white border border-[#10b981] rounded-xl shadow-sm relative overflow-hidden"
-              >
-                <div class="absolute top-0 left-0 right-0 h-1.5 bg-[#10b981]"></div>
-                <div class="p-4">
-                  <div class="flex justify-between items-start mb-2">
-                    <span class="font-bold text-gray-800 text-sm leading-tight pr-4">{{
+              <div v-for="meeting in generatedMeetings" :key="meeting.id"
+                class="flex flex-col bg-white border border-[#10b981]/40 rounded-xl shadow-xs relative overflow-hidden shrink-0">
+                <div class="absolute top-0 left-0 right-0 h-1 bg-[#10b981]"></div>
+                <div class="p-3">
+                  <div class="flex justify-between items-start mb-1">
+                    <span class="font-bold text-gray-800 text-xs leading-tight pr-4">{{
                       meeting.project_title
                     }}</span>
-                    <button
-                      @click="deleteTempMeeting(meeting.id)"
-                      class="text-red-400 hover:text-red-600 transition-colors p-1"
-                      title="Delete Schedule"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        class="h-4 w-4"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2"
-                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                        />
+                    <button @click="deleteTempMeeting(meeting.id)"
+                      class="text-red-400 hover:text-red-600 transition-colors p-0.5" title="Delete Schedule">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                       </svg>
                     </button>
                   </div>
 
-                  <div class="flex flex-col gap-1 text-xs">
-                    <div class="flex items-center gap-2 text-gray-600">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        class="h-3.5 w-3.5"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2"
-                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                        />
-                      </svg>
-                      <span class="font-medium">{{ meeting.date }}</span>
-                    </div>
-                    <div class="flex items-center gap-2 text-gray-600">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        class="h-3.5 w-3.5"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2"
-                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                      </svg>
-                      <span class="font-medium"
-                        >{{ meeting.start_time }} - {{ meeting.end_time }}</span
-                      >
-                    </div>
+                  <div class="flex items-center justify-between text-[11px] text-gray-600 font-semibold mt-1">
+                    <span>📅 {{ meeting.date }}</span>
+                    <span>⏰ {{ meeting.start_time }} - {{ meeting.end_time }}</span>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- Middle: Calendar Component -->
+          <!-- RIGHT CARD: Meeting Settings & AI Auto-Scheduler -->
           <div
-            class="flex-1 flex flex-col gap-4 shadow-lg rounded-xl overflow-hidden bg-white min-w-0 border border-gray-100 p-4"
-          >
-            <!-- Warning Banner if one or more actors have missing timetables -->
-            <div
-              v-if="missingActors && missingActors.length > 0"
-              class="bg-amber-50 border-2 border-amber-300 rounded-xl p-4 shadow-sm space-y-2"
-            >
-              <div class="flex items-center gap-2 text-amber-800 font-extrabold text-sm">
-                <AlertTriangle class="w-5 h-5 text-amber-600 shrink-0" />
-                <span>Warning: Missing Timetable Schedule for FYP Party Member(s)</span>
-              </div>
-              <p class="text-xs font-semibold text-amber-700 leading-relaxed">
-                The following member(s) do not have a configured timetable schedule in the system.
-                AI auto-scheduling or manual presentation slot selection may cause unverified conflicts for these users:
-              </p>
-              <div class="flex flex-wrap gap-2 pt-1">
-                <span
-                  v-for="actor in missingActors"
-                  :key="actor.user_id"
-                  class="bg-amber-100 text-amber-900 border border-amber-300 px-3 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1.5"
-                >
-                  <span class="w-2 h-2 rounded-full bg-amber-500"></span>
-                  <strong>{{ actor.role }}:</strong> {{ actor.email }} (No timetable configured)
-                </span>
-              </div>
-            </div>
-
-            <CalendarSchedule
-              :events="combinedEvents"
-              :hideAddMeetingButton="true"
-              :constraints="{
-                avoidWeekend,
-                avoidOffWorkingHour,
-                avoidLunchHour,
-                workingHourStart,
-                workingHourEnd,
-                lunchHourStart,
-                lunchHourEnd,
-              }"
-            />
-          </div>
-
-          <!-- Right Sidebar: Meeting Settings -->
-          <div
-            class="w-full lg:w-1/4 lg:min-w-[280px] bg-white border-2 border-[#5C001F]/20 p-6 rounded-[2rem] shadow-xl flex flex-col gap-6 shrink-0 relative overflow-hidden"
-          >
+            class="w-full lg:w-1/2 bg-white border-2 border-[#5C001F]/20 p-5 rounded-2xl shadow-md flex flex-col gap-4 relative overflow-hidden">
             <!-- Decorative Header Accent -->
-            <div class="absolute top-0 left-0 right-0 h-3 bg-[#5C001F]"></div>
+            <div class="absolute top-0 left-0 right-0 h-2 bg-[#5C001F]"></div>
 
-            <h2
-              class="text-xl font-extrabold text-[#5C001F] mb-1 uppercase tracking-wider text-center mt-2"
-            >
-              Meeting Settings
+            <h2 class="text-lg font-extrabold text-[#5C001F] uppercase tracking-wider text-center mt-1">
+              Meeting Settings & AI Auto-Scheduler
             </h2>
 
-            <div class="h-px w-full bg-gray-100 mb-2"></div>
-
-            <!-- Date Settings -->
-            <div class="flex items-center justify-center gap-3">
-              <div class="flex flex-col w-full text-center min-w-0">
-                <label class="text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-1"
-                  >Meeting Date</label
-                >
-                <input
-                  type="date"
-                  v-model="startingDate"
-                  class="rounded-lg px-2 py-2 text-center bg-gray-50 border border-gray-200 shadow-inner text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#5C001F]/50 focus:border-[#5C001F] w-full transition-all"
-                />
+            <div class="max-h-[300px] overflow-y-auto space-y-4 pr-1">
+              <!-- Date & Time Row -->
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div class="flex flex-col text-center">
+                  <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Meeting Date</label>
+                  <input type="date" v-model="startingDate"
+                    class="rounded-lg px-2 py-1.5 text-center bg-gray-50 border border-gray-200 shadow-inner text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#5C001F]" />
+                </div>
+                <div class="flex flex-col text-center">
+                  <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Start Time</label>
+                  <input type="time" v-model="startingTime"
+                    class="rounded-lg px-2 py-1.5 text-center bg-gray-50 border border-gray-200 shadow-inner text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#5C001F]" />
+                </div>
+                <div class="flex flex-col text-center">
+                  <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">End Time</label>
+                  <input type="time" v-model="endingTime"
+                    class="rounded-lg px-2 py-1.5 text-center bg-gray-50 border border-gray-200 shadow-inner text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#5C001F]" />
+                </div>
               </div>
-            </div>
 
-            <!-- Time Settings -->
-            <div class="flex items-center justify-between gap-3">
-              <div class="flex flex-col flex-1 text-center min-w-0">
-                <label class="text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-1"
-                  >Start Time</label
-                >
-                <input
-                  type="time"
-                  v-model="startingTime"
-                  class="rounded-lg px-2 py-2 text-center bg-gray-50 border border-gray-200 shadow-inner text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#5C001F]/50 focus:border-[#5C001F] w-full transition-all"
-                />
-              </div>
-              <span class="font-bold text-gray-300 mt-5">-</span>
-              <div class="flex flex-col flex-1 text-center min-w-0">
-                <label class="text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-1"
-                  >End Time</label
-                >
-                <input
-                  type="time"
-                  v-model="endingTime"
-                  class="rounded-lg px-2 py-2 text-center bg-gray-50 border border-gray-200 shadow-inner text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#5C001F]/50 focus:border-[#5C001F] w-full transition-all"
-                />
-              </div>
-            </div>
-
-            <!-- Duration -->
-            <div class="flex flex-col text-center w-full">
-              <label class="text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-1"
-                >Duration</label
-              >
-              <div class="relative w-full">
-                <input
-                  type="number"
-                  v-model="meetingDuration"
-                  class="rounded-lg px-4 py-2 text-center bg-gray-50 border border-gray-200 shadow-inner text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#5C001F]/50 focus:border-[#5C001F] w-full pr-16 transition-all"
-                />
-                <span
-                  class="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-400 bg-gray-50 pl-2"
-                  >MINUTES</span
-                >
-              </div>
-            </div>
-
-            <div class="h-px w-full bg-gray-100 my-1"></div>
-
-            <!-- Checkboxes -->
-            <div class="flex flex-col gap-4 px-2">
-              <label class="flex items-center gap-4 cursor-pointer group">
-                <input
-                  type="checkbox"
-                  v-model="avoidWeekend"
-                  class="w-5 h-5 border-2 border-gray-300 rounded appearance-none checked:border-[#5C001F] checked:bg-[#5C001F] checked:after:content-['✓'] checked:after:text-white checked:after:absolute checked:after:left-[3px] checked:after:top-[0px] checked:after:text-sm relative flex items-center justify-center cursor-pointer shrink-0 transition-colors shadow-sm group-hover:border-[#5C001F]/50"
-                />
-                <span
-                  class="text-sm font-bold text-gray-700 group-hover:text-[#5C001F] transition-colors"
-                  >Avoid weekend</span
-                >
-              </label>
-
-              <div class="flex flex-col gap-2">
-                <label class="flex items-center gap-4 cursor-pointer group">
-                  <input
-                    type="checkbox"
-                    v-model="avoidOffWorkingHour"
-                    class="w-5 h-5 border-2 border-gray-300 rounded appearance-none checked:border-[#5C001F] checked:bg-[#5C001F] checked:after:content-['✓'] checked:after:text-white checked:after:absolute checked:after:left-[3px] checked:after:top-[0px] checked:after:text-sm relative flex items-center justify-center cursor-pointer shrink-0 transition-colors shadow-sm group-hover:border-[#5C001F]/50"
-                  />
+              <!-- Duration -->
+              <div class="flex flex-col text-center w-full">
+                <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Duration
+                  (Minutes)</label>
+                <div class="relative w-full">
+                  <input type="number" v-model="meetingDuration"
+                    class="rounded-lg px-4 py-1.5 text-center bg-gray-50 border border-gray-200 shadow-inner text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#5C001F] w-full" />
                   <span
-                    class="text-sm font-bold text-gray-700 group-hover:text-[#5C001F] transition-colors"
-                    >Avoid off-working hours</span
-                  >
+                    class="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-bold text-gray-400 bg-gray-50 pl-1">MINUTES</span>
+                </div>
+              </div>
+
+              <!-- Constraint Checkboxes -->
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-gray-50 p-3 rounded-xl border border-gray-200">
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" v-model="avoidWeekend"
+                    class="w-4 h-4 text-[#5C001F] accent-[#5C001F] rounded" />
+                  <span class="text-xs font-bold text-gray-700">Avoid weekend</span>
                 </label>
-                <p class="text-xs text-gray-500 font-medium pl-9 -mt-2">
-                  Time for working duration
-                </p>
-                <div v-if="avoidOffWorkingHour" class="flex items-center gap-2 pl-9">
-                  <div class="flex flex-col flex-1 min-w-0">
-                    <input
-                      type="time"
-                      v-model="workingHourStart"
-                      class="rounded-lg px-2 py-1.5 text-center bg-gray-50 border border-gray-200 shadow-inner text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[#5C001F]/50 focus:border-[#5C001F] w-full transition-all"
-                    />
-                  </div>
-                  <span class="text-xs font-bold text-gray-400">-</span>
-                  <div class="flex flex-col flex-1 min-w-0">
-                    <input
-                      type="time"
-                      v-model="workingHourEnd"
-                      class="rounded-lg px-2 py-1.5 text-center bg-gray-50 border border-gray-200 shadow-inner text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[#5C001F]/50 focus:border-[#5C001F] w-full transition-all"
-                    />
-                  </div>
-                </div>
-              </div>
 
-              <div class="flex flex-col gap-2">
-                <label class="flex items-center gap-4 cursor-pointer group">
-                  <input
-                    type="checkbox"
-                    v-model="avoidLunchHour"
-                    class="w-5 h-5 border-2 border-gray-300 rounded appearance-none checked:border-[#5C001F] checked:bg-[#5C001F] checked:after:content-['✓'] checked:after:text-white checked:after:absolute checked:after:left-[3px] checked:after:top-[0px] checked:after:text-sm relative flex items-center justify-center cursor-pointer shrink-0 transition-colors shadow-sm group-hover:border-[#5C001F]/50"
-                  />
-                  <span
-                    class="text-sm font-bold text-gray-700 group-hover:text-[#5C001F] transition-colors"
-                    >Avoid lunch hour</span
-                  >
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" v-model="avoidOffWorkingHour"
+                    class="w-4 h-4 text-[#5C001F] accent-[#5C001F] rounded" />
+                  <span class="text-xs font-bold text-gray-700">Avoid off-hours</span>
                 </label>
-                <div v-if="avoidLunchHour" class="flex items-center gap-2 pl-9">
-                  <div class="flex flex-col flex-1 min-w-0">
-                    <input
-                      type="time"
-                      v-model="lunchHourStart"
-                      class="rounded-lg px-2 py-1.5 text-center bg-gray-50 border border-gray-200 shadow-inner text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[#5C001F]/50 focus:border-[#5C001F] w-full transition-all"
-                    />
+
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" v-model="avoidLunchHour"
+                    class="w-4 h-4 text-[#5C001F] accent-[#5C001F] rounded" />
+                  <span class="text-xs font-bold text-gray-700">Avoid lunch</span>
+                </label>
+              </div>
+
+              <!-- Let AI Decide / Auto-Schedule Section -->
+              <div
+                class="bg-gradient-to-br from-[#5C001F]/5 to-[#F8BE17]/10 border border-[#5C001F]/20 p-3.5 rounded-2xl shadow-inner flex flex-col gap-2.5">
+                <div class="flex items-center gap-1.5 justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-[#5C001F]" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  <h3 class="text-xs font-extrabold text-[#5C001F] uppercase tracking-wider m-0">
+                    Let AI decide for all FYP
+                  </h3>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                  <div class="flex flex-col text-center">
+                    <label class="text-[9px] font-bold text-gray-500 uppercase tracking-wide mb-0.5">Start Date</label>
+                    <input type="date" v-model="startingDate"
+                      class="rounded-lg px-2 py-1 text-center bg-white border border-gray-200 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#5C001F] w-full" />
                   </div>
-                  <span class="text-xs font-bold text-gray-400">-</span>
-                  <div class="flex flex-col flex-1 min-w-0">
-                    <input
-                      type="time"
-                      v-model="lunchHourEnd"
-                      class="rounded-lg px-2 py-1.5 text-center bg-gray-50 border border-gray-200 shadow-inner text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[#5C001F]/50 focus:border-[#5C001F] w-full transition-all"
-                    />
+                  <div class="flex flex-col text-center">
+                    <label class="text-[9px] font-bold text-gray-500 uppercase tracking-wide mb-0.5">End Date</label>
+                    <input type="date" v-model="endingDate"
+                      class="rounded-lg px-2 py-1 text-center bg-white border border-gray-200 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#5C001F] w-full" />
                   </div>
                 </div>
-              </div>
-            </div>
 
-            <div class="h-px w-full bg-gray-100 my-1"></div>
-
-            <!-- Let AI Decide Section -->
-            <div
-              class="bg-gradient-to-br from-[#5C001F]/5 to-[#F8BE17]/10 border border-[#5C001F]/20 p-4 rounded-2xl shadow-inner flex flex-col gap-3"
-            >
-              <div class="flex items-center gap-1.5 justify-center mb-1">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="h-4.5 w-4.5 text-[#5C001F]"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M13 10V3L4 14h7v7l9-11h-7z"
-                  />
-                </svg>
-                <h3 class="text-xs font-extrabold text-[#5C001F] uppercase tracking-wider m-0">
-                  Let AI decide for you
-                </h3>
-              </div>
-              <div class="flex flex-col gap-2">
-                <div class="flex flex-col w-full text-center">
-                  <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1"
-                    >Start Date</label
-                  >
-                  <input
-                    type="date"
-                    v-model="startingDate"
-                    class="rounded-lg px-2 py-1.5 text-center bg-white border border-gray-200 shadow-inner text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#5C001F]/50 w-full transition-all"
-                  />
-                </div>
-                <div class="flex flex-col w-full text-center">
-                  <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1"
-                    >End Date</label
-                  >
-                  <input
-                    type="date"
-                    v-model="endingDate"
-                    class="rounded-lg px-2 py-1.5 text-center bg-white border border-gray-200 shadow-inner text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#5C001F]/50 w-full transition-all"
-                  />
-                </div>
-              </div>
-
-              <!-- Allowed Weekdays Selector Row -->
-              <div class="flex flex-col gap-1.5 mt-1">
-                <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wide text-center">Allowed Days</label>
-                <div class="flex justify-between gap-1 px-1">
-                  <button 
-                    v-for="day in [
+                <!-- Allowed Weekdays Selector Row -->
+                <div class="flex flex-col gap-1">
+                  <label class="text-[9px] font-bold text-gray-500 uppercase tracking-wide text-center">Allowed
+                    Days</label>
+                  <div class="flex justify-between gap-1 px-1">
+                    <button v-for="day in [
                       { label: 'M', value: 1 },
                       { label: 'T', value: 2 },
                       { label: 'W', value: 3 },
@@ -952,102 +766,96 @@ const autoScheduleAll = async () => {
                       { label: 'F', value: 5 },
                       { label: 'S', value: 6 },
                       { label: 'S', value: 7 }
-                    ]" 
-                    :key="day.value"
-                    type="button"
-                    @click="toggleAllowedDay(day.value)"
-                    class="w-7 h-7 rounded-full text-xs font-bold transition-all flex items-center justify-center cursor-pointer border"
-                    :class="allowedDays.includes(day.value) 
-                      ? 'bg-[#5C001F] text-[#FFFFAB] border-[#5C001F] shadow-sm' 
-                      : 'bg-white text-gray-400 border-gray-200 hover:border-[#5C001F]/30'"
-                  >
-                    {{ day.label }}
-                  </button>
+                    ]" :key="day.value" type="button" @click="toggleAllowedDay(day.value)"
+                      class="w-6 h-6 rounded-full text-[10px] font-bold transition-all flex items-center justify-center cursor-pointer border"
+                      :class="allowedDays.includes(day.value)
+                        ? 'bg-[#5C001F] text-[#FFFFAB] border-[#5C001F] shadow-sm'
+                        : 'bg-white text-gray-400 border-gray-200 hover:border-[#5C001F]/30'">
+                      {{ day.label }}
+                    </button>
+                  </div>
                 </div>
+
+                <button @click="autoScheduleAll" type="button"
+                  class="mt-1 bg-gradient-to-r from-[#5C001F] to-[#7a0029] hover:from-[#450017] hover:to-[#5c001f] text-white border-2 border-[#F8BE17] px-3 py-2 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md hover:shadow-[0_0_10px_rgba(248,190,23,0.4)] transition-all hover:scale-[1.01] active:scale-[0.98] cursor-pointer w-full">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-[#F8BE17]" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  <span>Auto Schedule All Presentations</span>
+                </button>
               </div>
 
-              <button
-                @click="autoScheduleAll"
-                type="button"
-                class="mt-1 bg-gradient-to-r from-[#5C001F] to-[#7a0029] hover:from-[#450017] hover:to-[#5c001f] text-white border-2 border-[#F8BE17] px-3 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md hover:shadow-[0_0_10px_rgba(248,190,23,0.4)] transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer w-full"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="h-4 w-4 text-[#F8BE17]"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"
-                  />
-                </svg>
-                AI Auto-Schedule All
-              </button>
-            </div>
-
-            <!-- Generate Button -->
-            <div class="mt-auto pt-4 pb-2">
-              <button
-                @click="generateSchedule"
-                class="bg-[#5C001F] hover:bg-[#4a0018] text-white px-4 py-3.5 rounded-xl font-bold shadow-lg shadow-[#5C001F]/20 transition-all active:scale-95 text-sm w-full flex items-center justify-center gap-2 uppercase tracking-wide"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"
-                  />
-                </svg>
-                Generate Schedule
-              </button>
+              <!-- Generate Button -->
+              <div class="pt-2">
+                <button @click="generateSchedule"
+                  class="bg-[#5C001F] hover:bg-[#4a0018] text-white px-4 py-3 rounded-xl font-bold shadow-lg shadow-[#5C001F]/20 transition-all active:scale-95 text-xs w-full flex items-center justify-center gap-2 uppercase tracking-wide cursor-pointer">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                  </svg>
+                  <span>Generate Schedule</span>
+                </button>
+              </div>
             </div>
           </div>
+        </div>
+
+        <!-- MAIN FULL WIDTH CALENDAR SECTION -->
+        <div
+          class="w-full flex flex-col gap-4 shadow-xl rounded-2xl overflow-hidden bg-white border border-gray-200 p-4 sm:p-6">
+          <!-- Warning Banner if one or more actors have missing timetables -->
+          <div v-if="missingActors && missingActors.length > 0"
+            class="bg-amber-50 border-2 border-amber-300 rounded-xl p-4 shadow-sm space-y-2">
+            <div class="flex items-center gap-2 text-amber-800 font-extrabold text-sm">
+              <AlertTriangle class="w-5 h-5 text-amber-600 shrink-0" />
+              <span>Warning: Missing Timetable Schedule for FYP Party Member(s)</span>
+            </div>
+            <p class="text-xs font-semibold text-amber-700 leading-relaxed">
+              The following member(s) do not have a configured timetable schedule in the system.
+              AI auto-scheduling or manual presentation slot selection may cause unverified conflicts for these users:
+            </p>
+            <div class="flex flex-wrap gap-2 pt-1">
+              <span v-for="actor in missingActors" :key="actor.user_id"
+                class="bg-amber-100 text-amber-900 border border-amber-300 px-3 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                <strong>{{ actor.role }}:</strong> {{ actor.email }} (No timetable configured)
+              </span>
+            </div>
+          </div>
+
+          <CalendarSchedule :events="combinedEvents" :hideAddMeetingButton="true" :constraints="{
+            avoidWeekend,
+            avoidOffWorkingHour,
+            avoidLunchHour,
+            workingHourStart,
+            workingHourEnd,
+            lunchHourStart,
+            lunchHourEnd,
+          }" />
         </div>
       </main>
     </div>
     <AppFooter class="mt-auto -mb-[30px]" />
 
     <!-- AI Scheduling Loading Overlay -->
-    <div
-      v-if="isAutoScheduling"
-      class="fixed inset-0 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center z-50 transition-all"
-    >
+    <div v-if="isAutoScheduling"
+      class="fixed inset-0 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center z-50 transition-all">
       <div
-        class="bg-white p-8 rounded-3xl shadow-2xl flex flex-col items-center max-w-sm text-center border border-gray-100"
-      >
+        class="bg-white p-8 rounded-3xl shadow-2xl flex flex-col items-center max-w-sm text-center border border-gray-100">
         <div class="relative w-24 h-24 mb-6">
           <!-- Outer glowing spinning circle -->
           <div
-            class="absolute inset-0 rounded-full border-4 border-t-[#5C001F] border-r-transparent border-b-[#F8BE17] border-l-transparent animate-spin"
-          ></div>
+            class="absolute inset-0 rounded-full border-4 border-t-[#5C001F] border-r-transparent border-b-[#F8BE17] border-l-transparent animate-spin">
+          </div>
           <!-- Inner pulsing core -->
           <div
-            class="absolute inset-4 rounded-full bg-gradient-to-tr from-[#5C001F] to-[#7a0029] animate-pulse flex items-center justify-center"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-8 w-8 text-[#F8BE17] animate-bounce"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M13 10V3L4 14h7v7l9-11h-7z"
-              />
+            class="absolute inset-4 rounded-full bg-gradient-to-tr from-[#5C001F] to-[#7a0029] animate-pulse flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-[#F8BE17] animate-bounce" fill="none"
+              viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
           </div>
         </div>
@@ -1057,6 +865,54 @@ const autoScheduleAll = async () => {
         <p class="text-gray-500 text-sm font-medium leading-relaxed">
           Crosschecking lecturer availability, student classes, and avoiding conflicts...
         </p>
+      </div>
+    </div>
+    <!-- Save Success & Notifications Sent Modal -->
+    <div v-if="showSaveSuccessModal"
+      class="fixed inset-0 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center z-50 p-4 transition-all">
+      <div
+        class="bg-white rounded-3xl shadow-2xl flex flex-col items-center max-w-lg w-full p-6 sm:p-8 text-center border border-gray-100 relative overflow-hidden animate-in fade-in zoom-in duration-200">
+        <div class="absolute top-0 left-0 right-0 h-3 bg-[#10b981]"></div>
+
+        <div
+          class="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mb-4 text-[#10b981] shadow-inner">
+          <CheckCircle class="w-10 h-10" />
+        </div>
+
+        <h3 class="text-xl font-extrabold text-gray-900 mb-2 uppercase tracking-wider">
+          Meetings Saved & Actors Notified!
+        </h3>
+        <p class="text-gray-600 text-xs font-medium leading-relaxed mb-4">
+          All {{ savedNotificationSummary.saved_count }} presentation meeting(s) have been saved to the database. All
+          relevant FYP actors have been updated on their personal timetables and notified via in-app notifications and
+          email.
+        </p>
+
+        <div
+          class="w-full bg-gray-50 rounded-2xl p-4 border border-gray-200 text-left max-h-[220px] overflow-y-auto space-y-2 mb-6 shadow-inner">
+          <div class="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider mb-1">
+            Notified Members Breakdown:
+          </div>
+          <div v-for="(actor, idx) in savedNotificationSummary.notified_actors" :key="idx"
+            class="flex items-center justify-between text-xs bg-white p-2.5 rounded-xl border border-gray-200 shadow-2xs">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-[#10b981] shrink-0"></span>
+              <div>
+                <strong class="text-gray-800">{{ actor.role }}:</strong>
+                <span class="text-gray-600 ml-1">{{ actor.email }}</span>
+              </div>
+            </div>
+            <span
+              class="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 shrink-0">
+              Notified ✉️
+            </span>
+          </div>
+        </div>
+
+        <button @click="showSaveSuccessModal = false"
+          class="bg-[#5C001F] hover:bg-[#4a0018] text-white font-bold text-xs px-6 py-3 rounded-xl uppercase tracking-wider shadow-md hover:shadow-lg transition-all active:scale-95 cursor-pointer w-full">
+          Got it, Close
+        </button>
       </div>
     </div>
   </div>

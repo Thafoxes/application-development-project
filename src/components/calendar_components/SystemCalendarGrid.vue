@@ -144,6 +144,34 @@ const timeSlots = computed(() => {
   return slots
 })
 
+function formatLocalDate(date) {
+  if (!date) return ''
+  const d = new Date(date)
+  if (isNaN(d.getTime())) return ''
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+// Watch specificEvents to automatically jump calendar view to the week of the assigned meeting
+watch(
+  () => props.specificEvents,
+  (newEvents) => {
+    if (newEvents && newEvents.length > 0) {
+      const targetEvt = newEvents.find((e) => e.target_date || e.date)
+      if (targetEvt) {
+        const rawDate = targetEvt.target_date || targetEvt.date
+        const [y, m, d] = String(rawDate).split('-').map(Number)
+        if (y && m && d) {
+          currentDate.value = new Date(y, m - 1, d)
+        }
+      }
+    }
+  },
+  { immediate: true, deep: true },
+)
+
 // Current week start (Monday)
 const currentWeekStart = computed(() => {
   const d = new Date(currentDate.value)
@@ -163,7 +191,7 @@ const weekDates = computed(() => {
     dates.push({
       date,
       dayOfWeek,
-      dateStr: date.toISOString().split('T')[0],
+      dateStr: formatLocalDate(date),
       dayName: DAYS_OF_WEEK[i].name,
       shortName: DAYS_OF_WEEK[i].short,
       dayNumber: date.getDate(),
@@ -192,7 +220,7 @@ const monthGridDays = computed(() => {
     const dayOfWeek = prevDate.getDay() === 0 ? 7 : prevDate.getDay()
     days.push({
       date: prevDate,
-      dateStr: prevDate.toISOString().split('T')[0],
+      dateStr: formatLocalDate(prevDate),
       dayNumber: prevDate.getDate(),
       dayOfWeek,
       isCurrentMonth: false,
@@ -207,7 +235,7 @@ const monthGridDays = computed(() => {
     const dayOfWeek = currDate.getDay() === 0 ? 7 : currDate.getDay()
     days.push({
       date: currDate,
-      dateStr: currDate.toISOString().split('T')[0],
+      dateStr: formatLocalDate(currDate),
       dayNumber: d,
       dayOfWeek,
       isCurrentMonth: true,
@@ -224,7 +252,7 @@ const monthGridDays = computed(() => {
     const dayOfWeek = nextDate.getDay() === 0 ? 7 : nextDate.getDay()
     days.push({
       date: nextDate,
-      dateStr: nextDate.toISOString().split('T')[0],
+      dateStr: formatLocalDate(nextDate),
       dayNumber: nextDate.getDate(),
       dayOfWeek,
       isCurrentMonth: false,
