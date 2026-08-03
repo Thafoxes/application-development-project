@@ -735,27 +735,30 @@ onMounted(loadJourney)
                       class="bg-amber-600 text-white rounded-lg px-3 py-2 text-sm font-bold">Request edit</button></div>
                 </div>
               </div>
-              <div v-if="isStudent" class="bg-[#f7f1ea] rounded-[18px] p-5 space-y-3">
+              <div v-if="isStudent || canGiveFeedback" class="bg-[#f7f1ea] border border-[#e1d5cc] rounded-[18px] p-5 space-y-3">
+                <h3 class="font-extrabold text-slate-900 text-base">Record Logbook Entry</h3>
+                <p class="text-xs text-slate-600 font-medium">Log meeting discussions, guidance notes, or action plans.</p>
                 <input v-model="logbookForm.meetingDate" type="datetime-local"
-                  class="w-full border rounded-xl px-4 py-3" />
-                <select v-model="logbookForm.meetingType" class="w-full border rounded-xl px-4 py-3">
+                  class="w-full border-2 border-slate-300 rounded-xl px-4 py-3 text-slate-900 font-medium bg-white" />
+                <select v-model="logbookForm.meetingType" class="w-full border-2 border-slate-300 rounded-xl px-4 py-3 text-slate-900 font-medium bg-white">
                   <option>Physical</option>
                   <option>Google Meet</option>
                   <option>Microsoft Teams</option>
                   <option>Other Online</option>
                 </select>
-                <textarea v-model="logbookForm.topics" class="w-full border rounded-xl px-4 py-3"
+                <textarea v-model="logbookForm.topics" class="w-full border-2 border-slate-300 rounded-xl px-4 py-3 text-slate-900 font-medium bg-white placeholder:text-slate-400"
                   placeholder="Topics discussed" />
-                <textarea v-model="logbookForm.progress" class="w-full border rounded-xl px-4 py-3"
+                <textarea v-model="logbookForm.progress" class="w-full border-2 border-slate-300 rounded-xl px-4 py-3 text-slate-900 font-medium bg-white placeholder:text-slate-400"
                   placeholder="Progress summary" />
-                <textarea v-model="logbookForm.problems" class="w-full border rounded-xl px-4 py-3"
+                <textarea v-model="logbookForm.problems" class="w-full border-2 border-slate-300 rounded-xl px-4 py-3 text-slate-900 font-medium bg-white placeholder:text-slate-400"
                   placeholder="Problems identified" />
-                <textarea v-model="logbookForm.advice" class="w-full border rounded-xl px-4 py-3"
-                  placeholder="Supervisor advice / notes" />
+                <textarea v-model="logbookForm.advice" class="w-full border-2 border-slate-300 rounded-xl px-4 py-3 text-slate-900 font-medium bg-white placeholder:text-slate-400"
+                  placeholder="Supervisor / Staff advice notes" />
                 <input v-model="logbookForm.nextMeetingDate" type="datetime-local"
-                  class="w-full border rounded-xl px-4 py-3" />
-                <button @click="addLogbook" class="bg-[#5c001f] text-white rounded-xl px-4 py-2.5 font-bold">Save
-                  logbook entry</button>
+                  class="w-full border-2 border-slate-300 rounded-xl px-4 py-3 text-slate-900 font-medium bg-white" />
+                <button @click="addLogbook" class="bg-[#5c001f] hover:bg-[#430016] text-white rounded-xl px-5 py-3 font-bold shadow text-sm cursor-pointer transition-all">
+                  Save logbook entry
+                </button>
               </div>
             </div>
           </section>

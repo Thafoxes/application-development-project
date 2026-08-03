@@ -7,20 +7,21 @@ import RoleSidebar from '@/components/RoleSidebar.vue'
 import EmailActionConfirmModal from '@/components/EmailActionConfirmModal.vue'
 import { api } from '@/services/ifamousApi'
 
+import RubricEvaluationTable from '@/components/staff/RubricEvaluationTable.vue'
+import FeedbackFileUploadCard from '@/components/staff/FeedbackFileUploadCard.vue'
+
 const route = useRoute()
 const router = useRouter()
 const projectId = Number(route.query.projectId || 0)
 const loading = ref(true)
 const saving = ref(false)
 const error = ref('')
-const payload = ref({ project: {}, rubric: [], assessment: null, scores: [] })
+const payload = ref({ project: {}, rubric: [], assessment: null, scores: [], feedback: [] })
 const comments = ref('')
 const scoreMap = reactive({})
 const scoreComments = reactive({})
 const showSubmitConfirm = ref(false)
 const locked = computed(() => payload.value.assessment?.status === 'Submitted')
-const total = computed(() => payload.value.rubric.reduce((sum, item) => sum + Number(scoreMap[item.rubric_item_id] || 0), 0))
-const maximum = computed(() => payload.value.rubric.reduce((sum, item) => sum + Number(item.max_score || 0), 0))
 
 async function load() {
   loading.value = true
@@ -65,59 +66,24 @@ onMounted(load)
     <div v-if="loading" class="bg-white rounded-2xl p-10"><Loader2 class="animate-spin mx-auto text-[#5c001f]" /></div><div v-else-if="error && !payload.project.project_id" class="bg-red-50 text-red-800 rounded-2xl p-5 font-bold">{{ error }}</div>
     <template v-else>
       <div v-if="error" class="bg-red-50 text-red-800 rounded-2xl p-4 font-bold">{{ error }}</div>
-      <section class="bg-white rounded-[26px] p-6 shadow">
-        <div class="flex justify-between flex-wrap gap-4">
-          <div>
-            <h2 class="text-2xl font-bold text-slate-900">Assessment rubric</h2>
-            <p class="text-slate-500 font-medium">Maximum scores are enforced.</p>
-          </div>
-          <p class="text-3xl font-extrabold text-[#5c001f]">{{ total }} / {{ maximum }}</p>
-        </div>
-        <div class="overflow-x-auto mt-5">
-          <table class="w-full min-w-[760px]">
-            <thead>
-              <tr class="bg-[#f7f1ea] text-left text-slate-900 font-bold">
-                <th class="p-3">Criterion</th>
-                <th class="p-3">Description</th>
-                <th class="p-3">Max</th>
-                <th class="p-3">Score</th>
-                <th class="p-3">Comment</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-200">
-              <tr v-for="item in payload.rubric" :key="item.rubric_item_id" class="hover:bg-slate-50/60">
-                <td class="p-3 font-bold text-slate-900">{{ item.criterion }}</td>
-                <td class="p-3 text-sm text-slate-600 font-medium">{{ item.description }}</td>
-                <td class="p-3 font-bold text-slate-800">{{ item.max_score }}</td>
-                <td class="p-3">
-                  <input
-                    v-model.number="scoreMap[item.rubric_item_id]"
-                    :disabled="locked"
-                    type="number"
-                    min="0"
-                    :max="item.max_score"
-                    class="w-28 border-2 border-slate-300 rounded-xl px-3 py-2 font-bold text-slate-900 bg-white placeholder:text-slate-400 focus:border-[#5c001f] focus:outline-none focus:ring-4 focus:ring-[#5c001f]/15 disabled:bg-slate-100 disabled:text-slate-700 transition-all"
-                  />
-                </td>
-                <td class="p-3">
-                  <input
-                    v-model="scoreComments[item.rubric_item_id]"
-                    :disabled="locked"
-                    class="w-full border-2 border-slate-300 rounded-xl px-3 py-2 font-medium text-slate-900 bg-white placeholder:text-slate-400 focus:border-[#5c001f] focus:outline-none focus:ring-4 focus:ring-[#5c001f]/15 disabled:bg-slate-100 disabled:text-slate-700 transition-all"
-                    placeholder="Optional criterion feedback..."
-                  />
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+
+      <!-- Reusable Rubric Table Component -->
+      <RubricEvaluationTable
+        :rubric="payload.rubric"
+        :score-map="scoreMap"
+        :comment-map="scoreComments"
+        :locked="locked"
+      />
+
+      <section class="bg-white rounded-[26px] p-6 shadow border border-slate-200/90 space-y-4">
+        <h2 class="text-2xl font-extrabold text-slate-900">Overall Supervisor Comments</h2>
         <textarea
           v-model="comments"
           :disabled="locked"
-          class="w-full border-2 border-slate-300 rounded-xl p-4 min-h-32 mt-5 font-medium text-slate-900 bg-white placeholder:text-slate-400 focus:border-[#5c001f] focus:outline-none focus:ring-4 focus:ring-[#5c001f]/15 disabled:bg-slate-100 disabled:text-slate-700 transition-all"
+          class="w-full border-2 border-slate-300 rounded-xl p-4 min-h-32 font-medium text-slate-900 bg-white placeholder:text-slate-400 focus:border-[#5c001f] focus:outline-none focus:ring-4 focus:ring-[#5c001f]/15 disabled:bg-slate-100 disabled:text-slate-700 transition-all"
           placeholder="Overall supervisor comments"
         />
-        <div v-if="!locked" class="flex gap-3 mt-5">
+        <div v-if="!locked" class="flex gap-3 pt-2">
           <button @click="save(false)" :disabled="saving" class="border-2 border-[#5c001f] text-[#5c001f] hover:bg-[#5c001f]/5 rounded-xl px-5 py-3 font-bold inline-flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50">
             <Save class="w-5 h-5" /> Save draft
           </button>
@@ -125,10 +91,18 @@ onMounted(load)
             <Send class="w-5 h-5" /> Submit assessment
           </button>
         </div>
-        <p v-else class="bg-green-50 text-green-800 p-4 rounded-xl font-bold mt-5 border border-green-200">
+        <p v-else class="bg-green-50 text-green-800 p-4 rounded-xl font-bold border border-green-200">
           Supervisor assessment submitted and locked.
         </p>
       </section>
+
+      <!-- Reusable Feedback & Correction Attachment Upload Card -->
+      <FeedbackFileUploadCard
+        :project-id="projectId"
+        :feedback-list="payload.feedback || []"
+        role-label="Supervisor"
+        @updated="load"
+      />
     </template>
   </main></div>
     <EmailActionConfirmModal

@@ -573,16 +573,19 @@ router.post(
 
 router.post(
   "/projects/:projectId/logbooks",
-  requireProjectRole("student", "coordinator", "admin"),
+  requireProjectRole("student", "supervisor", "examiner", "coordinator", "admin"),
   async (req, res) => {
     try {
       const { meetingDate, meetingType, topics, progress, problems, advice, nextMeetingDate } = req.body;
       if (!meetingDate || !topics) return res.status(400).json({ error: "Meeting date and topics are required" });
+      const isStaffLog = req.roles.is_supervisor || req.roles.is_examiner || req.roles.is_coordinator || req.roles.is_admin;
+      const initialStatus = isStaffLog ? 'Approved' : 'Pending';
+
       const result = await query(
         `INSERT INTO fyp_logbooks
           (project_id, student_user_id, meeting_date, meeting_type, topics_discussed,
-           progress_summary, problems_identified, supervisor_advice, next_meeting_date, status)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending')`,
+           progress_summary, problems_identified, supervisor_advice, next_meeting_date, status, reviewed_by, reviewed_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           req.project.project_id,
           req.project.student_user_id,
@@ -593,15 +596,28 @@ router.post(
           problems || null,
           advice || null,
           nextMeetingDate || null,
+          initialStatus,
+          isStaffLog ? req.user.user_id : null,
+          isStaffLog ? new Date() : null,
         ]
       );
-      await notifyUser({
-        projectId: req.project.project_id,
-        userId: req.project.supervisor_user_id,
-        recipientType: "Supervisor",
-        title: "Logbook Entry Submitted",
-        message: `${req.project.student_name || "Student"} submitted a meeting logbook for review.`,
-      });
+      if (!isStaffLog) {
+        await notifyUser({
+          projectId: req.project.project_id,
+          userId: req.project.supervisor_user_id,
+          recipientType: "Supervisor",
+          title: "Logbook Entry Submitted",
+          message: `${req.project.student_name || "Student"} submitted a meeting logbook for review.`,
+        });
+      } else {
+        await notifyUser({
+          projectId: req.project.project_id,
+          userId: req.project.student_user_id,
+          recipientType: "Student",
+          title: "Logbook Entry Recorded",
+          message: `${req.user.full_name || "Staff"} logged an official guidance entry for ${req.project.project_title}.`,
+        });
+      }
       res.status(201).json({ success: true, logbookId: result.insertId });
     } catch (error) {
       return migrationError(res, error);

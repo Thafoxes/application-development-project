@@ -1,9 +1,10 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ClipboardCheck, Loader2, Search } from 'lucide-vue-next'
+import { Loader2, Search } from 'lucide-vue-next'
 import AppHeader from '@/components/AppHeader.vue'
 import RoleSidebar from '@/components/RoleSidebar.vue'
+import StaffProjectCard from '@/components/staff/StaffProjectCard.vue'
 import { api } from '@/services/ifamousApi'
 
 const router = useRouter()
@@ -12,6 +13,10 @@ const error = ref('')
 const projects = ref([])
 const search = ref('')
 const filtered = computed(() => projects.value.filter((p) => `${p.project_title} ${p.student_name} ${p.matric_no}`.toLowerCase().includes(search.value.toLowerCase())))
+
+function openReview(project) {
+  router.push({ path: '/examiner-review', query: { projectId: project.project_id } })
+}
 
 onMounted(async () => {
   try { projects.value = (await api.get('/examiner/projects')).data.projects || [] }
@@ -41,33 +46,13 @@ onMounted(async () => {
     <div v-else-if="error" class="bg-red-50 text-red-800 border border-red-200 p-5 rounded-2xl font-bold">{{ error }}</div>
 
     <section v-else class="grid grid-cols-1 xl:grid-cols-2 gap-5">
-      <article
+      <StaffProjectCard
         v-for="item in filtered"
         :key="item.project_id"
-        class="bg-white rounded-[24px] p-6 shadow-md border-2 border-slate-200/90 flex flex-col justify-between space-y-4 hover:border-[#5c001f] transition-all"
-      >
-        <div>
-          <div class="flex justify-between items-center gap-3">
-            <ClipboardCheck class="w-7 h-7 text-[#5c001f]" />
-            <span
-              class="px-3 py-1 rounded-full text-xs font-bold"
-              :class="item.evaluation_status === 'Submitted' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'"
-            >
-              {{ item.evaluation_status || 'Pending Evaluation' }}
-            </span>
-          </div>
-          <h2 class="text-xl font-extrabold text-slate-900 mt-4 leading-snug">{{ item.project_title }}</h2>
-          <p class="text-base font-semibold text-slate-700 mt-1">{{ item.student_name }} <span class="text-slate-500 font-normal">({{ item.matric_no }})</span></p>
-          <p class="text-sm font-medium text-slate-600 mt-2"><strong>Supervisor:</strong> {{ item.supervisor_name || 'Unassigned' }}</p>
-        </div>
-
-        <button
-          @click="router.push({ path: '/examiner-review', query: { projectId: item.project_id } })"
-          class="w-full bg-[#5c001f] hover:bg-[#430016] text-white rounded-xl px-5 py-3 font-bold shadow transition-all cursor-pointer"
-        >
-          {{ item.evaluation_status === 'Submitted' ? 'View evaluation' : 'Review and grade' }}
-        </button>
-      </article>
+        :project="item"
+        role="examiner"
+        @click="openReview"
+      />
       <div v-if="!filtered.length" class="col-span-full bg-white rounded-2xl p-8 text-center text-slate-600 font-semibold border-2 border-slate-200 shadow-sm">
         No assigned examination projects found.
       </div>
