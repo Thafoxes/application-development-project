@@ -52,9 +52,8 @@ router.get("/projects/:projectId/journey", async (req, res) => {
                 submission_type, status, version_number, is_locked, uploaded_by, submitted_at,
                 feedback, reviewed_by, reviewed_at
          FROM projects_submissions WHERE project_id = ?
-           ${examinerOnly ? "AND (is_locked = 1 OR submission_id = ?)" : ""}
-         ORDER BY submission_type, version_number DESC, submission_id DESC`,
-        examinerOnly ? [projectId, req.project.approved_submission_id] : [projectId]
+         ORDER BY version_number DESC, submission_id DESC`,
+        [projectId]
       ),
       examinerOnly
         ? query("SELECT * FROM fyp_feedback WHERE project_id = ? AND author_user_id = ? ORDER BY created_at DESC", [projectId, req.user.user_id])

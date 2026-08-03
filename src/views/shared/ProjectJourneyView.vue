@@ -366,6 +366,86 @@ onMounted(loadJourney)
             </p>
           </section>
 
+          <!-- Prominent Student FYP Proposal & Package Download Section -->
+          <section class="bg-white rounded-[26px] p-6 shadow-md border-2 border-slate-200 space-y-4">
+            <div class="flex items-center justify-between gap-4 flex-wrap border-b border-slate-100 pb-3">
+              <div>
+                <h2 class="text-xl font-extrabold text-slate-900 flex items-center gap-2">
+                  <FileText class="w-6 h-6 text-[#5c001f]" /> Student FYP Proposal & Submitted Documents
+                </h2>
+                <p class="text-xs text-slate-500 font-medium mt-0.5">
+                  Download the student's proposal or deliverables (PDF/PPTX) to review, annotate, and upload corrections.
+                </p>
+              </div>
+            </div>
+
+            <div v-if="data && data.submissions && data.submissions.length" class="space-y-3 pt-1">
+              <div
+                v-for="item in data.submissions"
+                :key="item.submission_id"
+                class="border-2 border-slate-200 bg-slate-50/50 rounded-2xl p-4 flex items-center justify-between gap-4 flex-wrap hover:border-slate-300 transition-all"
+              >
+                <div class="flex items-center gap-3 min-w-0">
+                  <FileText class="w-7 h-7 text-[#5c001f] shrink-0" />
+                  <div class="min-w-0">
+                    <p class="font-extrabold text-slate-900 text-base truncate">{{ item.original_file_name || item.submission_title }}</p>
+                    <p class="text-xs font-semibold text-slate-600 mt-0.5">
+                      {{ item.submission_type || 'Proposal' }} · Version {{ item.version_number || 1 }} · {{ item.status }}
+                      <span v-if="item.submitted_at"> · Submitted {{ formatMalaysiaDateTime(item.submitted_at) }}</span>
+                      <span v-if="item.is_locked" class="text-amber-700 font-bold"> · 🔒 Locked Copy</span>
+                    </p>
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-2 shrink-0">
+                  <a
+                    :href="fileUrl(projectId, item.submission_id)"
+                    target="_blank"
+                    rel="noopener"
+                    class="border-2 border-[#5c001f] text-[#5c001f] hover:bg-[#5c001f]/5 rounded-xl px-4 py-2 font-bold text-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    <Eye class="w-4 h-4" /> View PDF
+                  </a>
+                  <a
+                    :href="fileUrl(projectId, item.submission_id, true)"
+                    class="bg-[#5c001f] hover:bg-[#430016] text-white rounded-xl px-4 py-2 font-bold text-xs inline-flex items-center gap-1.5 shadow transition-colors cursor-pointer"
+                  >
+                    <Download class="w-4 h-4" /> Download PDF / Proposal
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <div v-else class="rounded-xl bg-amber-50 border border-amber-200 p-4 text-amber-800 text-xs font-bold">
+              No proposal document or deliverable file has been uploaded for this FYP project yet.
+            </div>
+
+            <!-- Student Upload Form -->
+            <div v-if="isStudent" class="mt-4 bg-[#f7f1ea] border border-[#e1d5cc] rounded-2xl p-5 space-y-3">
+              <h3 class="font-extrabold text-slate-900 text-sm flex items-center gap-2">
+                <Upload class="w-4 h-4 text-[#5c001f]" /> Upload New Proposal or Deliverable Version
+              </h3>
+              <div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
+                <input v-model="uploadForm.title" class="border-2 border-slate-300 rounded-xl px-4 py-2.5 text-xs font-medium text-slate-900 bg-white placeholder:text-slate-400" placeholder="Submission title (e.g. Revised Proposal)" />
+                <select v-model="uploadForm.submissionType" class="border-2 border-slate-300 rounded-xl px-4 py-2.5 text-xs font-medium text-slate-900 bg-white">
+                  <option value="proposal">Proposal / Revised Proposal</option>
+                  <option value="progress_report">Progress Report</option>
+                  <option value="presentation">Progress Presentation</option>
+                  <option value="prototype">Prototype</option>
+                  <option value="testing_evidence">Testing Evidence</option>
+                  <option value="final_deliverable">Final Deliverable</option>
+                  <option value="administrative">Administrative Document</option>
+                </select>
+                <input type="file" accept=".pdf,.pptx,.ppt" @change="selectedFile = $event.target.files[0]"
+                  class="w-full text-xs text-slate-600 font-medium file:mr-4 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#5c001f] file:text-white hover:file:bg-[#430016] cursor-pointer bg-white border-2 border-slate-300 rounded-xl py-1.5 px-2" />
+              </div>
+              <button @click="uploadSubmission" :disabled="saving"
+                class="bg-[#5c001f] hover:bg-[#430016] text-white rounded-xl px-5 py-2.5 font-bold shadow text-xs transition-all cursor-pointer">
+                Upload Submission
+              </button>
+            </div>
+          </section>
+
           <section v-if="isStudent"
             class="bg-white rounded-[26px] p-6 shadow border border-black/5 flex flex-wrap items-center justify-between gap-5">
             <div>
@@ -602,64 +682,6 @@ onMounted(loadJourney)
                 class="border rounded-xl px-4 py-2.5 font-bold inline-flex gap-2">
                 <ExternalLink class="w-4 h-4" /> Open Drive
               </a>
-            </div>
-          </section>
-
-          <section class="bg-white rounded-[26px] p-6 shadow border border-black/5">
-            <div class="flex items-center justify-between gap-4 flex-wrap">
-              <h2 class="text-2xl font-bold flex items-center gap-2">
-                <FileText class="w-6 h-6 text-[#5c001f]" /> Submission versions
-              </h2>
-              <span class="text-sm text-gray-500">Approved examination files are locked and preserved.</span>
-            </div>
-            <div class="mt-5 space-y-3">
-              <div v-for="item in data.submissions" :key="item.submission_id"
-                class="border rounded-[18px] p-4 flex items-center justify-between gap-4 flex-wrap">
-                <div>
-                  <p class="font-bold">{{ item.original_file_name || item.submission_title }}</p>
-                  <p class="text-sm text-gray-500">{{ item.submission_type }} · Version {{ item.version_number || 1 }} ·
-                    {{ item.status }} <span v-if="item.is_locked">· 🔒 Locked</span></p>
-                </div>
-                <div class="flex items-center gap-2">
-                  <a
-                    :href="fileUrl(projectId, item.submission_id)"
-                    target="_blank"
-                    rel="noopener"
-                    class="border-2 border-[#5c001f] text-[#5c001f] hover:bg-[#5c001f]/5 rounded-xl px-4 py-2 font-bold text-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer"
-                  >
-                    <Eye class="w-4 h-4" /> View PDF
-                  </a>
-                  <a
-                    :href="fileUrl(projectId, item.submission_id, true)"
-                    class="bg-[#5c001f] hover:bg-[#430016] text-white rounded-xl px-4 py-2 font-bold text-xs inline-flex items-center gap-1.5 shadow transition-colors cursor-pointer"
-                  >
-                    <Download class="w-4 h-4" /> Download PDF
-                  </a>
-                </div>
-              </div>
-              <p v-if="!data.submissions.length" class="text-gray-500">No journey submissions yet.</p>
-            </div>
-
-            <div v-if="isStudent" class="mt-6 bg-[#f7f1ea] rounded-[18px] p-5">
-              <h3 class="font-bold text-lg flex items-center gap-2">
-                <Upload class="w-5 h-5" /> Upload a new version or deliverable
-              </h3>
-              <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 mt-4">
-                <input v-model="uploadForm.title" class="border rounded-xl px-4 py-3" placeholder="Submission title" />
-                <select v-model="uploadForm.submissionType" class="border rounded-xl px-4 py-3">
-                  <option value="proposal">Proposal / Revised Proposal</option>
-                  <option value="progress_report">Progress Report</option>
-                  <option value="presentation">Progress Presentation</option>
-                  <option value="prototype">Prototype</option>
-                  <option value="testing_evidence">Testing Evidence</option>
-                  <option value="final_deliverable">Final Deliverable</option>
-                  <option value="administrative">Administrative Document</option>
-                </select>
-                <input type="file" @change="selectedFile = $event.target.files[0]"
-                  class="border rounded-xl px-4 py-2.5 bg-white" />
-              </div>
-              <button @click="uploadSubmission" :disabled="saving"
-                class="mt-4 bg-[#5c001f] text-white rounded-xl px-5 py-2.5 font-bold">Upload submission</button>
             </div>
           </section>
 
