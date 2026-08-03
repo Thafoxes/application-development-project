@@ -244,7 +244,7 @@ router.get("/student/my-fyp/:projectId", async (req, res) => {
         createdAt: first.created_at,
         updatedAt: first.updated_at,
         documents,
-        feedback,
+        feedback: first.feedback || "",
       },
     });
   } catch (error) {

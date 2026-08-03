@@ -202,7 +202,7 @@ router.get("/coordinator/examiner-match/:projectId", async (req, res) => {
        LEFT JOIN fyp_examiner_assignments ea ON ea.examiner_user_id = u.user_id
        LEFT JOIN fyp_evaluations ev
          ON ev.project_id = ea.project_id AND ev.examiner_user_id = ea.examiner_user_id
-       WHERE u.user_id <> COALESCE(?, 0) AND st.student_id IS NULL
+       WHERE u.user_id <> COALESCE(?, 0) AND st.student_id IS NULL AND LOWER(u.email) NOT LIKE '%@graduate.utm.my'
        GROUP BY u.user_id, u.full_name, u.email, u.expertise, u.affiliation,
                 e.industry_background, up.department, up.organisation, up.is_available, u.company_name`,
       [project.supervisor_user_id || 0]

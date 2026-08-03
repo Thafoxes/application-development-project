@@ -199,11 +199,25 @@ const supervisorCandidates = ref([])
 const loadingSupervisors = ref(false)
 const supervisorModalError = ref('')
 const assignSupervisorLoading = ref(false)
+const supervisorSearchQuery = ref('')
+
+const filteredSupervisorCandidates = computed(() => {
+  const q = supervisorSearchQuery.value.trim().toLowerCase()
+  if (!q) return supervisorCandidates.value
+  return supervisorCandidates.value.filter((cand) => {
+    const name = String(cand.full_name || cand.name || '').toLowerCase()
+    const email = String(cand.email || '').toLowerCase()
+    const expertise = String(cand.expertise || cand.research_expertise || '').toLowerCase()
+    const dept = String(cand.department || cand.affiliation || '').toLowerCase()
+    return name.includes(q) || email.includes(q) || expertise.includes(q) || dept.includes(q)
+  })
+})
 
 const openSupervisorModal = async () => {
   showSupervisorModal.value = true
   loadingSupervisors.value = true
   supervisorModalError.value = ''
+  supervisorSearchQuery.value = ''
   try {
     const res = await api.get(`/projects/${projectId.value}/supervisor-candidates`)
     supervisorCandidates.value = res.data.candidates || res.data.lecturers || []
@@ -250,11 +264,25 @@ const examinerCandidates = ref([])
 const loadingExaminers = ref(false)
 const examinerModalError = ref('')
 const assignExaminerLoading = ref(false)
+const examinerSearchQuery = ref('')
+
+const filteredExaminerCandidates = computed(() => {
+  const q = examinerSearchQuery.value.trim().toLowerCase()
+  if (!q) return examinerCandidates.value
+  return examinerCandidates.value.filter((cand) => {
+    const name = String(cand.full_name || cand.name || '').toLowerCase()
+    const email = String(cand.email || '').toLowerCase()
+    const expertise = String(cand.expertise || cand.industry_background || '').toLowerCase()
+    const dept = String(cand.department || cand.organisation || cand.affiliation || '').toLowerCase()
+    return name.includes(q) || email.includes(q) || expertise.includes(q) || dept.includes(q)
+  })
+})
 
 const openExaminerModal = async () => {
   showExaminerModal.value = true
   loadingExaminers.value = true
   examinerModalError.value = ''
+  examinerSearchQuery.value = ''
   try {
     const res = await api.get(`/coordinator/examiner-match/${projectId.value}`)
     examinerCandidates.value = res.data.candidates || []
@@ -783,14 +811,28 @@ onMounted(loadProject)
           {{ supervisorModalError }}
         </div>
 
+        <!-- Search Input -->
+        <div class="relative">
+          <Search class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            v-model="supervisorSearchQuery"
+            type="text"
+            placeholder="Search supervisor by name, email (@utm.my), or expertise..."
+            class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:border-[#5c001f] focus:bg-white focus:outline-none transition-all"
+          />
+        </div>
+
         <div v-if="loadingSupervisors" class="p-8 text-center">
           <Loader2 class="w-8 h-8 animate-spin mx-auto text-[#5c001f]" />
           <p class="text-xs font-bold mt-2">Loading available lecturers...</p>
         </div>
 
         <div v-else class="flex-1 overflow-y-auto space-y-3 pr-1">
+          <div v-if="!filteredSupervisorCandidates.length" class="p-6 text-center text-xs text-gray-500 font-medium bg-gray-50 rounded-xl border border-gray-200">
+            No matching supervisor candidates found for "{{ supervisorSearchQuery }}".
+          </div>
           <div
-            v-for="cand in supervisorCandidates"
+            v-for="cand in filteredSupervisorCandidates"
             :key="cand.user_id"
             class="p-4 rounded-xl border border-gray-200 hover:border-[#5c001f] transition-all flex flex-wrap items-center justify-between gap-3 bg-slate-50/50"
           >
@@ -841,14 +883,28 @@ onMounted(loadProject)
           {{ examinerModalError }}
         </div>
 
+        <!-- Search Input -->
+        <div class="relative">
+          <Search class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            v-model="examinerSearchQuery"
+            type="text"
+            placeholder="Search examiner by name, email (@utm.my), or expertise..."
+            class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:border-[#5c001f] focus:bg-white focus:outline-none transition-all"
+          />
+        </div>
+
         <div v-if="loadingExaminers" class="p-8 text-center">
           <Loader2 class="w-8 h-8 animate-spin mx-auto text-[#5c001f]" />
           <p class="text-xs font-bold mt-2">Loading examiner candidates...</p>
         </div>
 
         <div v-else class="flex-1 overflow-y-auto space-y-3 pr-1">
+          <div v-if="!filteredExaminerCandidates.length" class="p-6 text-center text-xs text-gray-500 font-medium bg-gray-50 rounded-xl border border-gray-200">
+            No matching examiner candidates found for "{{ examinerSearchQuery }}".
+          </div>
           <div
-            v-for="cand in examinerCandidates"
+            v-for="cand in filteredExaminerCandidates"
             :key="cand.user_id"
             class="p-4 rounded-xl border border-gray-200 hover:border-[#5c001f] transition-all flex flex-wrap items-center justify-between gap-3 bg-slate-50/50"
           >
