@@ -254,9 +254,9 @@ router.post("/timetable/crosscheck", (req, res) => {
       SELECT tt.user_id, tt.class_id, tt.schedule_json, u.full_name, u.email
       FROM time_table tt
       LEFT JOIN users u ON u.user_id = tt.user_id
-      WHERE tt.user_id IN (${placeholders}) AND tt.fyp_session_id = ?
+      WHERE tt.user_id IN (${placeholders})
     `);
-    queryValues.push([...user_ids, fyp_session_id]);
+    queryValues.push([...user_ids]);
   }
 
   if (queries.length === 0) {
@@ -297,57 +297,151 @@ router.post("/timetable/crosscheck", (req, res) => {
           }
 
           const isClass = row.class_id != null;
-          const meta = userRolesMap[row.user_id] || {};
+          const meta = userRolesMap[row.user_id] || userRolesMap[String(row.user_id)] || {};
           const roleName = meta.role || (isClass ? 'Class' : 'User');
           const emailOrName = meta.email || row.email || row.full_name || `User ${row.user_id}`;
-          const ownerLabel = isClass ? `Class ID: ${row.class_id}` : `[${roleName}: ${emailOrName}]`;
+          const ownerLabel = isClass ? `Class ${row.class_id}` : `${roleName}: ${emailOrName}`;
           const color = isClass ? '#eab308' : (meta.color || '#5C001F');
 
-          if (schedule.specific_events && Array.isArray(schedule.specific_events)) {
-            schedule.specific_events.forEach(e => {
-              aggregatedEvents.push({
-                id: `crosscheck-sp-${idCounter++}`,
-                title: e.label || e.title,
-                date: e.date || e.target_date,
-                start_time: e.start_time || '08:00',
-                end_time: e.end_time || '09:00',
-                owner: ownerLabel,
-                is_class: isClass,
-                color: color
-              });
+          // Universal extractor for all schedule formats
+          let weeklySlots = [];
+          let specificList = [];
+
+          if (Array.isArray(schedule)) {
+            schedule.forEach(item => {
+              if (item.date || item.target_date) {
+                specificList.push(item);
+              } else if (item.day_of_week || item.dayOfWeek || item.day_name) {
+                weeklySlots.push(item);
+              }
             });
+          } else if (schedule && typeof schedule === 'object') {
+            const specArr = schedule.specific_events || schedule.events || schedule.specificEvents || [];
+            if (Array.isArray(specArr)) {
+              specArr.forEach(item => specificList.push(item));
+            }
+
+            const recArr = schedule.weekly_recurring || schedule.weekly_schedule || schedule.slots || [];
+            if (Array.isArray(recArr)) {
+              recArr.forEach(item => {
+                if (item.slots && Array.isArray(item.slots)) {
+                  const dayNum = item.day_of_week || item.dayOfWeek || 1;
+                  item.slots.forEach(s => {
+                    weeklySlots.push({ ...s, day_of_week: dayNum });
+                  });
+                } else if (item.day_of_week || item.dayOfWeek || item.day_name) {
+                  weeklySlots.push(item);
+                }
+              });
+            }
           }
 
-          if (schedule.weekly_recurring && Array.isArray(schedule.weekly_recurring)) {
-            const startDate = new Date(2026, 0, 1);
-            const endDate = new Date(2026, 11, 31);
+          // 1. Process specific date events
+          specificList.forEach(e => {
+            aggregatedEvents.push({
+              id: `crosscheck-sp-${idCounter++}`,
+              title: e.label || e.title || e.subject || 'Event',
+              date: e.date || e.target_date,
+              start_time: e.start_time || e.time || '08:00',
+              end_time: e.end_time || '09:00',
+              owner: ownerLabel,
+              is_class: isClass,
+              color: color
+            });
+          });
 
-            for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-              const jsDay = d.getDay();
-              const jsonDayOfWeek = jsDay === 0 ? 7 : jsDay;
-              const dateStr = formatDate(d);
+          // 2. Process weekly recurring slots (expanded across 2026)
+          const dayMapNames = { 'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 'Thursday': 4, 'Friday': 5, 'Saturday': 6, 'Sunday': 7 };
+          const startDate = new Date(2026, 0, 1);
+          const endDate = new Date(2026, 11, 31);
 
-              const recurringDay = schedule.weekly_recurring.find(r => r.day_of_week === jsonDayOfWeek);
-              if (recurringDay && recurringDay.slots) {
-                recurringDay.slots.forEach(slot => {
-                  aggregatedEvents.push({
-                    id: `crosscheck-rc-${idCounter++}`,
-                    title: slot.label,
-                    date: dateStr,
-                    start_time: slot.start_time,
-                    end_time: slot.end_time,
-                    owner: ownerLabel,
-                    is_class: isClass,
-                    color: color
-                  });
+          for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+            const jsDay = d.getDay();
+            const jsonDayOfWeek = jsDay === 0 ? 7 : jsDay;
+            const dateStr = formatDate(d);
+
+            weeklySlots.forEach(slot => {
+              const slotDay = slot.day_of_week || slot.dayOfWeek || (slot.day_name ? dayMapNames[slot.day_name] : null);
+              if (slotDay === jsonDayOfWeek) {
+                aggregatedEvents.push({
+                  id: `crosscheck-rc-${idCounter++}`,
+                  title: slot.label || slot.title || slot.subject || 'Weekly Slot',
+                  date: dateStr,
+                  start_time: slot.start_time || slot.time || '08:00',
+                  end_time: slot.end_time || slot.time ? `${parseInt((slot.start_time||slot.time).split(':')[0]) + 1}:00` : '09:00',
+                  owner: ownerLabel,
+                  is_class: isClass,
+                  color: color
                 });
               }
-            }
+            });
           }
         });
       });
 
-      res.json({ status: "success", data: { occupied_events: aggregatedEvents } });
+      const foundUserIds = new Set();
+      resultsArray.forEach(results => {
+        results.forEach(row => {
+          if (row.user_id != null) {
+            foundUserIds.add(Number(row.user_id));
+          }
+        });
+      });
+
+      const missingActors = [];
+      if (user_ids && Array.isArray(user_ids)) {
+        user_ids.forEach(uid => {
+          const numId = Number(uid);
+          if (numId > 0 && !foundUserIds.has(numId)) {
+            const meta = userRolesMap[uid] || userRolesMap[String(uid)] || {};
+            missingActors.push({
+              user_id: numId,
+              role: meta.role || 'User',
+              email: meta.email || `User ID ${numId}`,
+            });
+          }
+        });
+      }
+
+      console.log("\n📋 ================= FYP ACTORS TIMETABLE BREAKDOWN =================");
+      if (user_ids && Array.isArray(user_ids)) {
+        user_ids.forEach(uid => {
+          const numId = Number(uid);
+          const meta = userRolesMap[uid] || userRolesMap[String(uid)] || {};
+          const role = meta.role || 'Party Member';
+          const email = meta.email || `ID ${numId}`;
+          const isFound = foundUserIds.has(numId);
+
+          if (isFound) {
+            const userRows = [];
+            resultsArray.forEach(arr => {
+              arr.forEach(r => {
+                if (Number(r.user_id) === numId) userRows.push(r);
+              });
+            });
+            console.log(`✅ [${role.toUpperCase()}] ${email} (User ID: ${numId}) -> TIMETABLE FOUND (${userRows.length} record(s))`);
+            userRows.forEach((r, idx) => {
+              try {
+                const sched = typeof r.schedule_json === 'string' ? JSON.parse(r.schedule_json) : r.schedule_json;
+                console.log(`   -> Record #${idx + 1} Schedule JSON:`, JSON.stringify(sched, null, 2));
+              } catch(e) {
+                console.log(`   -> Record #${idx + 1} Raw:`, r.schedule_json);
+              }
+            });
+          } else {
+            console.log(`❌ [${role.toUpperCase()}] ${email} (User ID: ${numId}) -> NO TIMETABLE FOUND IN DATABASE`);
+          }
+        });
+      }
+      console.log("======================================================================\n");
+
+      res.json({
+        status: "success",
+        data: {
+          occupied_events: aggregatedEvents,
+          missing_actors: missingActors
+        }
+      });
     })
     .catch(err => {
       console.error("Crosscheck Query Error:", err);
@@ -459,6 +553,7 @@ async function fetchRealProjectsFromDb() {
       fp.project_title,
       fp.status,
       fp.student_user_id,
+      su.user_id AS resolved_student_user_id,
       fp.student_name,
       fp.matric_no,
       fp.created_at,
@@ -466,16 +561,18 @@ async function fetchRealProjectsFromDb() {
       su.full_name AS student_full_name,
       su.email AS student_email,
       fp.supervisor_user_id,
+      sv_u.user_id AS resolved_supervisor_user_id,
       COALESCE(sv_u.full_name, fp.supervisor_name, 'Not Assigned') AS supervisor_full_name,
       COALESCE(sv_u.email, fp.supervisor_email, '') AS supervisor_email,
       ea.examiner_user_id AS assigned_examiner_user_id,
+      ex_u.user_id AS resolved_examiner_user_id,
       COALESCE(ex_u.full_name, fp.examiner_name) AS examiner_full_name,
       COALESCE(ex_u.email, fp.examiner_email) AS examiner_email
     FROM fyp_projects fp
-    LEFT JOIN users su ON su.user_id = fp.student_user_id
-    LEFT JOIN users sv_u ON sv_u.user_id = fp.supervisor_user_id
+    LEFT JOIN users su ON (su.user_id = fp.student_user_id OR (fp.student_name IS NOT NULL AND su.full_name = fp.student_name))
+    LEFT JOIN users sv_u ON (sv_u.user_id = fp.supervisor_user_id OR (fp.supervisor_email IS NOT NULL AND fp.supervisor_email != '' AND sv_u.email = fp.supervisor_email))
     LEFT JOIN fyp_examiner_assignments ea ON ea.project_id = fp.project_id AND ea.status = 'Assigned'
-    LEFT JOIN users ex_u ON ex_u.user_id = COALESCE(ea.examiner_user_id, fp.examiner_user_id)
+    LEFT JOIN users ex_u ON (ex_u.user_id = COALESCE(ea.examiner_user_id, fp.examiner_user_id) OR (fp.examiner_email IS NOT NULL AND fp.examiner_email != '' AND ex_u.email = fp.examiner_email))
     ORDER BY fp.project_id ASC
   `;
 
@@ -504,14 +601,14 @@ async function fetchRealProjectsFromDb() {
         created_at: r.created_at || null,
         updated_at: r.updated_at || r.created_at || null,
         student: {
-          user_id: r.student_user_id || 0,
+          user_id: r.resolved_student_user_id || r.student_user_id || 0,
           full_name: r.student_full_name || r.student_name || 'Student',
           email: r.student_email || '',
           matric_no: r.matric_no || '',
           class_id: null,
         },
         supervisor: {
-          user_id: r.supervisor_user_id || 0,
+          user_id: r.resolved_supervisor_user_id || r.supervisor_user_id || 0,
           full_name: r.supervisor_full_name,
           email: r.supervisor_email,
         },
@@ -520,8 +617,8 @@ async function fetchRealProjectsFromDb() {
     }
 
     const proj = projectMap.get(r.project_id);
-    if (r.assigned_examiner_user_id || r.examiner_full_name) {
-      const exUserId = r.assigned_examiner_user_id || 0;
+    const exUserId = r.resolved_examiner_user_id || r.assigned_examiner_user_id || 0;
+    if (exUserId > 0 || r.examiner_full_name) {
       if (!proj.examiners.some((e) => e.user_id === exUserId && exUserId > 0)) {
         proj.examiners.push({
           user_id: exUserId,

@@ -1,7 +1,7 @@
 <script setup>
 import { ref, watch, onMounted, onBeforeUnmount, computed } from 'vue'
 import axios from 'axios'
-import { Search } from 'lucide-vue-next'
+import { AlertTriangle, Search } from 'lucide-vue-next'
 import { useCalendarStore } from '@/stores/calendarStore'
 import CalendarSchedule from '@/components/calendar_components/CalendarSchedule.vue'
 import AppHeader from '@/components/AppHeader.vue'
@@ -13,6 +13,7 @@ const calendarStore = useCalendarStore()
 const generatedMeetings = ref([])
 const fypProjects = ref([])
 const loadingProjects = ref(false)
+const missingActors = ref([])
 
 const searchQuery = ref('')
 const sortBy = ref('newest')
@@ -237,10 +238,11 @@ watch(selectedProjectId, async (newProjectId) => {
   const userRolesMap = {}
 
   // 1. Student timetable
-  const studentId = project.student?.user_id || project.student_user_id
-  if (studentId) {
-    userIds.push(studentId)
-    userRolesMap[studentId] = {
+  const rawStudentId = project.student?.user_id || project.student_user_id
+  if (rawStudentId && Number(rawStudentId) > 0) {
+    const sId = Number(rawStudentId)
+    userIds.push(sId)
+    userRolesMap[sId] = {
       role: 'Student',
       email: project.student?.email || project.student?.full_name || project.student_name || 'Student',
       color: '#2563eb', // Royal Blue for Student
@@ -248,10 +250,11 @@ watch(selectedProjectId, async (newProjectId) => {
   }
 
   // 2. Supervisor timetable
-  const supervisorId = project.supervisor?.user_id || project.supervisor_user_id
-  if (supervisorId) {
-    userIds.push(supervisorId)
-    userRolesMap[supervisorId] = {
+  const rawSvId = project.supervisor?.user_id || project.supervisor_user_id
+  if (rawSvId && Number(rawSvId) > 0) {
+    const svId = Number(rawSvId)
+    userIds.push(svId)
+    userRolesMap[svId] = {
       role: 'Supervisor',
       email: project.supervisor?.email || project.supervisor?.full_name || project.supervisor_name || 'Supervisor',
       color: '#5c001f', // Maroon for Supervisor
@@ -261,15 +264,28 @@ watch(selectedProjectId, async (newProjectId) => {
   // 3. Examiner timetables
   if (project.examiners && Array.isArray(project.examiners)) {
     project.examiners.forEach((ex, idx) => {
-      if (ex.user_id) {
-        userIds.push(ex.user_id)
-        userRolesMap[ex.user_id] = {
+      if (ex.user_id && Number(ex.user_id) > 0) {
+        const exId = Number(ex.user_id)
+        userIds.push(exId)
+        userRolesMap[exId] = {
           role: `Examiner ${idx + 1}`,
           email: ex.email || ex.full_name || `Examiner ${idx + 1}`,
           color: idx === 0 ? '#d97706' : '#7c3aed', // Amber / Violet for Examiners
         }
       }
     })
+  }
+
+  // 4. Coordinator timetable
+  const user = JSON.parse(localStorage.getItem('user') || '{}')
+  const coordId = Number(user.user_id || user.id || 0)
+  if (coordId > 0 && !userIds.includes(coordId)) {
+    userIds.push(coordId)
+    userRolesMap[coordId] = {
+      role: 'Coordinator',
+      email: user.email || user.full_name || 'Coordinator Admin',
+      color: '#059669', // Emerald Green for Coordinator
+    }
   }
 
   try {
@@ -281,13 +297,16 @@ watch(selectedProjectId, async (newProjectId) => {
     })
 
     if (response.data && response.data.status === 'success') {
-      displayedEvents.value = response.data.data.occupied_events
+      displayedEvents.value = response.data.data.occupied_events || []
+      missingActors.value = response.data.data.missing_actors || []
     } else {
       displayedEvents.value = []
+      missingActors.value = []
     }
   } catch (err) {
     console.error('Failed to crosscheck timetable:', err)
     displayedEvents.value = []
+    missingActors.value = []
   }
 })
 
@@ -674,11 +693,35 @@ const autoScheduleAll = async () => {
             </div>
           </div>
 
-          <!-- Middle: Calendar Component (Sidebar removed) -->
+          <!-- Middle: Calendar Component -->
           <div
-            class="flex-1 flex flex-col shadow-lg rounded-xl overflow-hidden bg-white min-w-0 border border-gray-100"
+            class="flex-1 flex flex-col gap-4 shadow-lg rounded-xl overflow-hidden bg-white min-w-0 border border-gray-100 p-4"
           >
-            <!-- Render empty state if no project selected, otherwise show events and hide the native Add Meeting button -->
+            <!-- Warning Banner if one or more actors have missing timetables -->
+            <div
+              v-if="missingActors && missingActors.length > 0"
+              class="bg-amber-50 border-2 border-amber-300 rounded-xl p-4 shadow-sm space-y-2"
+            >
+              <div class="flex items-center gap-2 text-amber-800 font-extrabold text-sm">
+                <AlertTriangle class="w-5 h-5 text-amber-600 shrink-0" />
+                <span>Warning: Missing Timetable Schedule for FYP Party Member(s)</span>
+              </div>
+              <p class="text-xs font-semibold text-amber-700 leading-relaxed">
+                The following member(s) do not have a configured timetable schedule in the system.
+                AI auto-scheduling or manual presentation slot selection may cause unverified conflicts for these users:
+              </p>
+              <div class="flex flex-wrap gap-2 pt-1">
+                <span
+                  v-for="actor in missingActors"
+                  :key="actor.user_id"
+                  class="bg-amber-100 text-amber-900 border border-amber-300 px-3 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1.5"
+                >
+                  <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                  <strong>{{ actor.role }}:</strong> {{ actor.email }} (No timetable configured)
+                </span>
+              </div>
+            </div>
+
             <CalendarSchedule
               :events="combinedEvents"
               :hideAddMeetingButton="true"
