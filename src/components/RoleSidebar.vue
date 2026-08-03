@@ -11,6 +11,7 @@ import {
   Bell,
   Menu,
   X,
+  Table2,
 } from 'lucide-vue-next'
 import { roleFlags } from '@/services/ifamousApi'
 
@@ -49,6 +50,7 @@ const items = computed(() => {
       ['Dashboard', '/dashboard', LayoutDashboard],
       ['Manage FYP', '/manage-fyp', FolderKanban],
       ['Examiner Assignment', '/examiner-assignment', UsersRound],
+      ['My Timetable', '/personal-timetable', Table2],
     ]
   }
   if (activeRole.value === 'Student') {
@@ -57,6 +59,7 @@ const items = computed(() => {
       ['My FYP', '/student-fyp', FolderKanban],
       ['FYP Journey', '/project-journey', Route],
       ['Logbook', '/student-logbook', BookOpenCheck],
+      ['My Timetable', '/personal-timetable', Table2],
     ]
   }
   return [
@@ -64,6 +67,7 @@ const items = computed(() => {
     ['Assigned FYP', '/supervisor-projects', FolderKanban],
     ['Assigned Grading FYP', '/examiner-projects', ClipboardCheck],
     ['Logbook', '/supervisor-logbook', BookOpenCheck],
+    ['My Timetable', '/personal-timetable', Table2],
   ].filter(([label]) => label !== 'Assigned Grading FYP' || roles.isExaminer)
 })
 </script>

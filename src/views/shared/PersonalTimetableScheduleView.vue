@@ -4,7 +4,9 @@ import { useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 import AppHeader from '@/components/AppHeader.vue'
 import AppSidebar from '@/components/AppSidebar.vue'
+import RoleSidebar from '@/components/RoleSidebar.vue'
 import SystemCalendarGrid from '@/components/calendar_components/SystemCalendarGrid.vue'
+import { roleFlags } from '@/services/ifamousApi'
 import axios from 'axios'
 import {
   Calendar as CalendarIcon,
@@ -33,6 +35,7 @@ const api = {
 
 const router = useRouter()
 const { user } = useAuth()
+const roles = roleFlags()
 
 const isStudent = computed(() => {
   const role = String(user.value?.role || '').toLowerCase()
@@ -415,7 +418,8 @@ onMounted(loadScheduleData)
   <div class="min-h-screen bg-[#e7ded3] text-[#241616]">
     <AppHeader />
     <div class="flex flex-col md:flex-row flex-1 w-full min-w-0">
-      <AppSidebar />
+      <AppSidebar v-if="roles.isCoordinator" />
+      <RoleSidebar v-else :role="roles.isStudent ? 'Student' : 'Staff'" />
       <main class="flex-1 p-4 sm:p-6 lg:p-9 space-y-6 min-w-0 overflow-x-hidden">
         <!-- Header Banner -->
         <section class="rounded-[30px] bg-[#5c001f] text-white p-8 shadow-xl relative overflow-hidden">

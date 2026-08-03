@@ -29,16 +29,26 @@ function parseTags(rawString) {
     .filter((s) => s.length > 0)
 }
 
+function syncExpertiseFields() {
+  const joined = specialisationTags.value.join(', ')
+  form.expertise = joined
+  form.specialisation = joined
+  form.supervisorSpecialisation = joined
+  form.examinerSpecialisation = joined
+}
+
 function addTag() {
   const val = tagInput.value.trim().replace(/^[,\s]+|[,\s]+$/g, '')
   if (val && !specialisationTags.value.includes(val)) {
     specialisationTags.value.push(val)
+    syncExpertiseFields()
   }
   tagInput.value = ''
 }
 
 function removeTag(index) {
   specialisationTags.value.splice(index, 1)
+  syncExpertiseFields()
 }
 
 function handleKeydown(event) {
@@ -47,18 +57,26 @@ function handleKeydown(event) {
     addTag()
   } else if (event.key === 'Backspace' && tagInput.value === '' && specialisationTags.value.length > 0) {
     specialisationTags.value.pop()
+    syncExpertiseFields()
   }
 }
 
 onMounted(async () => {
   try {
     const profile = (await api.get('/profile')).data.profile || {}
-    const spec = profile.specialisation || profile.supervisor_specialisation || profile.examiner_specialisation || ''
-    specialisationTags.value = parseTags(spec)
+    const rawSpec = [
+      profile.expertise,
+      profile.specialisation,
+      profile.supervisor_specialisation,
+      profile.examiner_specialisation
+    ].filter(Boolean).join(', ')
+
+    specialisationTags.value = parseTags(rawSpec)
+    const spec = specialisationTags.value.join(', ')
 
     Object.assign(form, {
       fullName: profile.full_name || '', phoneNumber: profile.phone_number || '', companyName: profile.company_name || '',
-      expertise: profile.expertise || '', affiliation: profile.affiliation || '', department: profile.department || '',
+      expertise: spec, affiliation: profile.affiliation || '', department: profile.department || '',
       organisation: profile.organisation || '', biography: profile.biography || '', profilePhotoUrl: profile.profile_photo_url || '',
       professionalLink: profile.professional_link || '', isAvailable: Number(profile.is_available ?? 1) === 1,
       specialisation: spec, supervisorSpecialisation: spec, examinerSpecialisation: spec,
@@ -73,10 +91,7 @@ async function save() {
     if (tagInput.value.trim()) {
       addTag()
     }
-    const joinedSpec = specialisationTags.value.join(', ')
-    form.specialisation = joinedSpec
-    form.supervisorSpecialisation = joinedSpec
-    form.examinerSpecialisation = joinedSpec
+    syncExpertiseFields()
 
     await api.patch('/profile', form); message.value = 'Profile updated successfully.'
   }
@@ -137,13 +152,12 @@ async function save() {
               <input v-model="form.organisation" class="w-full border-2 border-slate-300 rounded-xl px-4 py-3 text-slate-900 bg-slate-50/50 font-medium placeholder:text-slate-400 focus:bg-white focus:border-[#5c001f] focus:outline-none focus:ring-4 focus:ring-[#5c001f]/15 transition-all" />
             </label>
 
-            <label class="space-y-1.5 block lg:col-span-2">
-              <span class="text-slate-900 font-bold text-sm sm:text-base block">Expertise</span>
-              <input v-model="form.expertise" class="w-full border-2 border-slate-300 rounded-xl px-4 py-3 text-slate-900 bg-slate-50/50 font-medium placeholder:text-slate-400 focus:bg-white focus:border-[#5c001f] focus:outline-none focus:ring-4 focus:ring-[#5c001f]/15 transition-all" placeholder="AI, software engineering, IoT..." />
-            </label>
-
-            <div v-if="roles.isSupervisor || roles.isExaminer || roles.isStaff" class="space-y-1.5 block lg:col-span-2">
-              <span class="text-slate-900 font-bold text-sm sm:text-base block">Specialisation <span class="text-xs text-slate-500 font-normal ml-1">(Press Enter or comma to add tag)</span></span>
+            <!-- Unified Expertise & Specialisation Tag Input -->
+            <div class="space-y-1.5 block lg:col-span-2">
+              <span class="text-slate-900 font-bold text-sm sm:text-base block">
+                Expertise & Specialisation
+                <span class="text-xs text-slate-500 font-normal ml-1">(Press Enter or comma to add tag)</span>
+              </span>
               
               <div class="w-full border-2 border-slate-300 rounded-xl p-2.5 bg-slate-50/50 focus-within:bg-white focus-within:border-[#5c001f] focus-within:ring-4 focus-within:ring-[#5c001f]/15 transition-all flex flex-wrap items-center gap-2 min-h-[52px]">
                 <span
@@ -168,7 +182,7 @@ async function save() {
                   @blur="addTag"
                   type="text"
                   class="flex-1 bg-transparent border-none outline-none text-slate-900 font-medium text-base min-w-[200px] placeholder:text-slate-400 py-1 px-1"
-                  placeholder="Type specialisation and press Enter or comma..."
+                  placeholder="Type expertise/specialisation and press Enter or comma..."
                 />
               </div>
             </div>
