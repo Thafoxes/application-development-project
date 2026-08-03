@@ -43,6 +43,7 @@ const projectId = computed(() => Number(route.query.projectId || 0))
 const project = computed(() => data.value?.project || {})
 const submissions = computed(() => data.value?.submissions || [])
 const nominations = computed(() => data.value?.nominations || [])
+const assignmentHistory = computed(() => data.value?.assignmentHistory || [])
 const proposalDocuments = computed(() =>
   submissions.value.filter((item) => String(item.submission_type || '').toLowerCase() === 'proposal'),
 )
@@ -75,10 +76,11 @@ const approveFYP = async () => {
   decisionLoading.value = true
   actionMessage.value = ''
   try {
+    const targetStatus = project.value.supervisor_user_id ? 'Active' : 'Pending AI Matching'
     await api.patch(`/coordinator/fyp-status/${projectId.value}`, {
-      status: 'Pending AI Matching',
+      status: targetStatus,
     })
-    actionMessage.value = 'FYP proposal was successfully approved! Status updated to Pending AI Matching.'
+    actionMessage.value = `FYP proposal was successfully approved! Status set to ${targetStatus === 'Active' ? 'Active / Approved' : 'Pending AI Matching'}.`
     await loadProject()
   } catch (err) {
     actionMessage.value = err.response?.data?.error || err.message
@@ -188,6 +190,98 @@ const acceptNomination = async (item, sendEmail = true) => {
     actionMessage.value = err.response?.data?.error || err.message
   } finally {
     nominationAction.value = 0
+  }
+}
+
+// Supervisor Assignment / Change Modal state
+const showSupervisorModal = ref(false)
+const supervisorCandidates = ref([])
+const loadingSupervisors = ref(false)
+const supervisorModalError = ref('')
+const assignSupervisorLoading = ref(false)
+
+const openSupervisorModal = async () => {
+  showSupervisorModal.value = true
+  loadingSupervisors.value = true
+  supervisorModalError.value = ''
+  try {
+    const res = await api.get(`/projects/${projectId.value}/supervisor-candidates`)
+    supervisorCandidates.value = res.data.candidates || res.data.lecturers || []
+  } catch (err) {
+    supervisorModalError.value = err.response?.data?.error || err.message
+  } finally {
+    loadingSupervisors.value = false
+  }
+}
+
+const assignSupervisor = async (cand) => {
+  assignSupervisorLoading.value = true
+  actionMessage.value = ''
+  try {
+    await api.post('/supervisor-matching/assign', {
+      projectId: projectId.value,
+      project: {
+        projectTitle: project.value.project_title,
+        projectType: project.value.project_type,
+        abstract: project.value.abstract,
+        keywords: project.value.keywords,
+      },
+      supervisor: {
+        user_id: cand.user_id,
+        name: cand.full_name || cand.name,
+        email: cand.email,
+        expertise: cand.expertise || 'General academic supervision',
+      },
+      sendEmail: true,
+    })
+    actionMessage.value = `${cand.full_name || cand.name} has been assigned as Supervisor!`
+    showSupervisorModal.value = false
+    await loadProject()
+  } catch (err) {
+    supervisorModalError.value = err.response?.data?.error || err.message
+  } finally {
+    assignSupervisorLoading.value = false
+  }
+}
+
+// Examiner Assignment / Change Modal state
+const showExaminerModal = ref(false)
+const examinerCandidates = ref([])
+const loadingExaminers = ref(false)
+const examinerModalError = ref('')
+const assignExaminerLoading = ref(false)
+
+const openExaminerModal = async () => {
+  showExaminerModal.value = true
+  loadingExaminers.value = true
+  examinerModalError.value = ''
+  try {
+    const res = await api.get(`/coordinator/examiner-match/${projectId.value}`)
+    examinerCandidates.value = res.data.candidates || []
+  } catch (err) {
+    examinerModalError.value = err.response?.data?.error || err.message
+  } finally {
+    loadingExaminers.value = false
+  }
+}
+
+const assignExaminer = async (cand) => {
+  assignExaminerLoading.value = true
+  actionMessage.value = ''
+  try {
+    await api.post(`/coordinator/projects/${projectId.value}/assign-examiner`, {
+      examinerUserId: cand.user_id,
+      matchScore: cand.matchScore || 80,
+      reason: 'Coordinator Assignment',
+      sendEmail: true,
+    })
+    actionMessage.value = `${cand.full_name || cand.name} has been assigned as Examiner!`
+    showExaminerModal.value = false
+    await loadProject()
+  } catch (err) {
+    examinerModalError.value = err.response?.data?.error || err.message
+  } finally {
+    assignExaminerLoading.value = false
   }
 }
 
@@ -319,6 +413,153 @@ onMounted(loadProject)
                 <p><strong>Updated:</strong> {{ formatMalaysiaDateTime(project.updated_at) }}</p>
               </div>
             </aside>
+          </section>
+
+          <!-- Supervisor & Examiner Management Section -->
+          <section class="bg-white rounded-[26px] p-6 shadow border border-black/5 space-y-6">
+            <div class="flex flex-wrap items-center justify-between gap-4 border-b border-gray-100 pb-4">
+              <div>
+                <h2 class="text-2xl font-bold flex items-center gap-2 text-[#5c001f]">
+                  <UserCheck class="w-6 h-6 text-[#5c001f]" /> Supervisor & Examiner Management
+                </h2>
+                <p class="text-sm text-gray-500 mt-1">
+                  Assign or change the assigned supervisor and examiner for this FYP project.
+                </p>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <!-- Supervisor Box -->
+              <div class="rounded-[20px] bg-[#f7f1ea] border border-[#e1d5cc] p-6 space-y-4 flex flex-col justify-between">
+                <div>
+                  <div class="flex items-center justify-between">
+                    <span class="text-xs uppercase font-bold tracking-wider text-[#5c001f]">Project Supervisor</span>
+                    <span
+                      class="px-3 py-1 rounded-full text-xs font-bold"
+                      :class="project.supervisor_user_id ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'"
+                    >
+                      {{ project.supervisor_user_id ? 'Assigned' : 'Unassigned' }}
+                    </span>
+                  </div>
+
+                  <div class="mt-4">
+                    <h3 class="text-xl font-bold text-gray-900">{{ project.supervisor_name || 'Not Assigned' }}</h3>
+                    <p class="text-sm text-gray-600 font-medium">{{ project.supervisor_email || 'No email available' }}</p>
+                    <p class="text-xs text-gray-500 mt-2" v-if="project.supervisor_expertise">
+                      <strong>Expertise:</strong> {{ project.supervisor_expertise }}
+                    </p>
+                  </div>
+                </div>
+
+                <div class="pt-2">
+                  <button
+                    @click="openSupervisorModal"
+                    class="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#5c001f] hover:bg-[#430016] text-white px-5 py-3 font-bold shadow transition-all cursor-pointer"
+                  >
+                    <Edit3 class="w-4 h-4 text-[#f8be17]" />
+                    {{ project.supervisor_user_id ? 'Change Supervisor' : 'Assign Supervisor' }}
+                  </button>
+                </div>
+              </div>
+
+              <!-- Examiner Box -->
+              <div class="rounded-[20px] bg-[#f7f1ea] border border-[#e1d5cc] p-6 space-y-4 flex flex-col justify-between">
+                <div>
+                  <div class="flex items-center justify-between">
+                    <span class="text-xs uppercase font-bold tracking-wider text-[#5c001f]">Project Examiner</span>
+                    <span
+                      class="px-3 py-1 rounded-full text-xs font-bold"
+                      :class="project.examiner_user_id || project.assigned_examiner_name ? 'bg-purple-100 text-purple-800' : 'bg-amber-100 text-amber-800'"
+                    >
+                      {{ project.examiner_user_id || project.assigned_examiner_name ? 'Assigned' : 'Unassigned' }}
+                    </span>
+                  </div>
+
+                  <div class="mt-4">
+                    <h3 class="text-xl font-bold text-gray-900">{{ project.assigned_examiner_name || project.examiner_name || 'Not Assigned' }}</h3>
+                    <p class="text-sm text-gray-600 font-medium">{{ project.assigned_examiner_email || project.examiner_email || 'No email available' }}</p>
+                    <p class="text-xs text-gray-500 mt-2" v-if="project.assigned_examiner_expertise">
+                      <strong>Expertise:</strong> {{ project.assigned_examiner_expertise }}
+                    </p>
+                  </div>
+                </div>
+
+                <div class="pt-2">
+                  <button
+                    @click="openExaminerModal"
+                    class="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#5c001f] hover:bg-[#430016] text-white px-5 py-3 font-bold shadow transition-all cursor-pointer"
+                  >
+                    <UserCheck class="w-4 h-4 text-[#f8be17]" />
+                    {{ project.examiner_user_id || project.assigned_examiner_name ? 'Change Examiner' : 'Assign Examiner' }}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Assignment History & Audit Log Section -->
+          <section class="bg-white rounded-[26px] p-6 shadow border border-black/5 space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <h2 class="text-xl font-bold flex items-center gap-2 text-gray-900">
+                  <FileText class="w-5 h-5 text-[#5c001f]" /> Assignment Audit Log & History
+                </h2>
+                <p class="text-xs text-gray-500 mt-0.5">
+                  Complete historical record of all supervisor and examiner assignments for this FYP project.
+                </p>
+              </div>
+              <span class="text-xs font-bold px-3 py-1 bg-gray-100 text-gray-700 rounded-full">
+                {{ assignmentHistory.length }} Records
+              </span>
+            </div>
+
+            <div v-if="assignmentHistory.length" class="overflow-x-auto border border-gray-200 rounded-2xl">
+              <table class="w-full text-left text-sm">
+                <thead class="bg-[#f7f1ea] text-[#5c001f] font-bold text-xs uppercase border-b border-[#e1d5cc]">
+                  <tr>
+                    <th class="p-3">Role</th>
+                    <th class="p-3">Assigned Handler</th>
+                    <th class="p-3">Status</th>
+                    <th class="p-3">Assigned At</th>
+                    <th class="p-3">Unassigned At</th>
+                    <th class="p-3">Assigned By / Reason</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 font-medium">
+                  <tr v-for="(item, idx) in assignmentHistory" :key="idx" class="hover:bg-gray-50/80">
+                    <td class="p-3">
+                      <span
+                        class="px-2.5 py-1 rounded-full text-xs font-bold"
+                        :class="item.role_type === 'Supervisor' ? 'bg-amber-100 text-amber-800' : 'bg-purple-100 text-purple-800'"
+                      >
+                        {{ item.role_type }}
+                      </span>
+                    </td>
+                    <td class="p-3">
+                      <p class="font-bold text-gray-900">{{ item.person_name || 'User #' + (item.supervisor_user_id || item.examiner_user_id) }}</p>
+                      <p class="text-xs text-gray-500">{{ item.person_email || '-' }}</p>
+                    </td>
+                    <td class="p-3">
+                      <span
+                        class="px-2 py-0.5 rounded text-xs font-bold"
+                        :class="item.status === 'Assigned' ? 'bg-emerald-100 text-emerald-800' : item.status === 'Reassigned' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-600'"
+                      >
+                        {{ item.status }}
+                      </span>
+                    </td>
+                    <td class="p-3 text-xs text-gray-600">{{ formatMalaysiaDateTime(item.assigned_at) }}</td>
+                    <td class="p-3 text-xs text-gray-600">{{ item.unassigned_at ? formatMalaysiaDateTime(item.unassigned_at) : '-' }}</td>
+                    <td class="p-3 text-xs text-gray-500">
+                      <p class="font-semibold text-gray-700">{{ item.assigned_by_name || 'System / Coordinator' }}</p>
+                      <p class="text-[11px] italic" v-if="item.assignment_reason">{{ item.assignment_reason }}</p>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div v-else class="rounded-xl bg-gray-50 p-4 text-center text-xs text-gray-500 font-medium">
+              No previous assignment changes recorded in the audit log.
+            </div>
           </section>
 
           <section class="bg-white rounded-[26px] p-6 shadow border border-black/5">
@@ -510,6 +751,127 @@ onMounted(loadProject)
             class="inline-flex items-center gap-2 rounded-xl bg-red-600 hover:bg-red-700 px-5 py-2 text-sm font-bold text-white shadow disabled:opacity-50"
           >
             <Trash2 class="w-4 h-4" /> Delete FYP Permanently
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Change / Assign Supervisor Modal -->
+    <div
+      v-if="showSupervisorModal"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+    >
+      <div class="w-full max-w-2xl rounded-[26px] bg-white p-6 shadow-2xl space-y-4 max-h-[85vh] flex flex-col">
+        <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+          <div>
+            <h3 class="text-xl font-bold text-gray-900">Assign / Change Supervisor</h3>
+            <p class="text-xs text-gray-500">Select a lecturer to assign as supervisor for this project</p>
+          </div>
+          <button @click="showSupervisorModal = false" class="text-gray-400 hover:text-gray-600 font-bold text-lg cursor-pointer">✕</button>
+        </div>
+
+        <div v-if="supervisorModalError" class="bg-red-50 text-red-800 text-xs p-3 rounded-xl font-bold">
+          {{ supervisorModalError }}
+        </div>
+
+        <div v-if="loadingSupervisors" class="p-8 text-center">
+          <Loader2 class="w-8 h-8 animate-spin mx-auto text-[#5c001f]" />
+          <p class="text-xs font-bold mt-2">Loading available lecturers...</p>
+        </div>
+
+        <div v-else class="flex-1 overflow-y-auto space-y-3 pr-1">
+          <div
+            v-for="cand in supervisorCandidates"
+            :key="cand.user_id"
+            class="p-4 rounded-xl border border-gray-200 hover:border-[#5c001f] transition-all flex flex-wrap items-center justify-between gap-3 bg-slate-50/50"
+          >
+            <div>
+              <p class="font-bold text-gray-900 text-base">{{ cand.full_name || cand.name }}</p>
+              <p class="text-xs text-gray-500 font-medium">{{ cand.email }}</p>
+              <p class="text-xs text-gray-600 mt-1" v-if="cand.expertise">
+                <strong>Expertise:</strong> {{ cand.expertise }}
+              </p>
+              <p class="text-xs text-gray-500 mt-0.5">
+                Capacity: {{ cand.current_capacity || 0 }} / {{ cand.sv_capacity || 5 }}
+              </p>
+            </div>
+
+            <button
+              @click="assignSupervisor(cand)"
+              :disabled="assignSupervisorLoading"
+              class="rounded-xl bg-[#5c001f] hover:bg-[#430016] text-white px-4 py-2 text-xs font-bold shadow disabled:opacity-50 cursor-pointer"
+            >
+              Assign Supervisor
+            </button>
+          </div>
+        </div>
+
+        <div class="pt-2 border-t border-gray-100 flex justify-end">
+          <button @click="showSupervisorModal = false" class="px-4 py-2 rounded-xl border border-gray-300 text-xs font-bold cursor-pointer">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Change / Assign Examiner Modal -->
+    <div
+      v-if="showExaminerModal"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+    >
+      <div class="w-full max-w-2xl rounded-[26px] bg-white p-6 shadow-2xl space-y-4 max-h-[85vh] flex flex-col">
+        <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+          <div>
+            <h3 class="text-xl font-bold text-gray-900">Assign / Change Examiner</h3>
+            <p class="text-xs text-gray-500">Select an eligible examiner candidate for this project</p>
+          </div>
+          <button @click="showExaminerModal = false" class="text-gray-400 hover:text-gray-600 font-bold text-lg cursor-pointer">✕</button>
+        </div>
+
+        <div v-if="examinerModalError" class="bg-red-50 text-red-800 text-xs p-3 rounded-xl font-bold">
+          {{ examinerModalError }}
+        </div>
+
+        <div v-if="loadingExaminers" class="p-8 text-center">
+          <Loader2 class="w-8 h-8 animate-spin mx-auto text-[#5c001f]" />
+          <p class="text-xs font-bold mt-2">Loading examiner candidates...</p>
+        </div>
+
+        <div v-else class="flex-1 overflow-y-auto space-y-3 pr-1">
+          <div
+            v-for="cand in examinerCandidates"
+            :key="cand.user_id"
+            class="p-4 rounded-xl border border-gray-200 hover:border-[#5c001f] transition-all flex flex-wrap items-center justify-between gap-3 bg-slate-50/50"
+          >
+            <div>
+              <div class="flex items-center gap-2">
+                <p class="font-bold text-gray-900 text-base">{{ cand.full_name || cand.name }}</p>
+                <span v-if="cand.matchScore" class="px-2 py-0.5 bg-purple-100 text-purple-800 rounded text-xs font-bold">
+                  {{ cand.matchScore }}% Match
+                </span>
+              </div>
+              <p class="text-xs text-gray-500 font-medium">{{ cand.email }}</p>
+              <p class="text-xs text-gray-600 mt-1" v-if="cand.expertise">
+                <strong>Expertise:</strong> {{ cand.expertise }}
+              </p>
+              <p class="text-xs text-gray-500 mt-0.5" v-if="cand.reason">
+                {{ cand.reason }}
+              </p>
+            </div>
+
+            <button
+              @click="assignExaminer(cand)"
+              :disabled="assignExaminerLoading"
+              class="rounded-xl bg-[#5c001f] hover:bg-[#430016] text-white px-4 py-2 text-xs font-bold shadow disabled:opacity-50 cursor-pointer"
+            >
+              Assign Examiner
+            </button>
+          </div>
+        </div>
+
+        <div class="pt-2 border-t border-gray-100 flex justify-end">
+          <button @click="showExaminerModal = false" class="px-4 py-2 rounded-xl border border-gray-300 text-xs font-bold cursor-pointer">
+            Close
           </button>
         </div>
       </div>

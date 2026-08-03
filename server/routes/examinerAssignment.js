@@ -233,8 +233,8 @@ router.post("/coordinator/projects/:projectId/assign-examiner", async (req, res)
       );
       if (!projects.length) throw Object.assign(new Error("Project not found"), { status: 404 });
       const project = projects[0];
-      if (!['Awaiting Examiner Assignment', 'Examiner Assigned'].includes(project.status)) {
-        throw Object.assign(new Error("Project is not ready for examiner assignment"), { status: 409 });
+      if (project.status === 'Rejected') {
+        throw Object.assign(new Error("Cannot assign examiner to a rejected project"), { status: 409 });
       }
       if (Number(project.supervisor_user_id) === examinerUserId) {
         throw Object.assign(new Error("The same person cannot supervise and examine the same FYP"), { status: 409 });

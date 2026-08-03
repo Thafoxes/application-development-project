@@ -104,7 +104,7 @@ router.get("/coordinator/fyp-queue", (req, res) => {
 // PATCH /api/coordinator/fyp-status/:projectId - update FYP project status and match score in SQL database
 router.patch("/coordinator/fyp-status/:projectId", (req, res) => {
   const projectId = req.params.projectId;
-  const { status, matchScore, feedback } = req.body || {};
+  let { status, matchScore, feedback } = req.body || {};
 
   if (!projectId) {
     return res.status(400).json({ success: false, error: "Project ID is required" });
@@ -120,6 +120,7 @@ router.patch("/coordinator/fyp-status/:projectId", (req, res) => {
     "Pending Supervisor Assignment",
     "Pending Supervisor Approval",
     "Active",
+    "FYP Approved",
     "Revision Required",
     "Rejected"
   ];
@@ -128,43 +129,58 @@ router.patch("/coordinator/fyp-status/:projectId", (req, res) => {
     return res.status(400).json({ success: false, error: "Invalid project status" });
   }
 
-  const workflow = workflowStateForStatus(status, 0);
-  const isApproved = status === "Pending AI Matching" || status === "Pending Supervisor Assignment" || status === "Active";
-  const approvedClause = isApproved ? ", proposal_approved_at = COALESCE(proposal_approved_at, NOW())" : "";
-
-  const sql = `
-    UPDATE fyp_projects
-    SET status = ?,
-        match_score = COALESCE(?, match_score),
-        current_phase = ?,
-        progress_percent = GREATEST(COALESCE(progress_percent, 0), ?),
-        risk_status = ?
-        ${approvedClause},
-        updated_at = NOW()
-    WHERE project_id = ?
-  `;
-
-  db.query(sql, [status, matchScore || null, workflow.phase, workflow.progress, workflow.risk, projectId], (err, result) => {
-    if (err) {
-      return res.status(500).json({ success: false, error: err.message });
+  // Check if project has an assigned supervisor to set correct approved status
+  db.query("SELECT supervisor_user_id FROM fyp_projects WHERE project_id = ? LIMIT 1", [projectId], (checkErr, projRows) => {
+    if (checkErr) {
+      return res.status(500).json({ success: false, error: checkErr.message });
     }
 
-    if (feedback && feedback.trim()) {
-      const authorId = req.user?.user_id || null;
-      const feedbackSql = `
-        INSERT INTO fyp_feedback (project_id, author_user_id, feedback_text, category, created_at)
-        VALUES (?, ?, ?, ?, NOW())
-      `;
-      db.query(feedbackSql, [projectId, authorId, feedback.trim(), status === "Revision Required" ? "Proposal Revision Request" : "Coordinator Review"], (fbErr) => {
-        if (fbErr) console.warn("Could not record feedback:", fbErr.message);
+    const currentProject = projRows?.[0];
+    const hasSupervisor = Boolean(currentProject?.supervisor_user_id);
+
+    let targetStatus = status;
+    if (status === "Pending AI Matching" || status === "FYP Approved" || status === "Active") {
+      targetStatus = hasSupervisor ? "Active" : "Pending AI Matching";
+    }
+
+    const workflow = workflowStateForStatus(targetStatus, 0);
+    const isApproved = targetStatus === "Pending AI Matching" || targetStatus === "Pending Supervisor Assignment" || targetStatus === "Active" || targetStatus === "FYP Approved";
+    const approvedClause = isApproved ? ", proposal_approved_at = COALESCE(proposal_approved_at, NOW())" : "";
+
+    const sql = `
+      UPDATE fyp_projects
+      SET status = ?,
+          match_score = COALESCE(?, match_score),
+          current_phase = ?,
+          progress_percent = GREATEST(COALESCE(progress_percent, 0), ?),
+          risk_status = ?
+          ${approvedClause},
+          updated_at = NOW()
+      WHERE project_id = ?
+    `;
+
+    db.query(sql, [targetStatus, matchScore || null, workflow.phase, workflow.progress, workflow.risk, projectId], (err, result) => {
+      if (err) {
+        return res.status(500).json({ success: false, error: err.message });
+      }
+
+      if (feedback && feedback.trim()) {
+        const authorId = req.user?.user_id || null;
+        const feedbackSql = `
+          INSERT INTO fyp_feedback (project_id, author_user_id, feedback_text, category, created_at)
+          VALUES (?, ?, ?, ?, NOW())
+        `;
+        db.query(feedbackSql, [projectId, authorId, feedback.trim(), status === "Revision Required" ? "Proposal Revision Request" : "Coordinator Review"], (fbErr) => {
+          if (fbErr) console.warn("Could not record feedback:", fbErr.message);
+        });
+      }
+
+      res.json({
+        success: true,
+        projectId,
+        status: targetStatus,
+        affectedRows: result.affectedRows,
       });
-    }
-
-    res.json({
-      success: true,
-      projectId,
-      status,
-      affectedRows: result.affectedRows,
     });
   });
 });

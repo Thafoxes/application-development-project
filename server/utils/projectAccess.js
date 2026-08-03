@@ -24,10 +24,16 @@ async function loadRoles(userId) {
 async function loadProject(projectId) {
   const rows = await query(
     `SELECT fp.*,
+       su.full_name AS joined_supervisor_name,
+       su.email AS joined_supervisor_email,
+       COALESCE(s.research_expertise, su.expertise) AS joined_supervisor_expertise,
        COALESCE(ea.examiner_user_id, fp.examiner_user_id) AS assigned_examiner_user_id,
        eu.full_name AS assigned_examiner_name,
-       eu.email AS assigned_examiner_email
+       eu.email AS assigned_examiner_email,
+       eu.expertise AS assigned_examiner_expertise
      FROM fyp_projects fp
+     LEFT JOIN users su ON su.user_id = fp.supervisor_user_id
+     LEFT JOIN supervisor s ON s.supervisor_id = fp.supervisor_user_id
      LEFT JOIN fyp_examiner_assignments ea
        ON ea.project_id = fp.project_id AND ea.status = 'Assigned'
      LEFT JOIN users eu
@@ -36,7 +42,16 @@ async function loadProject(projectId) {
      LIMIT 1`,
     [projectId]
   );
-  return rows?.[0] || null;
+  if (!rows?.[0]) return null;
+  const proj = rows[0];
+  return {
+    ...proj,
+    supervisor_name: proj.joined_supervisor_name || proj.supervisor_name || 'Not Assigned',
+    supervisor_email: proj.joined_supervisor_email || proj.supervisor_email || '',
+    supervisor_expertise: proj.joined_supervisor_expertise || proj.supervisor_expertise || '',
+    examiner_name: proj.assigned_examiner_name || proj.examiner_name || null,
+    examiner_email: proj.assigned_examiner_email || proj.examiner_email || null,
+  };
 }
 
 function canViewProject(project, userId, roles, isProjectStudentMember = false) {

@@ -821,10 +821,39 @@ router.post("/api/supervisor-matching/assign", authenticateToken, requireAnyRole
 
     await connection.beginTransaction();
 
+    // Ensure audit log table exists
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS fyp_supervisor_assignments (
+        assignment_id INT AUTO_INCREMENT PRIMARY KEY,
+        project_id INT NOT NULL,
+        supervisor_user_id INT NOT NULL,
+        assigned_by INT DEFAULT NULL,
+        status VARCHAR(50) DEFAULT 'Assigned',
+        assignment_reason TEXT DEFAULT NULL,
+        assigned_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        unassigned_at DATETIME DEFAULT NULL
+      )
+    `);
+
     let finalProjectId = projectId ? Number(projectId) : null;
 
     if (finalProjectId) {
-      // Update existing student-submitted project
+      // 1. Mark previous supervisor assignments as Reassigned in audit log
+      await connection.execute(
+        "UPDATE fyp_supervisor_assignments SET status = 'Reassigned', unassigned_at = NOW() WHERE project_id = ? AND status = 'Assigned'",
+        [finalProjectId]
+      );
+
+      // 2. Insert new supervisor assignment into audit log
+      if (supervisor.user_id) {
+        await connection.execute(
+          `INSERT INTO fyp_supervisor_assignments (project_id, supervisor_user_id, assigned_by, status, assignment_reason, assigned_at)
+           VALUES (?, ?, ?, 'Assigned', ?, NOW())`,
+          [finalProjectId, supervisor.user_id, req.user?.user_id || null, "Coordinator Supervisor Assignment"]
+        );
+      }
+
+      // 3. Update existing student-submitted project
       await connection.execute(
         `
         UPDATE fyp_projects
@@ -838,8 +867,10 @@ router.post("/api/supervisor-matching/assign", authenticateToken, requireAnyRole
           supervisor_email = ?,
           supervisor_expertise = ?,
           match_score = ?,
-          status = 'Pending Supervisor Approval',
-          current_phase = 'Supervisor Review', progress_percent = 25, risk_status = 'On Track',
+          status = 'Active',
+          current_phase = 'Development',
+          progress_percent = GREATEST(COALESCE(progress_percent, 0), 25),
+          risk_status = 'On Track',
           updated_at = NOW()
         WHERE project_id = ?
         `,

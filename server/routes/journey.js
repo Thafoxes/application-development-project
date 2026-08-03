@@ -114,6 +114,31 @@ router.get("/projects/:projectId/journey", async (req, res) => {
       );
     }
 
+    const [svHistoryRows, exHistoryRows] = await Promise.all([
+      query(
+        `SELECT sa.*, u.full_name AS person_name, u.email AS person_email,
+                ab.full_name AS assigned_by_name, 'Supervisor' AS role_type
+         FROM fyp_supervisor_assignments sa
+         JOIN users u ON u.user_id = sa.supervisor_user_id
+         LEFT JOIN users ab ON ab.user_id = sa.assigned_by
+         WHERE sa.project_id = ? ORDER BY sa.assigned_at DESC`,
+        [projectId]
+      ).catch(() => []),
+      query(
+        `SELECT ea.*, u.full_name AS person_name, u.email AS person_email,
+                ab.full_name AS assigned_by_name, 'Examiner' AS role_type
+         FROM fyp_examiner_assignments ea
+         JOIN users u ON u.user_id = ea.examiner_user_id
+         LEFT JOIN users ab ON ab.user_id = ea.assigned_by
+         WHERE ea.project_id = ? ORDER BY ea.assigned_at DESC`,
+        [projectId]
+      ).catch(() => []),
+    ]);
+
+    const assignmentHistory = [...svHistoryRows, ...exHistoryRows].sort(
+      (a, b) => new Date(b.assigned_at || 0) - new Date(a.assigned_at || 0)
+    );
+
     res.json({
       success: true,
       project: {
@@ -136,6 +161,7 @@ router.get("/projects/:projectId/journey", async (req, res) => {
       feedback,
       actionItems,
       nominations,
+      assignmentHistory,
       releasedResult: req.project.status === "Result Released" || req.roles.is_coordinator || req.roles.is_admin
         ? {
             finalScore: req.project.final_score,
