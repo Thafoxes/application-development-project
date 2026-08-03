@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import {
+  Download,
   FileText,
   FolderKanban,
   Loader2,
@@ -11,7 +12,7 @@ import {
 import AppHeader from '@/components/AppHeader.vue'
 import RoleSidebar from '@/components/RoleSidebar.vue'
 import StaffProjectCard from '@/components/staff/StaffProjectCard.vue'
-import { api } from '@/services/ifamousApi'
+import { api, fileUrl } from '@/services/ifamousApi'
 import { openSupervisorProject } from '@/utils/supervisorProjectNavigation'
 import { formatMalaysiaDate } from '@/utils/dateTime'
 
@@ -195,12 +196,24 @@ onMounted(loadProjects)
                   <td class="text-xs font-semibold text-slate-600">{{ formatMalaysiaDate(project.lastUpdated || project.updated_at) }}</td>
 
                   <td class="text-right pr-5">
-                    <button
-                      @click="reviewProject(project)"
-                      class="bg-[#5c001f] hover:bg-[#430016] text-white px-4 py-2 rounded-xl font-bold text-xs inline-flex items-center gap-2 shadow cursor-pointer"
-                    >
-                      Open FYP
-                    </button>
+                    <div class="inline-flex items-center gap-2">
+                      <a
+                        v-if="project.latestSubmissionId || project.approved_submission_id"
+                        :href="fileUrl(project.project_id || project.id, project.latestSubmissionId || project.approved_submission_id, true)"
+                        target="_blank"
+                        rel="noopener"
+                        class="border-2 border-[#5c001f] text-[#5c001f] hover:bg-[#5c001f]/5 px-3 py-1.5 rounded-xl font-bold text-xs inline-flex items-center gap-1 transition-all cursor-pointer"
+                      >
+                        <Download class="w-3.5 h-3.5" /> Download PDF
+                      </a>
+
+                      <button
+                        @click="reviewProject(project)"
+                        class="bg-[#5c001f] hover:bg-[#430016] text-white px-4 py-2 rounded-xl font-bold text-xs inline-flex items-center gap-2 shadow cursor-pointer"
+                      >
+                        Open FYP
+                      </button>
+                    </div>
                   </td>
                 </tr>
               </tbody>

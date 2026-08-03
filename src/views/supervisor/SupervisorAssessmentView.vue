@@ -1,11 +1,11 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ArrowLeft, Loader2, Save, Send } from 'lucide-vue-next'
+import { ArrowLeft, Download, Eye, FileText, Loader2, Save, Send } from 'lucide-vue-next'
 import AppHeader from '@/components/AppHeader.vue'
 import RoleSidebar from '@/components/RoleSidebar.vue'
 import EmailActionConfirmModal from '@/components/EmailActionConfirmModal.vue'
-import { api } from '@/services/ifamousApi'
+import { api, fileUrl } from '@/services/ifamousApi'
 
 import RubricEvaluationTable from '@/components/staff/RubricEvaluationTable.vue'
 import FeedbackFileUploadCard from '@/components/staff/FeedbackFileUploadCard.vue'
@@ -16,7 +16,7 @@ const projectId = Number(route.query.projectId || 0)
 const loading = ref(true)
 const saving = ref(false)
 const error = ref('')
-const payload = ref({ project: {}, rubric: [], assessment: null, scores: [], feedback: [] })
+const payload = ref({ project: {}, submissions: [], rubric: [], assessment: null, scores: [], feedback: [] })
 const comments = ref('')
 const scoreMap = reactive({})
 const scoreComments = reactive({})
@@ -66,6 +66,49 @@ onMounted(load)
     <div v-if="loading" class="bg-white rounded-2xl p-10"><Loader2 class="animate-spin mx-auto text-[#5c001f]" /></div><div v-else-if="error && !payload.project.project_id" class="bg-red-50 text-red-800 rounded-2xl p-5 font-bold">{{ error }}</div>
     <template v-else>
       <div v-if="error" class="bg-red-50 text-red-800 rounded-2xl p-4 font-bold">{{ error }}</div>
+
+      <!-- Submitted FYP Package & Downloads -->
+      <section class="bg-white rounded-[26px] p-6 shadow border border-slate-200/90 space-y-4">
+        <h2 class="text-2xl font-extrabold text-slate-900 flex items-center gap-2">
+          <FileText class="w-6 h-6 text-[#5c001f]" /> Submitted FYP Documents & Deliverables
+        </h2>
+        <p class="text-xs text-slate-500 font-medium">Download student PDF proposal/deliverables to add corrections and upload annotated files back.</p>
+
+        <div v-if="payload.submissions && payload.submissions.length" class="space-y-3 pt-2">
+          <div
+            v-for="item in payload.submissions"
+            :key="item.submission_id"
+            class="border-2 border-slate-200 bg-slate-50/50 rounded-2xl p-4 flex justify-between items-center gap-4 flex-wrap hover:border-slate-300 transition-all"
+          >
+            <div class="flex items-center gap-3">
+              <FileText class="w-7 h-7 text-[#5c001f] flex-shrink-0" />
+              <div>
+                <p class="font-bold text-slate-900 text-base">{{ item.original_file_name || item.submission_title }}</p>
+                <p class="text-xs font-semibold text-slate-600 mt-0.5">Version {{ item.version_number }} · {{ item.submission_type || 'Document' }} · {{ item.status }}</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <a
+                :href="fileUrl(projectId, item.submission_id)"
+                target="_blank"
+                rel="noopener"
+                class="border-2 border-slate-300 hover:border-[#5c001f] text-slate-800 hover:text-[#5c001f] rounded-xl px-4 py-2 font-bold text-xs transition-all cursor-pointer inline-flex items-center gap-1.5"
+              >
+                <Eye class="w-4 h-4" /> View PDF
+              </a>
+              <a
+                :href="fileUrl(projectId, item.submission_id, true)"
+                class="bg-[#5c001f] hover:bg-[#430016] text-white rounded-xl px-4 py-2 font-bold text-xs inline-flex items-center gap-1.5 shadow transition-all cursor-pointer"
+              >
+                <Download class="w-4 h-4" /> Download PDF
+              </a>
+            </div>
+          </div>
+        </div>
+        <div v-else class="p-4 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-xs font-medium">
+          No FYP submissions uploaded yet for this project.
+        </div>
+      </section>
 
       <!-- Reusable Rubric Table Component -->
       <RubricEvaluationTable

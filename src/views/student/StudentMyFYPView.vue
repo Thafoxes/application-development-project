@@ -181,14 +181,14 @@ function openFilePicker() {
 function setSelectedFile(file) {
   if (!file) return;
 
-  const allowedExtensions = [".pdf", ".doc", ".docx", ".txt"];
+  const allowedExtensions = [".pdf", ".pptx", ".ppt"];
   const fileName = String(file.name || "").toLowerCase();
   const isAllowed = allowedExtensions.some((extension) =>
     fileName.endsWith(extension)
   );
 
   if (!isAllowed) {
-    errorMessage.value = "Only .pdf, .doc, .docx, or .txt files are supported.";
+    errorMessage.value = "Only .pdf or .pptx files are supported for proposals.";
     return;
   }
 
@@ -555,10 +555,10 @@ onMounted(loadMyFyp);
             <CloudUpload class="w-16 h-16 mx-auto text-[#5c001f]" />
             <h2 class="text-2xl font-bold mt-4">Upload Proposal Document</h2>
             <p class="text-sm text-gray-600 mt-2">
-              Supported: .pdf, .doc, .docx, .txt. Drag and drop your file here or choose manually.
+              Supported: .pdf, .pptx. Drag and drop your file here or choose manually.
             </p>
 
-            <input ref="fileInput" class="hidden" type="file" accept=".pdf,.doc,.docx,.txt" @change="handleUpload" />
+            <input ref="fileInput" class="hidden" type="file" accept=".pdf,.pptx,.ppt" @change="handleUpload" />
 
             <button @click="openFilePicker" class="mt-6 bg-[#5c001f] text-white px-6 py-3 rounded-full font-bold">
               Choose File

@@ -79,11 +79,17 @@ router.get(
         `SELECT fp.project_id, fp.project_title, fp.project_type, fp.abstract, fp.keywords,
                 fp.student_name, fp.matric_no, fp.supervisor_name, fp.status,
                 fp.github_url, fp.google_drive_url, fp.approved_submission_id,
+                COALESCE(fp.approved_submission_id, ps.latest_submission_id) AS latest_submission_id,
                 ea.assigned_at, ev.status AS evaluation_status, ev.total_score, ev.submitted_at
          FROM fyp_examiner_assignments ea
          JOIN fyp_projects fp ON fp.project_id = ea.project_id
          LEFT JOIN fyp_evaluations ev
            ON ev.project_id = fp.project_id AND ev.examiner_user_id = ea.examiner_user_id
+         LEFT JOIN (
+           SELECT project_id, MAX(submission_id) AS latest_submission_id
+           FROM projects_submissions
+           GROUP BY project_id
+         ) ps ON ps.project_id = fp.project_id
          WHERE ea.examiner_user_id = ? AND ea.status = 'Assigned'
          ORDER BY CASE WHEN ev.status = 'Submitted' THEN 1 ELSE 0 END, ea.assigned_at DESC`,
         [req.user.user_id]
@@ -108,9 +114,9 @@ router.get(
           `SELECT submission_id, submission_title, original_file_name, mime_type,
                   submission_type, status, version_number, is_locked, submitted_at
            FROM projects_submissions
-           WHERE project_id = ? AND (is_locked = 1 OR submission_id = ?)
-           ORDER BY version_number DESC`,
-          [projectId, req.project.approved_submission_id]
+           WHERE project_id = ?
+           ORDER BY version_number DESC, submission_id DESC`,
+          [projectId]
         ),
         query(
           `SELECT rubric_item_id, criterion, description, max_score, weightage, display_order

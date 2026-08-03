@@ -189,7 +189,7 @@ function scrollToResult() {
 
 function requestRevisedProposalSubmission() {
   if (!revisionFile.value) {
-    errorMessage.value = "Please choose a revised PDF or DOCX proposal.";
+    errorMessage.value = "Please choose a revised PDF or PPTX proposal.";
     return;
   }
   showRevisionConfirm.value = true;
@@ -197,7 +197,7 @@ function requestRevisedProposalSubmission() {
 
 async function submitRevisedProposal(sendEmail = true) {
   if (!revisionFile.value) {
-    errorMessage.value = "Please choose a revised PDF or DOCX proposal.";
+    errorMessage.value = "Please choose a revised PDF or PPTX proposal.";
     return;
   }
   revisionSubmitting.value = true;
@@ -440,7 +440,7 @@ onMounted(async () => {
             <form v-if="revisionRequired" @submit.prevent="requestRevisedProposalSubmission" class="mt-6 rounded-[18px] bg-white border border-amber-200 p-5 space-y-4">
               <div>
                 <label class="font-bold block mb-2">Upload revised proposal</label>
-                <input type="file" accept=".pdf,.doc,.docx,.txt" @change="revisionFile = $event.target.files?.[0] || null" class="w-full rounded-[14px] border border-[#d8c9bd] px-4 py-3" />
+                <input type="file" accept=".pdf,.pptx,.ppt" @change="revisionFile = $event.target.files?.[0] || null" class="w-full rounded-[14px] border border-[#d8c9bd] px-4 py-3" />
                 <p class="text-xs text-gray-500 mt-2">The new file is saved as another proposal version. The original version remains in Documents.</p>
               </div>
               <div>

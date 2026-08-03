@@ -1,5 +1,6 @@
 <script setup>
-import { ClipboardCheck, FolderKanban } from 'lucide-vue-next'
+import { ClipboardCheck, Download, FolderKanban } from 'lucide-vue-next'
+import { fileUrl } from '@/services/ifamousApi'
 
 const props = defineProps({
   project: {
@@ -13,14 +14,17 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['click'])
+
+function getSubmissionId(p) {
+  return p.latestSubmissionId || p.latest_submission_id || p.approved_submission_id || null
+}
 </script>
 
 <template>
   <article
-    @click="emit('click', project)"
     class="bg-white rounded-[24px] p-6 shadow-md border-2 border-slate-200/90 flex flex-col justify-between space-y-4 hover:border-[#5c001f] transition-all cursor-pointer group"
   >
-    <div>
+    <div @click="emit('click', project)">
       <div class="flex justify-between items-center gap-3">
         <div class="flex items-center gap-2">
           <FolderKanban v-if="role === 'supervisor'" class="w-6 h-6 text-[#5c001f]" />
@@ -62,9 +66,21 @@ const emit = defineEmits(['click'])
       </div>
     </div>
 
-    <div class="pt-2">
+    <div class="pt-2 flex flex-col sm:flex-row items-center gap-2">
+      <a
+        v-if="getSubmissionId(project)"
+        :href="fileUrl(project.project_id || project.id, getSubmissionId(project), true)"
+        target="_blank"
+        rel="noopener"
+        @click.stop
+        class="w-full sm:w-auto px-4 py-2.5 rounded-xl border-2 border-[#5c001f] text-[#5c001f] hover:bg-[#5c001f]/5 font-bold text-xs inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+      >
+        <Download class="w-4 h-4" /> Download PDF
+      </a>
+
       <button
-        class="w-full bg-[#5c001f] group-hover:bg-[#430016] text-white rounded-xl px-5 py-2.5 text-xs font-bold shadow transition-all cursor-pointer"
+        @click="emit('click', project)"
+        class="flex-1 w-full bg-[#5c001f] group-hover:bg-[#430016] text-white rounded-xl px-5 py-2.5 text-xs font-bold shadow transition-all cursor-pointer"
       >
         {{ role === 'supervisor' ? 'Open FYP Assessment & Journey' : project.evaluation_status === 'Submitted' ? 'View Evaluation' : 'Review and Grade' }}
       </button>

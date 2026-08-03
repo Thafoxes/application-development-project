@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   Download,
   ExternalLink,
+  Eye,
   FileText,
   GitBranch,
   Loader2,
@@ -350,6 +351,21 @@ onMounted(loadJourney)
             </div>
           </section>
 
+          <!-- FYP Abstract Card -->
+          <section v-if="project.abstract || project.keywords" class="bg-white rounded-[26px] p-6 shadow border border-slate-200/90 space-y-3">
+            <div class="flex items-center justify-between gap-4 flex-wrap">
+              <h2 class="text-xl font-extrabold text-slate-900 flex items-center gap-2">
+                <FileText class="w-5 h-5 text-[#5c001f]" /> Project Abstract & Overview
+              </h2>
+              <span v-if="project.keywords" class="text-xs font-bold text-slate-700 bg-slate-100 px-3 py-1 rounded-full border border-slate-200">
+                <strong>Keywords:</strong> {{ project.keywords }}
+              </span>
+            </div>
+            <p class="text-slate-800 font-medium text-sm leading-relaxed whitespace-pre-line bg-slate-50/70 p-4 rounded-2xl border border-slate-200">
+              {{ project.abstract || 'No abstract text provided.' }}
+            </p>
+          </section>
+
           <section v-if="isStudent"
             class="bg-white rounded-[26px] p-6 shadow border border-black/5 flex flex-wrap items-center justify-between gap-5">
             <div>
@@ -604,12 +620,20 @@ onMounted(loadJourney)
                   <p class="text-sm text-gray-500">{{ item.submission_type }} · Version {{ item.version_number || 1 }} ·
                     {{ item.status }} <span v-if="item.is_locked">· 🔒 Locked</span></p>
                 </div>
-                <div class="flex gap-2">
-                  <a :href="fileUrl(projectId, item.submission_id)" target="_blank"
-                    class="border rounded-xl px-3 py-2 font-bold">Preview</a>
-                  <a :href="fileUrl(projectId, item.submission_id, true)"
-                    class="border rounded-xl px-3 py-2 font-bold inline-flex gap-2">
-                    <Download class="w-4 h-4" /> Download
+                <div class="flex items-center gap-2">
+                  <a
+                    :href="fileUrl(projectId, item.submission_id)"
+                    target="_blank"
+                    rel="noopener"
+                    class="border-2 border-[#5c001f] text-[#5c001f] hover:bg-[#5c001f]/5 rounded-xl px-4 py-2 font-bold text-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    <Eye class="w-4 h-4" /> View PDF
+                  </a>
+                  <a
+                    :href="fileUrl(projectId, item.submission_id, true)"
+                    class="bg-[#5c001f] hover:bg-[#430016] text-white rounded-xl px-4 py-2 font-bold text-xs inline-flex items-center gap-1.5 shadow transition-colors cursor-pointer"
+                  >
+                    <Download class="w-4 h-4" /> Download PDF
                   </a>
                 </div>
               </div>
@@ -809,18 +833,27 @@ onMounted(loadJourney)
                 </a>
               </div>
             </div>
-            <div v-if="canGiveFeedback" class="mt-5 bg-[#f7f1ea] rounded-[18px] p-5 space-y-3">
-              <select v-model="feedbackForm.submissionId" class="w-full border rounded-xl px-4 py-3">
+            <div v-if="canGiveFeedback" class="mt-5 bg-[#f7f1ea] border border-[#e1d5cc] rounded-[18px] p-5 space-y-3">
+              <h3 class="font-extrabold text-slate-900 text-base">Send Revision Feedback & Correction PDF</h3>
+              <p class="text-xs text-slate-600 font-medium">Download the student's submission above, add annotations/corrections to the PDF, and attach it below.</p>
+              <select v-model="feedbackForm.submissionId" class="w-full border-2 border-slate-300 rounded-xl px-4 py-3 text-slate-900 font-medium bg-white">
                 <option value="">General project feedback</option>
                 <option v-for="item in data.submissions" :key="item.submission_id" :value="item.submission_id">{{
                   item.original_file_name || item.submission_title }}</option>
               </select>
-              <textarea v-model="feedbackForm.comment" class="w-full border rounded-xl px-4 py-3"
-                placeholder="Comment, correction or highlighted issue" />
-              <input type="file" @change="attachment = $event.target.files[0]"
-                class="w-full border rounded-xl px-4 py-2 bg-white" />
+              <textarea v-model="feedbackForm.comment" class="w-full border-2 border-slate-300 rounded-xl px-4 py-3 text-slate-900 font-medium bg-white placeholder:text-slate-400"
+                placeholder="Comment, correction instructions or highlighted issue..." />
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-[#5c001f] mb-1">
+                  Attach Corrected / Annotated PDF or PPTX Document (Optional)
+                </label>
+                <input type="file" accept=".pdf,.pptx,.ppt" @change="attachment = $event.target.files[0]"
+                  class="w-full text-xs text-slate-600 font-medium file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#5c001f] file:text-white hover:file:bg-[#430016] cursor-pointer" />
+              </div>
               <button @click="requestFeedbackSubmission"
-                class="bg-[#5c001f] text-white rounded-xl px-4 py-2.5 font-bold">Send feedback</button>
+                class="bg-[#5c001f] hover:bg-[#430016] text-white rounded-xl px-5 py-3 font-bold shadow text-xs transition-all cursor-pointer">
+                Send Feedback & Correction File
+              </button>
             </div>
           </section>
 

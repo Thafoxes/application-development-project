@@ -309,20 +309,22 @@ onMounted(loadProject);
                 </div>
 
                 <div class="flex gap-2">
-                  <button
-                    @click="previewDocument(doc)"
-                    class="border border-[#5c001f] text-[#5c001f] px-4 py-2 rounded-full font-bold flex items-center gap-2"
+                  <a
+                    :href="fileUrl(project.project_id, doc.submission_id)"
+                    target="_blank"
+                    rel="noopener"
+                    class="border-2 border-[#5c001f] text-[#5c001f] hover:bg-[#5c001f]/5 px-4 py-2 rounded-xl font-bold flex items-center gap-2 transition-colors cursor-pointer"
                   >
                     <Eye class="w-4 h-4" />
-                    View
-                  </button>
-                  <button
-                    @click="downloadDocument(doc)"
-                    class="bg-[#5c001f] text-white px-4 py-2 rounded-full font-bold flex items-center gap-2"
+                    View PDF
+                  </a>
+                  <a
+                    :href="fileUrl(project.project_id, doc.submission_id, true)"
+                    class="bg-[#5c001f] hover:bg-[#430016] text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 shadow transition-colors cursor-pointer"
                   >
                     <Download class="w-4 h-4" />
-                    Download
-                  </button>
+                    Download PDF
+                  </a>
                 </div>
               </div>
             </div>
@@ -400,7 +402,7 @@ onMounted(loadProject);
               type="file"
               @change="correctionFile = $event.target.files?.[0] || null"
               class="w-full rounded-[16px] border border-[#d8c9bd] bg-white px-4 py-3"
-              accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.webp,.txt"
+              accept=".pdf,.pptx,.ppt"
             />
             <p v-if="correctionFile" class="text-sm text-gray-600 mt-2">
               Selected: {{ correctionFile.name }}

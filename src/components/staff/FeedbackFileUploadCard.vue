@@ -106,15 +106,16 @@ function getFeedbackDownloadUrl(feedbackId) {
 
       <div>
         <label class="block text-xs font-bold uppercase tracking-wider text-[#5c001f] mb-1.5">
-          Attach Corrected / Marked FYP File (Optional)
+          Attach Annotated / Corrected PDF or PPTX Document (Optional)
         </label>
         <input
           type="file"
+          accept=".pdf,.pptx,.ppt"
           @change="handleFileSelect"
           class="w-full text-xs text-slate-600 font-medium file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#5c001f] file:text-white hover:file:bg-[#430016] cursor-pointer"
         />
         <p class="text-[11px] text-slate-500 mt-1" v-if="selectedFile">
-          Selected file: <strong>{{ selectedFile.name }}</strong> ({{ Math.round(selectedFile.size / 1024) }} KB)
+          Selected corrected file: <strong>{{ selectedFile.name }}</strong> ({{ Math.round(selectedFile.size / 1024) }} KB)
         </p>
       </div>
 

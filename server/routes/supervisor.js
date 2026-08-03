@@ -122,21 +122,27 @@ router.get("/supervisor/projects", (req, res) => {
 
   const sql = `
     SELECT
-      project_id,
-      student_user_id,
-      student_name,
-      matric_no,
-      project_title,
-      project_type,
-      abstract,
-      keywords,
-      status,
-      match_score,
-      created_at,
-      updated_at
-    FROM fyp_projects
-    WHERE supervisor_user_id = ?
-    ORDER BY updated_at DESC, created_at DESC
+      fp.project_id,
+      fp.student_user_id,
+      fp.student_name,
+      fp.matric_no,
+      fp.project_title,
+      fp.project_type,
+      fp.abstract,
+      fp.keywords,
+      fp.status,
+      fp.match_score,
+      fp.created_at,
+      fp.updated_at,
+      ps.latest_submission_id
+    FROM fyp_projects fp
+    LEFT JOIN (
+      SELECT project_id, MAX(submission_id) AS latest_submission_id
+      FROM projects_submissions
+      GROUP BY project_id
+    ) ps ON ps.project_id = fp.project_id
+    WHERE fp.supervisor_user_id = ?
+    ORDER BY fp.updated_at DESC, fp.created_at DESC
   `;
 
   db.query(sql, [userId], (err, rows) => {
@@ -155,6 +161,7 @@ router.get("/supervisor/projects", (req, res) => {
         status: String(p.status || "Pending Supervisor Approval") === "Assigned" ? "Pending Supervisor Approval" : (p.status || "Pending Supervisor Approval"),
         matchScore: p.match_score || null,
         lastUpdated: p.updated_at || p.created_at,
+        latestSubmissionId: p.latest_submission_id || null,
       })),
     });
   });

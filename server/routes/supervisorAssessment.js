@@ -27,7 +27,7 @@ router.get(
   async (req, res) => {
     try {
       const assessorId = Number(req.project.supervisor_user_id);
-      const [rubric, assessment, scores] = await Promise.all([
+      const [rubric, assessment, scores, submissions, feedback] = await Promise.all([
         query(
           `SELECT rubric_item_id, criterion, description, max_score, weightage, display_order
            FROM fyp_rubric_items WHERE is_active = 1 ORDER BY display_order, rubric_item_id`
@@ -43,6 +43,15 @@ router.get(
            WHERE sa.project_id = ? AND sa.supervisor_user_id = ?`,
           [req.project.project_id, assessorId]
         ),
+        query(
+          `SELECT submission_id, submission_title, original_file_name, mime_type,
+                  submission_type, status, version_number, is_locked, submitted_at
+           FROM projects_submissions
+           WHERE project_id = ?
+           ORDER BY version_number DESC, submission_id DESC`,
+          [req.project.project_id]
+        ),
+        query("SELECT * FROM fyp_feedback WHERE project_id = ? ORDER BY created_at DESC", [req.project.project_id]),
       ]);
       res.json({
         success: true,
@@ -50,6 +59,8 @@ router.get(
         rubric,
         assessment: assessment[0] || null,
         scores,
+        submissions,
+        feedback,
       });
     } catch (error) {
       return sendError(res, error);
